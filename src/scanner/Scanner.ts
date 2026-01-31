@@ -16,6 +16,10 @@ import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
 import { discoverFiles } from './FileDiscovery.js';
 import { matchRules } from './PatternMatcher.js';
 import { getRulesForScan } from '../rules/index.js';
+import { analyzeFile as analyzeFileSemantics, shouldAnalyze as shouldAnalyzeSemantics, getMemoryUsage } from '../analyzers/AstAnalyzer.js';
+import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
+import { loadThreatDatabase } from '../intelligence/ThreatFeed.js';
+import { matchIndicators, shouldMatchIndicators } from '../intelligence/IndicatorMatcher.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -137,11 +141,55 @@ function scanFile(
   try {
     const content = readFileSync(file.path, 'utf-8');
     const rules = getRulesForScan(config.categories, config.severities);
-    const findings = matchRules(rules, file, content, {
+    let allFindings: Finding[] = [];
+
+    // Regular pattern matching
+    const patternFindings = matchRules(rules, file, content, {
       contextLines: config.contextLines,
     });
+    allFindings.push(...patternFindings);
 
-    return { findings };
+    // Semantic analysis if enabled and applicable
+    if (config.semanticAnalysis && shouldAnalyzeSemantics(file, config)) {
+      // Monitor memory usage
+      const memBefore = getMemoryUsage();
+      if (memBefore.used > 1000) { // More than 1GB used
+        logger.warn(`High memory usage (${memBefore.used}MB) - skipping semantic analysis for ${file.relativePath}`);
+      } else {
+        try {
+          logger.debug(`Running semantic analysis on ${file.relativePath}`);
+          const semanticFindings = analyzeFileSemantics(file, content, rules);
+          // Convert SemanticFinding to Finding for compatibility
+          allFindings.push(...semanticFindings);
+
+          const memAfter = getMemoryUsage();
+          logger.debug(`Semantic analysis memory: ${memAfter.used - memBefore.used}MB delta`);
+        } catch (semanticError) {
+          const semanticMessage = semanticError instanceof Error ? semanticError.message : String(semanticError);
+          logger.warn(`Semantic analysis error for ${file.relativePath}: ${semanticMessage}`);
+        }
+      }
+    }
+
+    // Threat intelligence matching if enabled
+    if (config.threatIntel && shouldMatchIndicators(file, config)) {
+      try {
+        const threatDB = loadThreatDatabase();
+        logger.debug(`Running threat intelligence matching on ${file.relativePath}`);
+        const threatFindings = matchIndicators(threatDB, file, content, {
+          minConfidence: 50,
+          enablePatternMatching: true,
+          maxMatchesPerFile: 50
+        });
+        allFindings.push(...threatFindings);
+        logger.debug(`Found ${threatFindings.length} threat intelligence matches`);
+      } catch (threatError) {
+        const threatMessage = threatError instanceof Error ? threatError.message : String(threatError);
+        logger.warn(`Threat intelligence error for ${file.relativePath}: ${threatMessage}`);
+      }
+    }
+
+    return { findings: allFindings };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.warn(`Error scanning ${file.relativePath}: ${message}`);
@@ -192,6 +240,23 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     }
 
     allFindings.push(...result.findings);
+  }
+
+  // Cross-file correlation analysis if enabled
+  if (shouldAnalyzeCorrelations(discovery.files, config)) {
+    try {
+      logger.debug('Running cross-file correlation analysis');
+      const correlationFindings = analyzeCorrelations(discovery.files, getRulesForScan(config.categories, config.severities));
+      allFindings.push(...correlationFindings);
+      logger.debug(`Found ${correlationFindings.length} correlation findings`);
+    } catch (correlationError) {
+      const correlationMessage = correlationError instanceof Error ? correlationError.message : String(correlationError);
+      logger.warn(`Correlation analysis error: ${correlationMessage}`);
+      errors.push({
+        message: `Correlation analysis failed: ${correlationMessage}`,
+        fatal: false,
+      });
+    }
   }
 
   // Sort findings

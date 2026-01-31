@@ -31,7 +31,49 @@ export type ComponentType =
   | 'claude-md';
 
 /** File types supported for analysis */
-export type FileType = 'md' | 'sh' | 'bash' | 'zsh' | 'json' | 'yaml' | 'yml';
+export type FileType = 'md' | 'sh' | 'bash' | 'zsh' | 'json' | 'yaml' | 'yml' | 'ts' | 'js' | 'tsx' | 'jsx';
+
+/** Semantic pattern for AST-based analysis */
+export interface SemanticPattern {
+  /** Pattern type */
+  type: 'function-call' | 'property-access' | 'dynamic-import' | 'eval-chain' | 'object-structure';
+  /** Pattern identifier */
+  pattern: string;
+  /** Required context */
+  context?: string[];
+  /** Minimum confidence level (0-1) */
+  confidence?: number;
+}
+
+/** Correlation rule for multi-file analysis */
+export interface CorrelationRule {
+  /** Rule identifier */
+  id: string;
+  /** Description of the correlation pattern */
+  description: string;
+  /** File patterns that must be present */
+  filePatterns: string[];
+  /** Content patterns that must exist across files */
+  contentPatterns: string[];
+  /** Maximum distance between related files (directory levels) */
+  maxDistance?: number;
+}
+
+/** Remediation fix definition */
+export interface RemediationFix {
+  /** Fix type */
+  type: 'replace' | 'remove' | 'quarantine' | 'permission-change';
+  /** Fix description */
+  description: string;
+  /** Pattern to match for fix */
+  pattern: string;
+  /** Replacement content (for replace type) */
+  replacement?: string;
+  /** Safety level (0=dangerous, 1=safe) */
+  safety: number;
+  /** Whether fix can be applied automatically */
+  automatic: boolean;
+}
 
 /** A single security rule definition */
 export interface Rule {
@@ -65,6 +107,36 @@ export interface Rule {
   excludeContext?: RegExp[];
   /** Minimum match length to trigger (filters short matches) */
   minMatchLength?: number;
+  /** Semantic patterns for AST-based detection */
+  semanticPatterns?: SemanticPattern[];
+  /** Correlation rules for multi-file analysis */
+  correlationRules?: CorrelationRule[];
+  /** Available fixes for this rule */
+  remediationFixes?: RemediationFix[];
+}
+
+/** AST node information for semantic findings */
+export interface ASTNodeInfo {
+  /** Node type (function, property, etc.) */
+  nodeType: string;
+  /** Node name/identifier */
+  name?: string;
+  /** Parent context */
+  parent?: string;
+  /** Child nodes */
+  children?: string[];
+}
+
+/** Semantic context for advanced analysis */
+export interface SemanticContext {
+  /** Function/method name */
+  functionName?: string;
+  /** Variable names in scope */
+  variables?: string[];
+  /** Import statements */
+  imports?: string[];
+  /** Call chain */
+  callChain?: string[];
 }
 
 /** A security finding from the scanner */
@@ -97,6 +169,28 @@ export interface Finding {
   timestamp: Date;
   /** Risk score (0-100) */
   riskScore: number;
+}
+
+/** Semantic finding with AST information */
+export interface SemanticFinding extends Finding {
+  /** AST node information */
+  astNode?: ASTNodeInfo;
+  /** Semantic context */
+  semanticContext?: SemanticContext;
+  /** Confidence level (0-1) */
+  confidence: number;
+}
+
+/** Correlation finding across multiple files */
+export interface CorrelationFinding extends Finding {
+  /** Related files in the attack pattern */
+  relatedFiles: string[];
+  /** Attack pattern name */
+  attackPattern: string;
+  /** Risk vectors identified */
+  riskVectors: string[];
+  /** Correlation strength (0-1) */
+  correlationStrength: number;
 }
 
 /** A line of context around a finding */
@@ -201,6 +295,12 @@ export interface ScannerConfig {
   threatIntel: boolean;
   /** Enable behavioral analysis */
   behaviorAnalysis: boolean;
+  /** Enable semantic analysis */
+  semanticAnalysis: boolean;
+  /** Enable cross-file correlation */
+  correlationAnalysis: boolean;
+  /** Enable auto-remediation */
+  autoRemediation: boolean;
   /** Context lines to show around findings */
   contextLines: number;
   /** Maximum file size to scan (bytes) */
@@ -231,6 +331,9 @@ export interface CliOptions {
   verbose?: boolean;
   aiDetection?: boolean;
   threatIntel?: boolean;
+  semanticAnalysis?: boolean;
+  correlationAnalysis?: boolean;
+  autoRemediation?: boolean;
   config?: string;
 }
 
@@ -284,6 +387,9 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   aiDetection: false,
   threatIntel: false,
   behaviorAnalysis: false,
+  semanticAnalysis: false,
+  correlationAnalysis: false,
+  autoRemediation: false,
   contextLines: 3,
   maxFileSize: 10 * 1024 * 1024, // 10MB
   format: 'console',

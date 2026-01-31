@@ -23,6 +23,26 @@ import {
   getBaselineStats
 } from '../dist/utils/baseline.js';
 import { getAllRules, getRuleById, getRuleStats } from '../dist/rules/index.js';
+import {
+  loadThreatDatabase,
+  saveThreatDatabase,
+  addIndicators,
+  searchIndicators,
+  needsUpdate
+} from '../dist/intelligence/ThreatFeed.js';
+import {
+  applyRemediation,
+  applyRemediationBatch,
+  previewRemediation,
+  canAutoRemediate
+} from '../dist/remediation/Fixer.js';
+import {
+  quarantineFile,
+  listQuarantinedFiles,
+  restoreQuarantinedFile,
+  getQuarantineStats,
+  checkQuarantineHealth
+} from '../dist/remediation/Quarantine.js';
 import { logger } from '../dist/utils/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -54,6 +74,10 @@ program
   .option('-v, --verbose', 'Verbose output with context')
   .option('--ai-detection', 'Enable AI-powered detection (experimental)')
   .option('--threat-intel', 'Enable threat intelligence feeds (experimental)')
+  .option('--semantic-analysis', 'Enable AST-based semantic analysis')
+  .option('--correlation-analysis', 'Enable cross-file correlation analysis')
+  .option('--auto-remediation', 'Enable automated fixing (experimental)')
+  .option('--auto-fix', 'Automatically apply safe fixes after scanning')
   .option('--config <file>', 'Path to configuration file')
   .option('--baseline <file>', 'Path to baseline file for filtering known findings')
   .option('--ignore-baseline', 'Ignore baseline file and show all findings')
@@ -79,8 +103,14 @@ program
         verbose: options.verbose,
         aiDetection: options.aiDetection,
         threatIntel: options.threatIntel,
+        semanticAnalysis: options.semanticAnalysis,
+        correlationAnalysis: options.correlationAnalysis,
+        autoRemediation: options.autoRemediation,
         config: options.config,
       });
+
+      // Apply auto-fix if enabled
+      const shouldAutoFix = options.autoFix;
 
       // If no paths specified and no Claude configs found, show helpful message
       if (config.paths.length === 0) {
@@ -156,6 +186,32 @@ program
       } else {
         console.error(`Format '${config.format}' not yet implemented`);
         process.exit(1);
+      }
+
+      // Apply auto-fix if enabled and findings exist
+      if (shouldAutoFix && result.findings.length > 0) {
+        const fixableFindings = result.findings.filter(finding => canAutoRemediate(finding));
+
+        if (fixableFindings.length > 0) {
+          console.log(`\n🔧 Auto-fixing ${fixableFindings.length} issues...`);
+
+          const results = await applyRemediationBatch(fixableFindings, {
+            createBackups: true,
+            backupDir: '.ferret-backups',
+            safeOnly: true,
+            dryRun: false
+          });
+
+          const successful = results.filter(r => r.success);
+          console.log(`✅ Applied ${successful.length}/${results.length} fixes automatically`);
+
+          if (successful.length > 0) {
+            console.log('Fixed issues:');
+            for (const fix of successful) {
+              console.log(`  ✓ ${fix.finding.relativePath}:${fix.finding.line}`);
+            }
+          }
+        }
       }
 
       // Exit with appropriate code
@@ -393,6 +449,359 @@ baselineCmd
 
     } catch (error) {
       console.error('Error removing baseline:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Threat Intelligence commands
+const intelCmd = program
+  .command('intel')
+  .description('Manage threat intelligence');
+
+intelCmd
+  .command('status')
+  .description('Show threat intelligence database status')
+  .option('--intel-dir <dir>', 'Threat intelligence directory', '.ferret-intel')
+  .action((options) => {
+    try {
+      const db = loadThreatDatabase(options.intelDir);
+      const updateNeeded = needsUpdate(db, 24);
+
+      console.log('🛡️  Threat Intelligence Status');
+      console.log('━'.repeat(60));
+      console.log(`Database Version: ${db.version}`);
+      console.log(`Last Updated: ${new Date(db.lastUpdated).toLocaleString()}`);
+      console.log(`Total Indicators: ${db.stats.totalIndicators}`);
+      console.log(`Update Needed: ${updateNeeded ? '⚠️  Yes' : '✅ No'}`);
+      console.log('');
+
+      console.log('By Type:');
+      for (const [type, count] of Object.entries(db.stats.byType)) {
+        if (count > 0) {
+          console.log(`  ${type}: ${count}`);
+        }
+      }
+      console.log('');
+
+      console.log('By Category:');
+      for (const [category, count] of Object.entries(db.stats.byCategory)) {
+        console.log(`  ${category}: ${count}`);
+      }
+      console.log('');
+
+      console.log('Sources:');
+      for (const source of db.sources) {
+        console.log(`  ${source.enabled ? '✅' : '❌'} ${source.name}: ${source.description}`);
+      }
+
+    } catch (error) {
+      console.error('Error loading threat intelligence:', error.message);
+      process.exit(1);
+    }
+  });
+
+intelCmd
+  .command('search')
+  .description('Search threat intelligence indicators')
+  .argument('<query>', 'Search term')
+  .option('--intel-dir <dir>', 'Threat intelligence directory', '.ferret-intel')
+  .option('--limit <num>', 'Maximum results', '20')
+  .action((query, options) => {
+    try {
+      const db = loadThreatDatabase(options.intelDir);
+      const results = searchIndicators(db, query);
+      const limit = parseInt(options.limit, 10);
+
+      console.log(`🔍 Found ${results.length} indicators matching "${query}"`);
+      console.log('━'.repeat(60));
+
+      for (const indicator of results.slice(0, limit)) {
+        console.log(`[${indicator.severity.toUpperCase()}] ${indicator.type}: ${indicator.value}`);
+        console.log(`  ${indicator.description}`);
+        console.log(`  Tags: ${indicator.tags.join(', ')}`);
+        console.log(`  Confidence: ${indicator.confidence}%`);
+        console.log('');
+      }
+
+      if (results.length > limit) {
+        console.log(`... and ${results.length - limit} more results`);
+      }
+
+    } catch (error) {
+      console.error('Error searching threat intelligence:', error.message);
+      process.exit(1);
+    }
+  });
+
+intelCmd
+  .command('add')
+  .description('Add threat intelligence indicator')
+  .option('--type <type>', 'Indicator type (domain, ip, hash, package, pattern)', 'pattern')
+  .option('--value <value>', 'Indicator value', true)
+  .option('--category <category>', 'Threat category', 'unknown')
+  .option('--severity <severity>', 'Severity level', 'medium')
+  .option('--description <desc>', 'Description', '')
+  .option('--confidence <num>', 'Confidence level (0-100)', '75')
+  .option('--tags <tags>', 'Comma-separated tags', '')
+  .option('--intel-dir <dir>', 'Threat intelligence directory', '.ferret-intel')
+  .action((options) => {
+    try {
+      if (!options.value) {
+        console.error('Error: --value is required');
+        process.exit(1);
+      }
+
+      const db = loadThreatDatabase(options.intelDir);
+
+      const newIndicator = {
+        value: options.value,
+        type: options.type,
+        category: options.category,
+        severity: options.severity,
+        description: options.description || `Custom ${options.type} indicator`,
+        source: 'user-added',
+        confidence: parseInt(options.confidence, 10),
+        tags: options.tags ? options.tags.split(',').map(t => t.trim()) : [],
+        metadata: { addedBy: 'ferret-cli' }
+      };
+
+      const updatedDb = addIndicators(db, [newIndicator]);
+      saveThreatDatabase(updatedDb, options.intelDir);
+
+      console.log('✅ Added threat intelligence indicator:');
+      console.log(`   Type: ${newIndicator.type}`);
+      console.log(`   Value: ${newIndicator.value}`);
+      console.log(`   Severity: ${newIndicator.severity}`);
+      console.log(`   Confidence: ${newIndicator.confidence}%`);
+
+    } catch (error) {
+      console.error('Error adding indicator:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Remediation commands
+const fixCmd = program
+  .command('fix')
+  .description('Auto-remediation and quarantine management');
+
+fixCmd
+  .command('scan')
+  .description('Scan and apply automatic fixes')
+  .argument('[path]', 'Path to scan (defaults to Claude config directories)')
+  .option('--dry-run', 'Preview fixes without applying them')
+  .option('--safe-only', 'Only apply safe fixes (safety >= 0.8)', true)
+  .option('--backup-dir <dir>', 'Backup directory', '.ferret-backups')
+  .option('--auto-quarantine', 'Automatically quarantine high-risk files')
+  .option('-v, --verbose', 'Verbose output')
+  .action(async (path, options) => {
+    try {
+      logger.configure({
+        verbose: options.verbose,
+        level: options.verbose ? 'debug' : 'info',
+      });
+
+      // Run scan first
+      const config = loadConfig({
+        path: path,
+        verbose: options.verbose,
+        format: 'json'
+      });
+
+      if (config.paths.length === 0) {
+        console.error('No Claude Code configuration directories found.');
+        process.exit(1);
+      }
+
+      console.log('🔍 Scanning for security issues...');
+      const result = await scan(config);
+
+      if (result.findings.length === 0) {
+        console.log('✅ No security issues found');
+        return;
+      }
+
+      console.log(`\nFound ${result.findings.length} security issues`);
+
+      // Filter findings that can be auto-remediated
+      const fixableFindings = result.findings.filter(finding => canAutoRemediate(finding));
+
+      if (fixableFindings.length === 0) {
+        console.log('⚠️  No findings can be automatically remediated');
+        return;
+      }
+
+      console.log(`📋 ${fixableFindings.length} findings can be automatically fixed\n`);
+
+      if (options.dryRun) {
+        console.log('🔍 DRY RUN - Previewing fixes:\n');
+
+        for (const finding of fixableFindings) {
+          const preview = await previewRemediation(finding);
+          console.log(`[${finding.severity}] ${finding.ruleId} - ${finding.relativePath}:${finding.line}`);
+          console.log(`  Issue: ${finding.match}`);
+
+          if (preview.preview) {
+            console.log(`  Before: ${preview.preview.originalLine.trim()}`);
+            console.log(`  After:  ${preview.preview.fixedLine.trim()}`);
+          }
+
+          console.log(`  Fix: ${preview.fixes[0]?.description || 'No description'}\n`);
+        }
+
+        console.log(`Use 'ferret fix scan ${path || '.'} --verbose' to apply these fixes`);
+        return;
+      }
+
+      // Apply remediation
+      console.log('🔧 Applying automatic fixes...');
+
+      const remediationOptions = {
+        createBackups: true,
+        backupDir: options.backupDir,
+        safeOnly: options.safeOnly,
+        dryRun: false
+      };
+
+      const results = await applyRemediationBatch(fixableFindings, remediationOptions);
+      const successful = results.filter(r => r.success);
+
+      console.log(`\n✅ Applied ${successful.length}/${results.length} fixes successfully`);
+
+      if (successful.length > 0) {
+        console.log('\nFixed issues:');
+        for (const result of successful) {
+          console.log(`  ✓ ${result.finding.relativePath}:${result.finding.line} - ${result.fixApplied?.description}`);
+        }
+      }
+
+      const failed = results.filter(r => !r.success);
+      if (failed.length > 0) {
+        console.log('\nFailed fixes:');
+        for (const result of failed) {
+          console.log(`  ✗ ${result.finding.relativePath}:${result.finding.line} - ${result.error}`);
+        }
+      }
+
+      // Auto-quarantine high-risk files if enabled
+      if (options.autoQuarantine) {
+        const highRiskFindings = result.findings.filter(f =>
+          f.severity === 'CRITICAL' && f.riskScore >= 90
+        );
+
+        if (highRiskFindings.length > 0) {
+          console.log(`\n🔒 Auto-quarantining ${highRiskFindings.length} high-risk files...`);
+
+          const quarantinedFiles = new Set();
+          for (const finding of highRiskFindings) {
+            if (!quarantinedFiles.has(finding.file)) {
+              const entry = quarantineFile(
+                finding.file,
+                highRiskFindings.filter(f => f.file === finding.file),
+                'Auto-quarantine: High-risk security findings'
+              );
+
+              if (entry) {
+                quarantinedFiles.add(finding.file);
+                console.log(`  🔒 Quarantined: ${finding.relativePath}`);
+              }
+            }
+          }
+        }
+      }
+
+    } catch (error) {
+      console.error('Error during auto-remediation:', error.message);
+      if (options.verbose) {
+        console.error(error);
+      }
+      process.exit(1);
+    }
+  });
+
+fixCmd
+  .command('quarantine')
+  .description('Manage quarantined files')
+  .option('--list', 'List quarantined files')
+  .option('--restore <id>', 'Restore quarantined file by ID')
+  .option('--stats', 'Show quarantine statistics')
+  .option('--health', 'Check quarantine health')
+  .option('--quarantine-dir <dir>', 'Quarantine directory', '.ferret-quarantine')
+  .action((options) => {
+    try {
+      if (options.list) {
+        const entries = listQuarantinedFiles(options.quarantineDir);
+
+        if (entries.length === 0) {
+          console.log('No quarantined files found');
+          return;
+        }
+
+        console.log('🔒 Quarantined Files:');
+        console.log('━'.repeat(80));
+
+        for (const entry of entries) {
+          const status = entry.restored ? '♻️  Restored' : '🔒 Quarantined';
+          console.log(`${status} | ${entry.id}`);
+          console.log(`  Original: ${entry.originalPath}`);
+          console.log(`  Date: ${new Date(entry.quarantineDate).toLocaleString()}`);
+          console.log(`  Reason: ${entry.reason}`);
+          console.log(`  Risk: ${entry.metadata.severity} (${entry.metadata.riskScore}/100)`);
+          console.log(`  Findings: ${entry.findings.length}`);
+          console.log('');
+        }
+      } else if (options.restore) {
+        const success = restoreQuarantinedFile(options.restore, options.quarantineDir);
+
+        if (success) {
+          console.log(`✅ Restored quarantined file: ${options.restore}`);
+        } else {
+          console.error(`❌ Failed to restore file: ${options.restore}`);
+          process.exit(1);
+        }
+      } else if (options.stats) {
+        const stats = getQuarantineStats(options.quarantineDir);
+
+        console.log('📊 Quarantine Statistics:');
+        console.log('━'.repeat(40));
+        console.log(`Total Quarantined: ${stats.totalQuarantined}`);
+        console.log(`Total Restored: ${stats.totalRestored}`);
+        console.log('');
+
+        if (Object.keys(stats.byCategory).length > 0) {
+          console.log('By Category:');
+          for (const [category, count] of Object.entries(stats.byCategory)) {
+            console.log(`  ${category}: ${count}`);
+          }
+          console.log('');
+        }
+
+        if (Object.keys(stats.bySeverity).length > 0) {
+          console.log('By Severity:');
+          for (const [severity, count] of Object.entries(stats.bySeverity)) {
+            console.log(`  ${severity}: ${count}`);
+          }
+        }
+      } else if (options.health) {
+        const health = checkQuarantineHealth(options.quarantineDir);
+
+        console.log(`🏥 Quarantine Health: ${health.healthy ? '✅ Healthy' : '⚠️  Issues Found'}`);
+
+        if (health.issues.length > 0) {
+          console.log('\nIssues:');
+          for (const issue of health.issues) {
+            console.log(`  ⚠️  ${issue}`);
+          }
+        }
+
+        console.log(`\nTotal Files: ${health.stats.totalQuarantined}`);
+        console.log(`Restored: ${health.stats.totalRestored}`);
+      } else {
+        console.log('Use --list, --restore <id>, --stats, or --health');
+      }
+
+    } catch (error) {
+      console.error('Error managing quarantine:', error.message);
       process.exit(1);
     }
   });

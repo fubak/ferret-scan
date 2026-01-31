@@ -217,6 +217,18 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
     config.threatIntel = cliOptions.threatIntel;
   }
 
+  if (cliOptions.semanticAnalysis !== undefined) {
+    config.semanticAnalysis = cliOptions.semanticAnalysis;
+  }
+
+  if (cliOptions.correlationAnalysis !== undefined) {
+    config.correlationAnalysis = cliOptions.correlationAnalysis;
+  }
+
+  if (cliOptions.autoRemediation !== undefined) {
+    config.autoRemediation = cliOptions.autoRemediation;
+  }
+
   return config;
 }
 

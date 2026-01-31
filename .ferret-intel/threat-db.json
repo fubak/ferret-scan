@@ -1,0 +1,180 @@
+{
+  "version": "1.0",
+  "lastUpdated": "2026-01-31T19:55:32.789Z",
+  "sources": [
+    {
+      "name": "claude-malicious-packages",
+      "description": "Known malicious npm packages targeting Claude environments",
+      "lastUpdated": "2026-01-31T19:55:32.768Z",
+      "enabled": true,
+      "format": "json"
+    },
+    {
+      "name": "claude-suspicious-domains",
+      "description": "Suspicious domains used in Claude exploitation attempts",
+      "lastUpdated": "2026-01-31T19:55:32.769Z",
+      "enabled": true,
+      "format": "json"
+    },
+    {
+      "name": "claude-backdoor-patterns",
+      "description": "Code patterns associated with Claude-specific backdoors",
+      "lastUpdated": "2026-01-31T19:55:32.769Z",
+      "enabled": true,
+      "format": "json"
+    }
+  ],
+  "indicators": [
+    {
+      "value": "evil-claude-api.com",
+      "type": "domain",
+      "category": "phishing",
+      "severity": "high",
+      "description": "Fake Claude API endpoint used for credential harvesting",
+      "source": "claude-suspicious-domains",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 95,
+      "tags": [
+        "phishing",
+        "fake-api",
+        "credential-theft"
+      ]
+    },
+    {
+      "value": "anthropic-fake.net",
+      "type": "domain",
+      "category": "phishing",
+      "severity": "high",
+      "description": "Impersonates legitimate Anthropic domain",
+      "source": "claude-suspicious-domains",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 90,
+      "tags": [
+        "phishing",
+        "impersonation"
+      ]
+    },
+    {
+      "value": "claude-jailbreak-helper",
+      "type": "package",
+      "category": "malicious-package",
+      "severity": "critical",
+      "description": "Package designed to bypass Claude safety mechanisms",
+      "source": "claude-malicious-packages",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 100,
+      "tags": [
+        "jailbreak",
+        "bypass",
+        "malicious-npm"
+      ]
+    },
+    {
+      "value": "anthropic-sdk-fake",
+      "type": "package",
+      "category": "malicious-package",
+      "severity": "high",
+      "description": "Fake Anthropic SDK that steals credentials",
+      "source": "claude-malicious-packages",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 95,
+      "tags": [
+        "credential-theft",
+        "fake-sdk"
+      ]
+    },
+    {
+      "value": "ignore.*previous.*instructions?.*forget.*rules?",
+      "type": "pattern",
+      "category": "jailbreak-attempt",
+      "severity": "high",
+      "description": "Pattern attempting to override Claude safety instructions",
+      "source": "claude-backdoor-patterns",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 85,
+      "tags": [
+        "jailbreak",
+        "instruction-override"
+      ]
+    },
+    {
+      "value": "developer.*mode.*enabled|admin.*access.*granted",
+      "type": "pattern",
+      "category": "privilege-escalation",
+      "severity": "medium",
+      "description": "Attempts to claim elevated privileges in Claude",
+      "source": "claude-backdoor-patterns",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 75,
+      "tags": [
+        "privilege-escalation",
+        "social-engineering"
+      ]
+    },
+    {
+      "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "type": "hash",
+      "category": "malicious-file",
+      "severity": "critical",
+      "description": "Hash of known malicious Claude configuration file",
+      "source": "claude-malicious-packages",
+      "firstSeen": "2024-01-01T00:00:00Z",
+      "lastSeen": "2026-01-31T19:55:32.769Z",
+      "confidence": 100,
+      "tags": [
+        "malicious-config",
+        "sha256"
+      ]
+    },
+    {
+      "value": "malicious-claude.com",
+      "type": "domain",
+      "category": "phishing",
+      "severity": "high",
+      "description": "Fake Claude interface for credential theft",
+      "source": "user-added",
+      "confidence": 90,
+      "tags": [
+        "phishing",
+        "fake-ui"
+      ],
+      "metadata": {
+        "addedBy": "ferret-cli"
+      },
+      "firstSeen": "2026-01-31T19:55:32.787Z",
+      "lastSeen": "2026-01-31T19:55:32.787Z"
+    }
+  ],
+  "stats": {
+    "totalIndicators": 8,
+    "byType": {
+      "domain": 3,
+      "url": 0,
+      "ip": 0,
+      "hash": 1,
+      "email": 0,
+      "filename": 0,
+      "package": 2,
+      "pattern": 2,
+      "signature": 0
+    },
+    "byCategory": {
+      "phishing": 3,
+      "malicious-package": 2,
+      "jailbreak-attempt": 1,
+      "privilege-escalation": 1,
+      "malicious-file": 1
+    },
+    "bySeverity": {
+      "high": 5,
+      "critical": 2,
+      "medium": 1
+    }
+  }
+}

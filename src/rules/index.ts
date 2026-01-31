@@ -12,6 +12,8 @@ import { permissionRules } from './permissions.js';
 import { persistenceRules } from './persistence.js';
 import { supplyChainRules } from './supply-chain.js';
 import { aiSpecificRules } from './ai-specific.js';
+import { semanticRules } from './semanticRules.js';
+import { correlationRules } from './correlationRules.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -27,6 +29,8 @@ const ALL_RULES: Rule[] = [
   ...persistenceRules,
   ...supplyChainRules,
   ...aiSpecificRules,
+  ...semanticRules,
+  ...correlationRules,
 ];
 
 /**
@@ -117,6 +121,8 @@ export {
   persistenceRules,
   supplyChainRules,
   aiSpecificRules,
+  semanticRules,
+  correlationRules,
 };
 
 export default getAllRules;
