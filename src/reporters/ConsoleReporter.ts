@@ -22,15 +22,14 @@ const colors = {
 };
 
 const FERRET_BANNER = `
-${colors.cyan}      .---.
-     /     \\
-     \\.@-@./      ${colors.bold}███████╗███████╗██████╗ ██████╗ ███████╗████████╗
-${colors.cyan}     /\`\\_/\`\\      ${colors.bold}██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝
-${colors.cyan}    //  _  \\\\     ${colors.bold}█████╗  █████╗  ██████╔╝██████╔╝█████╗     ██║
-${colors.cyan}   | \\     )|_    ${colors.bold}██╔══╝  ██╔══╝  ██╔══██╗██╔══██╗██╔══╝     ██║
-${colors.cyan}  /\`\\_\`>  <_/ \\   ${colors.bold}██║     ███████╗██║  ██║██║  ██║███████╗   ██║
-${colors.cyan}  \\__/'---'\\__/   ${colors.bold}╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝${colors.reset}
-${colors.dim}  Security Scanner for AI CLI Configs${colors.reset}
+${colors.cyan} ⡠⢂⠔⠚⠟⠓⠒⠒⢂⠐⢄
+ ⣷⣧⣀⠀⢀⣀⣤⣄⠈⢢⢸⡀   ${colors.bold}███████╗███████╗██████╗ ██████╗ ███████╗████████╗
+${colors.cyan}⢀⣿⣭⣿⣿⣿⣿⣽⣹⣧⠈⣾⢱⡀  ${colors.bold}██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝
+${colors.cyan}⢸⢿⠋⢸⠂⠈⠹⢿⣿⡿⠀⢸⡷⡇  ${colors.bold}█████╗  █████╗  ██████╔╝██████╔╝█████╗     ██║
+${colors.cyan}⠈⣆⠉⢇⢁⠶⠈⠀⠉⠀⢀⣾⣇⡇  ${colors.bold}██╔══╝  ██╔══╝  ██╔══██╗██╔══██╗██╔══╝     ██║
+${colors.cyan}  ⢑⣦⣤⣤⣤⣤⣴⣶⣿⡿⢨⠃  ${colors.bold}██║     ███████╗██║  ██║██║  ██║███████╗   ██║
+${colors.cyan} ⢰⣿⣿⣟⣯⡿⣽⣻⣾⣽⣇⠏   ${colors.bold}╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝${colors.reset}
+${colors.dim} Security Scanner for AI CLI Configs${colors.reset}
 `;
 
 const SEVERITY_COLORS: Record<Severity, string> = {
