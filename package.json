@@ -63,16 +63,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ferret-security/ferret-scan.git"
+    "url": "https://github.com/fubak/ferret-scan.git"
   },
   "bugs": {
-    "url": "https://github.com/ferret-security/ferret-scan/issues"
+    "url": "https://github.com/fubak/ferret-scan/issues"
   },
-  "homepage": "https://github.com/ferret-security/ferret-scan#readme",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/ferret-security"
-  },
+  "homepage": "https://github.com/fubak/ferret-scan#readme",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"

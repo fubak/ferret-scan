@@ -25,9 +25,9 @@
 <p align="center">
   <a href="https://www.npmjs.com/package/ferret-scan"><img src="https://img.shields.io/npm/v/ferret-scan?style=flat-square&color=blue" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/ferret-scan"><img src="https://img.shields.io/npm/dm/ferret-scan?style=flat-square&color=green" alt="npm downloads"></a>
-  <a href="https://github.com/ferret-security/ferret-scan/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/ferret-scan?style=flat-square" alt="license"></a>
-  <a href="https://github.com/ferret-security/ferret-scan/actions"><img src="https://img.shields.io/github/actions/workflow/status/ferret-security/ferret-scan/ci.yml?style=flat-square" alt="build status"></a>
-  <a href="https://github.com/ferret-security/ferret-scan"><img src="https://img.shields.io/github/stars/ferret-security/ferret-scan?style=flat-square" alt="GitHub stars"></a>
+  <a href="https://github.com/fubak/ferret-scan/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/ferret-scan?style=flat-square" alt="license"></a>
+  <a href="https://github.com/fubak/ferret-scan/actions"><img src="https://img.shields.io/github/actions/workflow/status/fubak/ferret-scan/ci.yml?style=flat-square" alt="build status"></a>
+  <a href="https://github.com/fubak/ferret-scan"><img src="https://img.shields.io/github/stars/fubak/ferret-scan?style=flat-square" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
@@ -334,13 +334,13 @@ Create `.ferretrc.json` in your project root:
 ```bash
 # Basic scan
 docker run --rm -v $(pwd):/workspace:ro \
-  ghcr.io/ferret-security/ferret-scan scan /workspace
+  ghcr.io/fubak/ferret-scan scan /workspace
 
 # With output file
 docker run --rm \
   -v $(pwd):/workspace:ro \
   -v $(pwd)/results:/output:rw \
-  ghcr.io/ferret-security/ferret-scan scan /workspace \
+  ghcr.io/fubak/ferret-scan scan /workspace \
   --format html -o /output/report.html
 ```
 
@@ -379,7 +379,7 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines
 
 ```bash
 # Clone and setup
-git clone https://github.com/ferret-security/ferret-scan.git
+git clone https://github.com/fubak/ferret-scan.git
 cd ferret-scan
 npm install
 
@@ -403,10 +403,10 @@ MIT - see [LICENSE](LICENSE)
 
 ## Links
 
-- 📖 [Documentation](https://github.com/ferret-security/ferret-scan/wiki)
+- 📖 [Documentation](https://github.com/fubak/ferret-scan/wiki)
 - 📝 [Changelog](CHANGELOG.md)
-- 🐛 [Issue Tracker](https://github.com/ferret-security/ferret-scan/issues)
-- 💬 [Discussions](https://github.com/ferret-security/ferret-scan/discussions)
+- 🐛 [Issue Tracker](https://github.com/fubak/ferret-scan/issues)
+- 💬 [Discussions](https://github.com/fubak/ferret-scan/discussions)
 
 ---
 
