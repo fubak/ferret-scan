@@ -26,7 +26,12 @@ describe('Rule Registry', () => {
         expect(rule.category).toBeDefined();
         expect(rule.severity).toBeDefined();
         expect(rule.patterns).toBeInstanceOf(Array);
-        expect(rule.patterns.length).toBeGreaterThan(0);
+        // Rules may have patterns, semanticPatterns, or correlationRules
+        const hasPatterns = rule.patterns.length > 0;
+        const hasSemanticPatterns = (rule.semanticPatterns?.length ?? 0) > 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const hasCorrelationRules = ((rule as any).correlationRules?.length ?? 0) > 0;
+        expect(hasPatterns || hasSemanticPatterns || hasCorrelationRules).toBe(true);
         expect(rule.fileTypes).toBeInstanceOf(Array);
         expect(rule.components).toBeInstanceOf(Array);
         expect(rule.remediation).toBeDefined();

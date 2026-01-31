@@ -115,7 +115,7 @@ export function createBaseline(
     version: '1.0',
     createdDate: now,
     lastUpdated: now,
-    description: description || `Baseline created from scan of ${result.scannedPaths.join(', ')}`,
+    description: description ?? `Baseline created from scan of ${result.scannedPaths.join(', ')}`,
     findings: baselineFindings,
   };
 }
@@ -294,7 +294,7 @@ export function validateBaseline(
  */
 export function getDefaultBaselinePath(scanPaths: string[]): string {
   // Try to find a good location for baseline file
-  const firstPath = scanPaths[0] || process.cwd();
+  const firstPath = scanPaths[0] ?? process.cwd();
   return resolve(firstPath, '.ferret-baseline.json');
 }
 
@@ -315,11 +315,11 @@ export function getBaselineStats(baseline: Baseline): {
 
   for (const finding of baseline.findings) {
     // Count by rule
-    byRule[finding.ruleId] = (byRule[finding.ruleId] || 0) + 1;
+    byRule[finding.ruleId] = (byRule[finding.ruleId] ?? 0) + 1;
 
     // Extract severity from rule ID (if follows pattern like CRED-001)
-    const severity = finding.ruleId.split('-')[0] || 'UNKNOWN';
-    bySeverity[severity] = (bySeverity[severity] || 0) + 1;
+    const severity = finding.ruleId.split('-')[0] ?? 'UNKNOWN';
+    bySeverity[severity] = (bySeverity[severity] ?? 0) + 1;
 
     // Track date range
     if (finding.acceptedDate < oldestDate) {

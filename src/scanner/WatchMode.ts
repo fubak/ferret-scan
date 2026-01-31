@@ -38,14 +38,14 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
 /**
  * Debounce function calls
  */
-function debounce<T extends any[]>(
+function debounce<T extends unknown[]>(
   func: (...args: T) => void,
   wait: number
 ): (...args: T) => void {
   let timeout: NodeJS.Timeout;
   return (...args: T) => {
     clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
+    timeout = setTimeout(() => { func(...args); }, wait);
   };
 }
 
@@ -64,6 +64,7 @@ export async function startWatchMode(
   logger.info(`⏱️  Debounce: ${watchOptions.debounceMs}ms`);
 
   // Initial scan
+  /* eslint-disable no-console */
   console.log('🚀 Running initial scan...\n');
   const initialResult = await scan(config);
   const initialReport = generateConsoleReport(initialResult, {
@@ -72,9 +73,10 @@ export async function startWatchMode(
   });
   console.log(initialReport);
   console.log('\n👀 Watching for changes...\n');
+  /* eslint-enable no-console */
 
   // Debounced scan function
-  const debouncedScan = debounce(async () => {
+  const performScan = async (): Promise<void> => {
     if (isScanning) {
       logger.debug('Scan already in progress, skipping');
       return;
@@ -96,6 +98,7 @@ export async function startWatchMode(
         }
       }
 
+      /* eslint-disable no-console */
       console.log('🔄 Rescanning...\n');
       const result = await scan(config);
 
@@ -113,12 +116,18 @@ export async function startWatchMode(
       const timestamp = new Date().toLocaleTimeString();
       console.log(`\n✅ Scan completed at ${timestamp}`);
       console.log('👀 Watching for changes...\n');
+      /* eslint-enable no-console */
 
     } catch (error) {
+      // eslint-disable-next-line no-console
       console.error('❌ Scan failed:', error instanceof Error ? error.message : String(error));
     } finally {
       isScanning = false;
     }
+  };
+
+  const debouncedScan = debounce(() => {
+    void performScan();
   }, watchOptions.debounceMs);
 
   // Set up file watcher
@@ -163,6 +172,7 @@ export async function startWatchMode(
   });
 
   watcher.on('error', (error) => {
+    // eslint-disable-next-line no-console
     console.error('❌ Watch error:', error);
   });
 
@@ -173,9 +183,9 @@ export async function startWatchMode(
   });
 
   // Handle graceful shutdown
-  const cleanup = () => {
+  const cleanup = (): void => {
     logger.info('🛑 Stopping watch mode...');
-    watcher.close();
+    void watcher.close();
   };
 
   process.on('SIGINT', cleanup);
@@ -195,11 +205,13 @@ export async function startEnhancedWatchMode(
   // Enhanced version with better UX
   const watchOptions = { ...DEFAULT_WATCH_OPTIONS, ...options };
 
+  /* eslint-disable no-console */
   console.log('🚀 Ferret Watch Mode Starting...\n');
   console.log(`📂 Watching: ${config.paths.join(', ')}`);
   console.log(`⚙️  Debounce: ${watchOptions.debounceMs}ms`);
   console.log(`🔍 Severities: ${config.severities.join(', ')}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+  /* eslint-enable no-console */
 
   return startWatchMode(config, options);
 }
@@ -234,7 +246,7 @@ export function createChangeNotifier(
     }
   });
 
-  return () => watcher.close();
+  return () => { void watcher.close(); };
 }
 
 export default { startWatchMode, startEnhancedWatchMode, createChangeNotifier };

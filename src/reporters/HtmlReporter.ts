@@ -70,7 +70,7 @@ function getSeverityIcon(severity: Severity): string {
 /**
  * Generate CSS styles
  */
-function generateCSS(darkMode: boolean = false): string {
+function generateCSS(darkMode = false): string {
   const theme = darkMode ? {
     bg: '#0f172a',
     bgSecondary: '#1e293b',

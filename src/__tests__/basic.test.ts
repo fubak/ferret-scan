@@ -18,7 +18,12 @@ describe('Basic Functionality', () => {
     it('should have valid patterns', () => {
       const rules = getAllRules();
       for (const rule of rules) {
-        expect(rule.patterns.length).toBeGreaterThan(0);
+        // Rules may have patterns, semanticPatterns, or correlationRules
+        const hasPatterns = rule.patterns.length > 0;
+        const hasSemanticPatterns = (rule.semanticPatterns?.length ?? 0) > 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+        const hasCorrelationRules = ((rule as any).correlationRules?.length ?? 0) > 0;
+        expect(hasPatterns || hasSemanticPatterns || hasCorrelationRules).toBe(true);
         for (const pattern of rule.patterns) {
           expect(pattern).toBeInstanceOf(RegExp);
         }
@@ -71,11 +76,14 @@ describe('Basic Functionality', () => {
       };
 
       const sarifOutput = formatSarifReport(mockResult);
-      const parsed = JSON.parse(sarifOutput);
+      const parsed = JSON.parse(sarifOutput) as {
+        version: string;
+        runs: { tool: { driver: { name: string } } }[];
+      };
 
       expect(parsed.version).toBe('2.1.0');
       expect(parsed.runs).toHaveLength(1);
-      expect(parsed.runs[0].tool.driver.name).toBe('ferret-scan');
+      expect(parsed.runs[0]?.tool.driver.name).toBe('ferret-scan');
     });
   });
 });

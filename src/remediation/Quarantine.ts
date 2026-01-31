@@ -74,7 +74,7 @@ const DEFAULT_OPTIONS: QuarantineOptions = {
  */
 function generateQuarantineId(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substr(2, 5);
+  const random = Math.random().toString(36).substring(2, 7);
   return `quar-${timestamp}-${random}`;
 }
 
@@ -172,10 +172,10 @@ function calculateQuarantineStats(entries: QuarantineEntry[]): QuarantineDatabas
 
   for (const entry of entries) {
     // Count by category
-    stats.byCategory[entry.metadata.category] = (stats.byCategory[entry.metadata.category] || 0) + 1;
+    stats.byCategory[entry.metadata.category] = (stats.byCategory[entry.metadata.category] ?? 0) + 1;
 
     // Count by severity
-    stats.bySeverity[entry.metadata.severity] = (stats.bySeverity[entry.metadata.severity] || 0) + 1;
+    stats.bySeverity[entry.metadata.severity] = (stats.bySeverity[entry.metadata.severity] ?? 0) + 1;
   }
 
   return stats;
@@ -224,7 +224,8 @@ export function quarantineFile(
     const fileHash = calculateFileHash(filePath);
     const maxRiskScore = Math.max(...findings.map(f => f.riskScore));
     const severities = findings.map(f => f.severity);
-    const highestSeverity = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'].find(s => severities.includes(s as any)) || 'INFO';
+    const severityOrder = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'] as const;
+    const highestSeverity = severityOrder.find(s => severities.includes(s)) ?? 'INFO';
 
     const entry: QuarantineEntry = {
       id,
@@ -239,7 +240,7 @@ export function quarantineFile(
       metadata: {
         riskScore: maxRiskScore,
         severity: highestSeverity,
-        category: findings[0]?.category || 'unknown'
+        category: findings[0]?.category ?? 'unknown'
       }
     };
 
@@ -376,7 +377,7 @@ export function getQuarantineStats(quarantineDir: string = DEFAULT_OPTIONS.quara
  * Clean up old quarantine entries
  */
 export function cleanupQuarantine(
-  maxAgeDays: number = 30,
+  maxAgeDays = 30,
   quarantineDir: string = DEFAULT_OPTIONS.quarantineDir
 ): number {
   try {

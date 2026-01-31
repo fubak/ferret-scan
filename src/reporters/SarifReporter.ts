@@ -12,7 +12,7 @@ interface SarifResult {
   message: {
     text: string;
   };
-  locations: Array<{
+  locations: {
     physicalLocation: {
       artifactLocation: {
         uri: string;
@@ -25,7 +25,7 @@ interface SarifResult {
         };
       };
     };
-  }>;
+  }[];
   properties?: {
     category: string;
     riskScore: number;
@@ -55,7 +55,7 @@ interface SarifRule {
 interface SarifDocument {
   version: '2.1.0';
   $schema: string;
-  runs: Array<{
+  runs: {
     tool: {
       driver: {
         name: string;
@@ -72,7 +72,7 @@ interface SarifDocument {
         riskScore: number;
       };
     };
-  }>;
+  }[];
 }
 
 /**

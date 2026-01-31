@@ -29,7 +29,7 @@ function extractCodeBlocks(content: string): { code: string; language: string; l
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    const trimmedLine = line?.trim() || '';
+    const trimmedLine = line?.trim() ?? '';
 
     if (trimmedLine.startsWith('```')) {
       if (!inCodeBlock) {
@@ -52,7 +52,7 @@ function extractCodeBlocks(content: string): { code: string; language: string; l
         currentLanguage = '';
       }
     } else if (inCodeBlock) {
-      currentBlock.push(line || '');
+      currentBlock.push(line ?? '');
     }
   }
 
@@ -70,7 +70,7 @@ function isAnalyzableLanguage(language: string): boolean {
 /**
  * Create TypeScript AST from code
  */
-function createAST(code: string, fileName: string = 'analysis.ts'): ts.SourceFile {
+function createAST(code: string, fileName = 'analysis.ts'): ts.SourceFile {
   return ts.createSourceFile(
     fileName,
     code,
@@ -90,27 +90,30 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
     callChain: []
   };
 
-  function visit(node: ts.Node) {
+  function visit(node: ts.Node): void {
     switch (node.kind) {
-      case ts.SyntaxKind.ImportDeclaration:
+      case ts.SyntaxKind.ImportDeclaration: {
         const importDecl = node as ts.ImportDeclaration;
         if (importDecl.moduleSpecifier && ts.isStringLiteral(importDecl.moduleSpecifier)) {
           context.imports!.push(importDecl.moduleSpecifier.text);
         }
         break;
+      }
 
-      case ts.SyntaxKind.VariableDeclaration:
+      case ts.SyntaxKind.VariableDeclaration: {
         const varDecl = node as ts.VariableDeclaration;
         if (varDecl.name && ts.isIdentifier(varDecl.name)) {
           context.variables!.push(varDecl.name.text);
         }
         break;
+      }
 
-      case ts.SyntaxKind.CallExpression:
+      case ts.SyntaxKind.CallExpression: {
         const callExpr = node as ts.CallExpression;
         const callText = callExpr.expression.getText(sourceFile);
         context.callChain!.push(callText);
         break;
+      }
     }
 
     ts.forEachChild(node, visit);
@@ -129,7 +132,7 @@ function findSecurityPatterns(
 ): { pattern: SemanticPattern; node: ts.Node; confidence: number }[] {
   const matches: { pattern: SemanticPattern; node: ts.Node; confidence: number }[] = [];
 
-  function visit(node: ts.Node) {
+  function visit(node: ts.Node): void {
     for (const pattern of patterns) {
       const match = matchSemanticPattern(node, pattern, sourceFile);
       if (match) {
@@ -157,13 +160,12 @@ function matchSemanticPattern(
   sourceFile: ts.SourceFile
 ): { confidence: number } | null {
   const nodeText = node.getText(sourceFile);
-  let confidence = pattern.confidence || 0.8;
+  let confidence = pattern.confidence ?? 0.8;
 
   switch (pattern.type) {
     case 'function-call':
       if (ts.isCallExpression(node)) {
-        const callExpr = node as ts.CallExpression;
-        const functionName = callExpr.expression.getText(sourceFile);
+        const functionName = node.expression.getText(sourceFile);
         if (functionName.includes(pattern.pattern)) {
           return { confidence };
         }
@@ -172,8 +174,7 @@ function matchSemanticPattern(
 
     case 'property-access':
       if (ts.isPropertyAccessExpression(node)) {
-        const propAccess = node as ts.PropertyAccessExpression;
-        const fullAccess = propAccess.getText(sourceFile);
+        const fullAccess = node.getText(sourceFile);
         if (fullAccess.includes(pattern.pattern)) {
           return { confidence };
         }
@@ -182,8 +183,7 @@ function matchSemanticPattern(
 
     case 'dynamic-import':
       if (ts.isCallExpression(node)) {
-        const callExpr = node as ts.CallExpression;
-        if (callExpr.expression.kind === ts.SyntaxKind.ImportKeyword) {
+        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
           // Dynamic import detected - pattern for security analysis only
           if (pattern.pattern === 'dynamic-import' || nodeText.includes(pattern.pattern)) {
             confidence += 0.1; // Higher confidence for dynamic imports
@@ -262,7 +262,7 @@ function getPositionFromNode(node: ts.Node, sourceFile: ts.SourceFile): { line: 
 function createContextLines(
   sourceFile: ts.SourceFile,
   node: ts.Node,
-  contextLines: number = 3
+  contextLines = 3
 ): ContextLine[] {
   const text = sourceFile.getText();
   const lines = text.split('\n');
@@ -276,7 +276,7 @@ function createContextLines(
   for (let i = start; i < end; i++) {
     context.push({
       lineNumber: i + 1,
-      content: lines[i] || '',
+      content: lines[i] ?? '',
       isMatch: i === matchLine
     });
   }

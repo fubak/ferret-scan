@@ -173,7 +173,7 @@ function findContentPatternsAcrossFiles(
         const regex = new RegExp(pattern, 'gi');
 
         for (let i = 0; i < lines.length; i++) {
-          const line = lines[i] || '';
+          const line = lines[i] ?? '';
           const match = regex.exec(line);
 
           if (match) {
@@ -235,13 +235,13 @@ function createCorrelationContext(
     for (let i = start; i < end; i++) {
       context.push({
         lineNumber: i + 1,
-        content: lines[i] || '',
+        content: lines[i] ?? '',
         isMatch: i === lineNumber - 1
       });
     }
 
     return context;
-  } catch (error) {
+  } catch {
     logger.warn(`Error creating context for ${file.relativePath}:${lineNumber}`);
     return [];
   }

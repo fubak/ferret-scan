@@ -141,7 +141,7 @@ function scanFile(
   try {
     const content = readFileSync(file.path, 'utf-8');
     const rules = getRulesForScan(config.categories, config.severities);
-    let allFindings: Finding[] = [];
+    const allFindings: Finding[] = [];
 
     // Regular pattern matching
     const patternFindings = matchRules(rules, file, content, {

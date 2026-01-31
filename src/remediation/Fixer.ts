@@ -207,7 +207,7 @@ function applyFix(
         const lines = content.split('\n');
 
         for (let i = 0; i < lines.length; i++) {
-          const line = lines[i] || '';
+          const line = lines[i] ?? '';
           if (regex.test(line)) {
             lines[i] = `# QUARANTINED: ${line}`;
             linesModified++;
@@ -245,7 +245,7 @@ function findApplicableFixes(finding: Finding): RemediationFix[] {
 
   // Check rule-specific fixes first
   if (finding.metadata && 'rule' in finding.metadata) {
-    const rule = finding.metadata['rule'] as any;
+    const rule = finding.metadata['rule'] as { remediationFixes?: RemediationFix[] } | undefined;
     if (rule?.remediationFixes) {
       applicableFixes.push(...rule.remediationFixes);
     }
@@ -272,7 +272,7 @@ function findApplicableFixes(finding: Finding): RemediationFix[] {
         applicableFixes.push(fix);
       }
 
-    } catch (error) {
+    } catch {
       logger.warn(`Invalid fix pattern: ${fix.pattern}`);
     }
   }

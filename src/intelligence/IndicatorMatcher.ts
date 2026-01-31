@@ -67,7 +67,7 @@ function getCompiledPattern(pattern: string): RegExp {
     try {
       const regex = new RegExp(pattern, 'gi');
       patternCache.set(pattern, regex);
-    } catch (error) {
+    } catch {
       logger.warn(`Invalid regex pattern: ${pattern}`);
       // Return a regex that never matches
       patternCache.set(pattern, /(?!.*)/);
@@ -84,7 +84,7 @@ function createThreatContext(
   _file: DiscoveredFile,
   content: string,
   line: number,
-  contextLines: number = 3
+  contextLines = 3
 ): ContextLine[] {
   const lines = content.split('\n');
   const start = Math.max(0, line - contextLines);
@@ -94,7 +94,7 @@ function createThreatContext(
   for (let i = start; i < end; i++) {
     context.push({
       lineNumber: i + 1,
-      content: lines[i] || '',
+      content: lines[i] ?? '',
       isMatch: i === line
     });
   }
@@ -152,7 +152,7 @@ function matchDomains(
     const regex = new RegExp(`\\b${domain.replace('.', '\\.')}\\b`, 'gi');
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex] || '';
+      const line = lines[lineIndex] ?? '';
       const match = regex.test(line);
 
       if (match && findings.length < config.maxMatchesPerFile) {
@@ -197,7 +197,7 @@ function matchPackages(
     const packageName = indicator.value;
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex] || '';
+      const line = lines[lineIndex] ?? '';
 
       // Simple string matching for package names
       if (line.toLowerCase().includes(packageName.toLowerCase()) &&
@@ -248,7 +248,7 @@ function matchPatterns(
     const regex = getCompiledPattern(indicator.value);
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-      const line = lines[lineIndex] || '';
+      const line = lines[lineIndex] ?? '';
       const match = regex.test(line);
 
       if (match && findings.length < config.maxMatchesPerFile) {
@@ -296,7 +296,7 @@ function matchHashes(
       const lines = content.split('\n');
 
       for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
-        const line = lines[lineIndex] || '';
+        const line = lines[lineIndex] ?? '';
 
         if (line.toLowerCase().includes(hash) && findings.length < config.maxMatchesPerFile) {
           const confidence = calculateMatchConfidence(indicator, {

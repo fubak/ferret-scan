@@ -277,8 +277,8 @@ function calculateStats(indicators: ThreatIndicator[]): ThreatDatabase['stats'] 
   // Count indicators
   for (const indicator of indicators) {
     stats.byType[indicator.type]++;
-    stats.byCategory[indicator.category] = (stats.byCategory[indicator.category] || 0) + 1;
-    stats.bySeverity[indicator.severity] = (stats.bySeverity[indicator.severity] || 0) + 1;
+    stats.byCategory[indicator.category] = (stats.byCategory[indicator.category] ?? 0) + 1;
+    stats.bySeverity[indicator.severity] = (stats.bySeverity[indicator.severity] ?? 0) + 1;
   }
 
   return stats;
@@ -357,7 +357,7 @@ export function getIndicatorsByCategory(db: ThreatDatabase, category: string): T
 /**
  * Get high-confidence indicators
  */
-export function getHighConfidenceIndicators(db: ThreatDatabase, minConfidence: number = 80): ThreatIndicator[] {
+export function getHighConfidenceIndicators(db: ThreatDatabase, minConfidence = 80): ThreatIndicator[] {
   return db.indicators.filter(indicator => indicator.confidence >= minConfidence);
 }
 
@@ -376,7 +376,7 @@ export function searchIndicators(db: ThreatDatabase, query: string): ThreatIndic
 /**
  * Check if database needs updating
  */
-export function needsUpdate(db: ThreatDatabase, maxAgeHours: number = 24): boolean {
+export function needsUpdate(db: ThreatDatabase, maxAgeHours = 24): boolean {
   const lastUpdate = new Date(db.lastUpdated);
   const now = new Date();
   const ageHours = (now.getTime() - lastUpdate.getTime()) / (1000 * 60 * 60);

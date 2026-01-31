@@ -24,13 +24,63 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Environment
+# Environment and Secrets (CRITICAL)
 .env
+.env.*
 .env.local
 .env.*.local
+*.env
 
-# Test artifacts
+# API Keys and Credentials
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+.credentials
+credentials.json
+secrets.json
+**/secrets/
+**/credentials/
+*.secret
+.secret*
+api-key*
+apikey*
+
+# AWS
+.aws/
+aws-credentials*
+
+# SSH Keys
+id_rsa*
+id_dsa*
+id_ecdsa*
+id_ed25519*
+*.ppk
+
+# GPG
+*.gpg
+secring.*
+
+# Service account keys
+*-sa-key.json
+*-service-account*.json
+service-account*.json
+
+# Ferret runtime data
 .ferret-quarantine/
+.ferret-backups/
+.ferret-intel/
+.ferret-data/
+.ferret-config/
+
+# Test artifacts and output
+output/
+results/
+*.sarif
+scan-results/
+security-results/
 
 # Temporary files
 tmp/
@@ -44,3 +94,11 @@ pnpm-lock.yaml
 # osgrep cache
 .osgrep/
 .osgrep
+
+# Docker
+.docker/
+
+# History files
+.bash_history
+.zsh_history
+.node_repl_history
