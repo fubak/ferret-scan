@@ -1,0 +1,31 @@
+# Ferret Scanner - Ignore File
+# These patterns exclude files from security scanning
+
+# Test fixtures (intentionally malicious for testing)
+test/fixtures/
+
+# Threat intelligence database (contains malicious patterns by design)
+.ferret-intel/
+
+# Build artifacts
+dist/
+node_modules/
+
+# Documentation (contains threat examples for demonstration)
+docs/
+PROJECT_SPEC.md
+IMPLEMENTATION_PLAN.md
+CHANGELOG.md
+README.md
+package.json
+
+# Coverage reports
+coverage/
+
+# IDE and editor files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
