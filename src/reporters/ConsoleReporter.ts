@@ -22,11 +22,15 @@ const colors = {
 };
 
 const FERRET_BANNER = `
-${colors.cyan}${colors.bold} _____ _____ ____  ____  _____ _____
-|   __|   __| __ \\| __ \\|   __|_   _|
-|   __|   __|    -|    -|   __| | |
-|__|  |_____|__|__|__|__|_____| |_|${colors.reset}
-${colors.dim}Ferret out security threats in your AI CLI configs${colors.reset}
+${colors.cyan}      .---.
+     /     \\
+     \\.@-@./      ${colors.bold}███████╗███████╗██████╗ ██████╗ ███████╗████████╗
+${colors.cyan}     /\`\\_/\`\\      ${colors.bold}██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝
+${colors.cyan}    //  _  \\\\     ${colors.bold}█████╗  █████╗  ██████╔╝██████╔╝█████╗     ██║
+${colors.cyan}   | \\     )|_    ${colors.bold}██╔══╝  ██╔══╝  ██╔══██╗██╔══██╗██╔══╝     ██║
+${colors.cyan}  /\`\\_\`>  <_/ \\   ${colors.bold}██║     ███████╗██║  ██║██║  ██║███████╗   ██║
+${colors.cyan}  \\__/'---'\\__/   ${colors.bold}╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝${colors.reset}
+${colors.dim}  Security Scanner for AI CLI Configs${colors.reset}
 `;
 
 const SEVERITY_COLORS: Record<Severity, string> = {
