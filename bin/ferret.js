@@ -11,6 +11,17 @@ import { fileURLToPath } from 'node:url';
 import { scan, getExitCode } from '../dist/scanner/Scanner.js';
 import { loadConfig, getClaudeConfigPaths } from '../dist/utils/config.js';
 import { generateConsoleReport } from '../dist/reporters/ConsoleReporter.js';
+import { formatSarifReport } from '../dist/reporters/SarifReporter.js';
+import { formatHtmlReport } from '../dist/reporters/HtmlReporter.js';
+import { startEnhancedWatchMode } from '../dist/scanner/WatchMode.js';
+import {
+  loadBaseline,
+  saveBaseline,
+  createBaseline,
+  filterAgainstBaseline,
+  getDefaultBaselinePath,
+  getBaselineStats
+} from '../dist/utils/baseline.js';
 import { getAllRules, getRuleById, getRuleStats } from '../dist/rules/index.js';
 import { logger } from '../dist/utils/logger.js';
 
@@ -44,6 +55,8 @@ program
   .option('--ai-detection', 'Enable AI-powered detection (experimental)')
   .option('--threat-intel', 'Enable threat intelligence feeds (experimental)')
   .option('--config <file>', 'Path to configuration file')
+  .option('--baseline <file>', 'Path to baseline file for filtering known findings')
+  .option('--ignore-baseline', 'Ignore baseline file and show all findings')
   .action(async (path, options) => {
     try {
       // Configure logger
@@ -83,8 +96,24 @@ program
         process.exit(1);
       }
 
+      // Handle watch mode
+      if (config.watch) {
+        await startEnhancedWatchMode(config);
+        return; // Watch mode runs indefinitely
+      }
+
       // Run scan
-      const result = await scan(config);
+      let result = await scan(config);
+
+      // Apply baseline filtering if enabled
+      if (!options.ignoreBaseline) {
+        const baselinePath = options.baseline || getDefaultBaselinePath(config.paths);
+        const baseline = loadBaseline(baselinePath);
+        if (baseline) {
+          console.log(`📋 Applying baseline from: ${baselinePath}`);
+          result = filterAgainstBaseline(result, baseline);
+        }
+      }
 
       // Output results
       if (config.format === 'console') {
@@ -99,6 +128,28 @@ program
           const { writeFileSync } = await import('node:fs');
           writeFileSync(config.outputFile, output);
           console.log(`JSON report written to: ${config.outputFile}`);
+        } else {
+          console.log(output);
+        }
+      } else if (config.format === 'sarif') {
+        const output = formatSarifReport(result);
+        if (config.outputFile) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(config.outputFile, output);
+          console.log(`SARIF report written to: ${config.outputFile}`);
+        } else {
+          console.log(output);
+        }
+      } else if (config.format === 'html') {
+        const output = formatHtmlReport(result, {
+          title: `Security Scan Report - ${new Date().toLocaleDateString()}`,
+          darkMode: false,
+          showCode: true,
+        });
+        if (config.outputFile) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(config.outputFile, output);
+          console.log(`HTML report written to: ${config.outputFile}`);
         } else {
           console.log(output);
         }
@@ -228,6 +279,121 @@ rulesCmd
     console.log('By Severity:');
     for (const [sev, count] of Object.entries(stats.bySeverity)) {
       console.log(`  ${sev}: ${count}`);
+    }
+  });
+
+// Baseline commands
+const baselineCmd = program
+  .command('baseline')
+  .description('Manage baseline of accepted findings');
+
+baselineCmd
+  .command('create')
+  .description('Create baseline from current scan results')
+  .argument('[path]', 'Path to scan (defaults to Claude config directories)')
+  .option('-o, --output <file>', 'Output baseline file path')
+  .option('--description <desc>', 'Description for the baseline')
+  .action(async (path, options) => {
+    try {
+      // Load configuration for scanning
+      const config = loadConfig({ path });
+
+      if (config.paths.length === 0) {
+        console.error('No Claude Code configuration directories found.');
+        process.exit(1);
+      }
+
+      console.log('🔍 Scanning to create baseline...');
+      const result = await scan(config);
+
+      const baselinePath = options.output || getDefaultBaselinePath(config.paths);
+      const baseline = createBaseline(result, options.description);
+
+      saveBaseline(baseline, baselinePath);
+      console.log(`✅ Created baseline with ${baseline.findings.length} findings`);
+      console.log(`📋 Baseline saved to: ${baselinePath}`);
+
+    } catch (error) {
+      console.error('Error creating baseline:', error.message);
+      process.exit(1);
+    }
+  });
+
+baselineCmd
+  .command('show')
+  .description('Show baseline information')
+  .argument('[file]', 'Baseline file path (defaults to .ferret-baseline.json)')
+  .action((file) => {
+    try {
+      const baselinePath = file || getDefaultBaselinePath([process.cwd()]);
+      const baseline = loadBaseline(baselinePath);
+
+      if (!baseline) {
+        console.error(`No baseline found at: ${baselinePath}`);
+        process.exit(1);
+      }
+
+      const stats = getBaselineStats(baseline);
+
+      console.log('📋 Baseline Information');
+      console.log('━'.repeat(60));
+      console.log(`File: ${baselinePath}`);
+      console.log(`Description: ${baseline.description || 'No description'}`);
+      console.log(`Created: ${new Date(baseline.createdDate).toLocaleString()}`);
+      console.log(`Updated: ${new Date(baseline.lastUpdated).toLocaleString()}`);
+      console.log(`Total Findings: ${stats.totalFindings}`);
+      console.log('');
+
+      if (Object.keys(stats.byRule).length > 0) {
+        console.log('By Rule:');
+        for (const [rule, count] of Object.entries(stats.byRule)) {
+          console.log(`  ${rule}: ${count}`);
+        }
+        console.log('');
+      }
+
+      if (Object.keys(stats.bySeverity).length > 0) {
+        console.log('By Category:');
+        for (const [category, count] of Object.entries(stats.bySeverity)) {
+          console.log(`  ${category}: ${count}`);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error reading baseline:', error.message);
+      process.exit(1);
+    }
+  });
+
+baselineCmd
+  .command('remove')
+  .description('Remove baseline file')
+  .argument('[file]', 'Baseline file path (defaults to .ferret-baseline.json)')
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (file, options) => {
+    try {
+      const baselinePath = file || getDefaultBaselinePath([process.cwd()]);
+      const baseline = loadBaseline(baselinePath);
+
+      if (!baseline) {
+        console.error(`No baseline found at: ${baselinePath}`);
+        process.exit(1);
+      }
+
+      if (!options.yes) {
+        // Simple confirmation (in a real implementation, you'd use a proper prompt library)
+        console.log(`This will delete the baseline at: ${baselinePath}`);
+        console.log('Use --yes to confirm');
+        process.exit(1);
+      }
+
+      const { unlinkSync } = await import('node:fs');
+      unlinkSync(baselinePath);
+      console.log(`✅ Baseline removed: ${baselinePath}`);
+
+    } catch (error) {
+      console.error('Error removing baseline:', error.message);
+      process.exit(1);
     }
   });
 
