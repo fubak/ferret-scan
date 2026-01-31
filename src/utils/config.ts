@@ -96,36 +96,89 @@ function parseCategories(categoriesStr: string | undefined): ThreatCategory[] | 
 }
 
 /**
- * Get Claude Code configuration paths
+ * AI CLI configuration directory patterns
+ * Supports multiple AI assistants and their config locations
  */
-export function getClaudeConfigPaths(): string[] {
+const AI_CLI_PATTERNS = {
+  // Claude Code
+  claude: {
+    dirs: ['.claude'],
+    files: ['CLAUDE.md', '.mcp.json'],
+  },
+  // Cursor
+  cursor: {
+    dirs: ['.cursor'],
+    files: ['.cursorrules'],
+  },
+  // Windsurf
+  windsurf: {
+    dirs: ['.windsurf'],
+    files: ['.windsurfrules'],
+  },
+  // Continue
+  continue: {
+    dirs: ['.continue'],
+    files: [],
+  },
+  // Aider
+  aider: {
+    dirs: ['.aider'],
+    files: ['.aider.conf.yml', '.aiderignore'],
+  },
+  // Cline
+  cline: {
+    dirs: ['.cline'],
+    files: ['.clinerules'],
+  },
+  // Generic AI
+  generic: {
+    dirs: ['.ai'],
+    files: ['AI.md', 'AGENT.md', 'AGENTS.md'],
+  },
+};
+
+/**
+ * Get AI CLI configuration paths
+ * Detects configurations for Claude Code, Cursor, Windsurf, Continue, Aider, Cline, and generic AI configs
+ */
+export function getAIConfigPaths(): string[] {
   const paths: string[] = [];
+  const cwd = process.cwd();
+  const home = homedir();
 
-  // Global Claude config
-  const globalClaudeDir = resolve(homedir(), '.claude');
-  if (existsSync(globalClaudeDir)) {
-    paths.push(globalClaudeDir);
-  }
+  // Check all AI CLI patterns
+  for (const cli of Object.values(AI_CLI_PATTERNS)) {
+    // Check directories (both global and project-level)
+    for (const dir of cli.dirs) {
+      const globalDir = resolve(home, dir);
+      if (existsSync(globalDir)) {
+        paths.push(globalDir);
+      }
 
-  // Project-level Claude config
-  const projectClaudeDir = resolve(process.cwd(), '.claude');
-  if (existsSync(projectClaudeDir)) {
-    paths.push(projectClaudeDir);
-  }
+      const projectDir = resolve(cwd, dir);
+      if (existsSync(projectDir)) {
+        paths.push(projectDir);
+      }
+    }
 
-  // CLAUDE.md files
-  const projectClaudeMd = resolve(process.cwd(), 'CLAUDE.md');
-  if (existsSync(projectClaudeMd)) {
-    paths.push(projectClaudeMd);
-  }
-
-  // .mcp.json files
-  const mcpJson = resolve(process.cwd(), '.mcp.json');
-  if (existsSync(mcpJson)) {
-    paths.push(mcpJson);
+    // Check files (project-level only)
+    for (const file of cli.files) {
+      const projectFile = resolve(cwd, file);
+      if (existsSync(projectFile)) {
+        paths.push(projectFile);
+      }
+    }
   }
 
   return paths;
+}
+
+/**
+ * Get Claude Code configuration paths
+ * @deprecated Use getAIConfigPaths() instead
+ */
+export function getClaudeConfigPaths(): string[] {
+  return getAIConfigPaths();
 }
 
 /**
@@ -171,8 +224,8 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
   if (cliOptions.path) {
     config.paths = [resolve(cliOptions.path)];
   } else {
-    // Default to Claude config paths
-    config.paths = getClaudeConfigPaths();
+    // Default to AI CLI config paths
+    config.paths = getAIConfigPaths();
   }
 
   const parsedSeverities = parseSeverities(cliOptions.severity);

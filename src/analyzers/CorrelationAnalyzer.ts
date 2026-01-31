@@ -325,7 +325,7 @@ function generateRiskVectors(match: CrossFileMatch): string[] {
   if (fileTypes.includes('hook') && fileTypes.includes('skill')) {
     vectors.push('Hook-Skill Chain');
   }
-  if (fileTypes.includes('settings') && fileTypes.includes('claude-md')) {
+  if (fileTypes.includes('settings') && fileTypes.includes('ai-config-md')) {
     vectors.push('Configuration Tampering');
   }
 

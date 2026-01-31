@@ -1,5 +1,5 @@
 /**
- * Ferret-Scan - AI-powered security scanner for Claude Code configurations
+ * Ferret-Scan - Security scanner for AI CLI configurations
  *
  * @packageDocumentation
  */
@@ -45,6 +45,9 @@ export {
 export { generateConsoleReport } from './reporters/ConsoleReporter.js';
 
 // Utils
-export { loadConfig, getClaudeConfigPaths } from './utils/config.js';
+export { loadConfig, getAIConfigPaths } from './utils/config.js';
+// Re-export deprecated for backwards compatibility
+// eslint-disable-next-line @typescript-eslint/no-deprecated
+export { getClaudeConfigPaths } from './utils/config.js';
 export { createIgnoreFilter, shouldIgnore } from './utils/ignore.js';
 export { logger } from './utils/logger.js';

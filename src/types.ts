@@ -1,6 +1,6 @@
 /**
  * Ferret-Scan Type Definitions
- * AI-powered security scanner for Claude Code configurations
+ * Security scanner for AI CLI configurations
  */
 
 /** Severity levels for security findings */
@@ -28,7 +28,8 @@ export type ComponentType =
   | 'plugin'
   | 'mcp'
   | 'settings'
-  | 'claude-md';
+  | 'ai-config-md'
+  | 'rules-file';
 
 /** File types supported for analysis */
 export type FileType = 'md' | 'sh' | 'bash' | 'zsh' | 'json' | 'yaml' | 'yml' | 'ts' | 'js' | 'tsx' | 'jsx';

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * Ferret CLI - Security scanner for Claude Code configurations
+ * Ferret CLI - Security scanner for AI CLI configurations
  */
 
 import { Command } from 'commander';
@@ -9,7 +9,7 @@ import { readFileSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scan, getExitCode } from '../dist/scanner/Scanner.js';
-import { loadConfig, getClaudeConfigPaths } from '../dist/utils/config.js';
+import { loadConfig, getAIConfigPaths } from '../dist/utils/config.js';
 import { generateConsoleReport } from '../dist/reporters/ConsoleReporter.js';
 import { formatSarifReport } from '../dist/reporters/SarifReporter.js';
 import { formatHtmlReport } from '../dist/reporters/HtmlReporter.js';
@@ -56,14 +56,14 @@ const program = new Command();
 
 program
   .name('ferret')
-  .description('Ferret out security threats in your Claude Code configurations')
+  .description('Ferret out security threats in your AI CLI configurations')
   .version(packageJson.version);
 
 // Main scan command
 program
   .command('scan')
-  .description('Scan Claude Code configurations for security issues')
-  .argument('[path]', 'Path to scan (defaults to Claude config directories)')
+  .description('Scan AI CLI configurations for security issues')
+  .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
   .option('-f, --format <format>', 'Output format: console, json, sarif, html', 'console')
   .option('-s, --severity <levels>', 'Severity levels to report (comma-separated)', 'critical,high,medium,low,info')
   .option('-c, --categories <cats>', 'Categories to scan (comma-separated)')
@@ -112,15 +112,18 @@ program
       // Apply auto-fix if enabled
       const shouldAutoFix = options.autoFix;
 
-      // If no paths specified and no Claude configs found, show helpful message
+      // If no paths specified and no AI CLI configs found, show helpful message
       if (config.paths.length === 0) {
-        console.error('No Claude Code configuration directories found.');
+        console.error('No AI CLI configuration directories found.');
         console.error('');
         console.error('Ferret looks for configurations in:');
-        console.error('  - ~/.claude/ (global)');
-        console.error('  - ./.claude/ (project)');
-        console.error('  - ./CLAUDE.md');
-        console.error('  - ./.mcp.json');
+        console.error('  Claude Code: ~/.claude/, ./.claude/, CLAUDE.md, .mcp.json');
+        console.error('  Cursor:      ./.cursor/, .cursorrules');
+        console.error('  Windsurf:    ./.windsurf/, .windsurfrules');
+        console.error('  Continue:    ./.continue/');
+        console.error('  Aider:       ./.aider/, .aider.conf.yml');
+        console.error('  Cline:       ./.cline/, .clinerules');
+        console.error('  Generic:     ./.ai/, AI.md, AGENT.md');
         console.error('');
         console.error('You can also specify a path: ferret scan /path/to/config');
         process.exit(1);
@@ -346,7 +349,7 @@ const baselineCmd = program
 baselineCmd
   .command('create')
   .description('Create baseline from current scan results')
-  .argument('[path]', 'Path to scan (defaults to Claude config directories)')
+  .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
   .option('-o, --output <file>', 'Output baseline file path')
   .option('--description <desc>', 'Description for the baseline')
   .action(async (path, options) => {
@@ -355,7 +358,7 @@ baselineCmd
       const config = loadConfig({ path });
 
       if (config.paths.length === 0) {
-        console.error('No Claude Code configuration directories found.');
+        console.error('No AI CLI configuration directories found.');
         process.exit(1);
       }
 
@@ -588,7 +591,7 @@ const fixCmd = program
 fixCmd
   .command('scan')
   .description('Scan and apply automatic fixes')
-  .argument('[path]', 'Path to scan (defaults to Claude config directories)')
+  .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
   .option('--dry-run', 'Preview fixes without applying them')
   .option('--safe-only', 'Only apply safe fixes (safety >= 0.8)', true)
   .option('--backup-dir <dir>', 'Backup directory', '.ferret-backups')
@@ -609,7 +612,7 @@ fixCmd
       });
 
       if (config.paths.length === 0) {
-        console.error('No Claude Code configuration directories found.');
+        console.error('No AI CLI configuration directories found.');
         process.exit(1);
       }
 
@@ -812,7 +815,7 @@ program
   .description('Show version information')
   .action(() => {
     console.log(`Ferret v${packageJson.version}`);
-    console.log('AI-powered security scanner for Claude Code configurations');
+    console.log('Security scanner for AI CLI configurations');
   });
 
 // Parse and run

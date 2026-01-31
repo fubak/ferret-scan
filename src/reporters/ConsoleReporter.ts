@@ -26,7 +26,7 @@ ${colors.cyan}${colors.bold} _____ _____ ____  ____  _____ _____
 |   __|   __| __ \\| __ \\|   __|_   _|
 |   __|   __|    -|    -|   __| | |
 |__|  |_____|__|__|__|__|_____| |_|${colors.reset}
-${colors.dim}Ferret out security threats in your Claude configs${colors.reset}
+${colors.dim}Ferret out security threats in your AI CLI configs${colors.reset}
 `;
 
 const SEVERITY_COLORS: Record<Severity, string> = {
@@ -188,7 +188,7 @@ export function generateConsoleReport(
   if (result.summary.total === 0) {
     lines.push('');
     lines.push(`${colors.green}${colors.bold}No security issues found!${colors.reset}`);
-    lines.push(`${colors.green}Your Claude configurations look clean.${colors.reset}`);
+    lines.push(`${colors.green}Your AI CLI configurations look clean.${colors.reset}`);
   } else {
     lines.push(formatGroupedFindings(result, verbose));
   }

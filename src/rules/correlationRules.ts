@@ -100,7 +100,7 @@ export const correlationRules: Rule[] = [
     description: 'Detects configuration changes combined with obfuscation techniques',
     patterns: [],
     fileTypes: ['md', 'json', 'yaml'],
-    components: ['settings', 'claude-md', 'mcp'],
+    components: ['settings', 'ai-config-md', 'mcp'],
     remediation: 'Review configuration changes and encoding patterns. Remove obfuscated malicious content.',
     references: [
       'https://attack.mitre.org/techniques/T1027/'
@@ -128,7 +128,7 @@ export const correlationRules: Rule[] = [
     description: 'Detects AI model safeguard bypass combined with data collection patterns',
     patterns: [],
     fileTypes: ['md', 'json', 'yaml', 'ts', 'js'],
-    components: ['skill', 'agent', 'claude-md'],
+    components: ['skill', 'agent', 'ai-config-md'],
     remediation: 'Review AI model interactions and data handling. Remove bypass attempts and unauthorized data collection.',
     references: [
       'https://owasp.org/www-project-top-ten-for-large-language-model-applications/'

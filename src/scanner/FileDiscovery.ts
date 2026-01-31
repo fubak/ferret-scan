@@ -1,6 +1,7 @@
 /**
- * FileDiscovery - Discovers Claude Code configuration files
- * Scans directories for skills, agents, hooks, MCP configs, and other files
+ * FileDiscovery - Discovers AI CLI configuration files
+ * Scans directories for skills, agents, hooks, MCP configs, rules files, and other AI CLI files
+ * Supports: Claude Code, Cursor, Windsurf, Continue, Aider, Cline, and generic AI configs
  */
 
 import { readdirSync, statSync, existsSync } from 'node:fs';
@@ -40,6 +41,7 @@ function getFileType(filePath: string): FileType | null {
 
 /**
  * Detect component type from file path
+ * Supports multiple AI CLI patterns
  */
 function detectComponentType(filePath: string): ComponentType {
   const normalizedPath = filePath.toLowerCase();
@@ -74,6 +76,15 @@ function detectComponentType(filePath: string): ComponentType {
     return 'mcp';
   }
 
+  // Rules files (Cursor, Windsurf, Cline)
+  if (
+    fileName === '.cursorrules' ||
+    fileName === '.windsurfrules' ||
+    fileName === '.clinerules'
+  ) {
+    return 'rules-file';
+  }
+
   // Settings files
   if (
     fileName === 'settings.json' ||
@@ -83,18 +94,24 @@ function detectComponentType(filePath: string): ComponentType {
     return 'settings';
   }
 
-  // CLAUDE.md files
-  if (fileName === 'claude.md' || fileName.startsWith('claude')) {
-    return 'claude-md';
+  // AI config markdown files (CLAUDE.md, AI.md, AGENT.md, etc.)
+  if (
+    fileName === 'claude.md' ||
+    fileName.startsWith('claude') ||
+    fileName === 'ai.md' ||
+    fileName === 'agent.md' ||
+    fileName === 'agents.md'
+  ) {
+    return 'ai-config-md';
   }
 
-  // Default to settings for JSON, claude-md for markdown
+  // Default to settings for JSON, ai-config-md for markdown
   const type = getFileType(filePath);
   if (type === 'json') {
     return 'settings';
   }
   if (type === 'md') {
-    return 'claude-md';
+    return 'ai-config-md';
   }
 
   return 'settings';
@@ -109,20 +126,34 @@ function isAnalyzableFile(filePath: string): boolean {
 
   const fileName = basename(filePath).toLowerCase();
 
-  // Specific files we care about
+  // Specific files we care about (multi-CLI support)
   const targetFiles = [
+    // Claude Code
     'claude.md',
     '.mcp.json',
     'mcp.json',
     'settings.json',
     'settings.local.json',
+    // Cursor
+    '.cursorrules',
+    // Windsurf
+    '.windsurfrules',
+    // Cline
+    '.clinerules',
+    // Aider
+    '.aider.conf.yml',
+    '.aiderignore',
+    // Generic AI
+    'ai.md',
+    'agent.md',
+    'agents.md',
   ];
 
   if (targetFiles.includes(fileName)) {
     return true;
   }
 
-  // All markdown files in .claude directory
+  // All markdown files in AI CLI config directories
   if (type === 'md') {
     return true;
   }

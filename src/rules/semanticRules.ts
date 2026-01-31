@@ -16,7 +16,7 @@ export const semanticRules: Rule[] = [
     description: 'Detects dynamic code execution patterns that could allow code injection',
     patterns: [],
     fileTypes: ['md', 'ts', 'js', 'tsx', 'jsx'],
-    components: ['skill', 'agent', 'hook', 'plugin', 'claude-md'],
+    components: ['skill', 'agent', 'hook', 'plugin', 'ai-config-md'],
     remediation: 'Avoid dynamic code execution. Use static imports, predefined functions, or safe templating instead.',
     references: [
       'https://owasp.org/www-community/attacks/Code_Injection'

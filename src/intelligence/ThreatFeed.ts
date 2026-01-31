@@ -72,26 +72,26 @@ export interface ThreatDatabase {
 const DEFAULT_INTEL_DIR = '.ferret-intel';
 
 /**
- * Built-in threat sources for Claude Code environments
+ * Built-in threat sources for AI CLI environments
  */
 const BUILTIN_SOURCES: ThreatSource[] = [
   {
-    name: 'claude-malicious-packages',
-    description: 'Known malicious npm packages targeting Claude environments',
+    name: 'ai-cli-malicious-packages',
+    description: 'Known malicious npm packages targeting AI CLI environments',
     lastUpdated: new Date().toISOString(),
     enabled: true,
     format: 'json'
   },
   {
-    name: 'claude-suspicious-domains',
-    description: 'Suspicious domains used in Claude exploitation attempts',
+    name: 'ai-cli-suspicious-domains',
+    description: 'Suspicious domains used in AI CLI exploitation attempts',
     lastUpdated: new Date().toISOString(),
     enabled: true,
     format: 'json'
   },
   {
-    name: 'claude-backdoor-patterns',
-    description: 'Code patterns associated with Claude-specific backdoors',
+    name: 'ai-cli-backdoor-patterns',
+    description: 'Code patterns associated with AI CLI-specific backdoors',
     lastUpdated: new Date().toISOString(),
     enabled: true,
     format: 'json'
@@ -104,12 +104,12 @@ const BUILTIN_SOURCES: ThreatSource[] = [
 const BUILTIN_INDICATORS: ThreatIndicator[] = [
   // Malicious domains
   {
-    value: 'evil-claude-api.com',
+    value: 'evil-ai-api.com',
     type: 'domain',
     category: 'phishing',
     severity: 'high',
-    description: 'Fake Claude API endpoint used for credential harvesting',
-    source: 'claude-suspicious-domains',
+    description: 'Fake AI API endpoint used for credential harvesting',
+    source: 'ai-cli-suspicious-domains',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 95,
@@ -120,8 +120,8 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
     type: 'domain',
     category: 'phishing',
     severity: 'high',
-    description: 'Impersonates legitimate Anthropic domain',
-    source: 'claude-suspicious-domains',
+    description: 'Impersonates legitimate AI provider domain',
+    source: 'ai-cli-suspicious-domains',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 90,
@@ -130,12 +130,12 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
 
   // Malicious packages
   {
-    value: 'claude-jailbreak-helper',
+    value: 'ai-jailbreak-helper',
     type: 'package',
     category: 'malicious-package',
     severity: 'critical',
-    description: 'Package designed to bypass Claude safety mechanisms',
-    source: 'claude-malicious-packages',
+    description: 'Package designed to bypass AI assistant safety mechanisms',
+    source: 'ai-cli-malicious-packages',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 100,
@@ -146,8 +146,8 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
     type: 'package',
     category: 'malicious-package',
     severity: 'high',
-    description: 'Fake Anthropic SDK that steals credentials',
-    source: 'claude-malicious-packages',
+    description: 'Fake AI SDK that steals credentials',
+    source: 'ai-cli-malicious-packages',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 95,
@@ -160,8 +160,8 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
     type: 'pattern',
     category: 'jailbreak-attempt',
     severity: 'high',
-    description: 'Pattern attempting to override Claude safety instructions',
-    source: 'claude-backdoor-patterns',
+    description: 'Pattern attempting to override AI assistant safety instructions',
+    source: 'ai-cli-backdoor-patterns',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 85,
@@ -172,8 +172,8 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
     type: 'pattern',
     category: 'privilege-escalation',
     severity: 'medium',
-    description: 'Attempts to claim elevated privileges in Claude',
-    source: 'claude-backdoor-patterns',
+    description: 'Attempts to claim elevated privileges in AI assistants',
+    source: 'ai-cli-backdoor-patterns',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 75,
@@ -186,8 +186,8 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
     type: 'hash',
     category: 'malicious-file',
     severity: 'critical',
-    description: 'Hash of known malicious Claude configuration file',
-    source: 'claude-malicious-packages',
+    description: 'Hash of known malicious AI CLI configuration file',
+    source: 'ai-cli-malicious-packages',
     firstSeen: '2024-01-01T00:00:00Z',
     lastSeen: new Date().toISOString(),
     confidence: 100,
