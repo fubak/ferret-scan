@@ -1,0 +1,238 @@
+name: Claude Code Security Scan
+
+on:
+  push:
+    paths:
+      - '.claude/**'
+      - '.mcp.json'
+      - 'CLAUDE.md'
+      - '**/*.claude.md'
+      - 'skills/**'
+      - 'hooks/**'
+  pull_request:
+    paths:
+      - '.claude/**'
+      - '.mcp.json'
+      - 'CLAUDE.md'
+      - '**/*.claude.md'
+      - 'skills/**'
+      - 'hooks/**'
+  workflow_dispatch:
+    inputs:
+      scan_mode:
+        description: 'Scan mode'
+        required: true
+        default: 'standard'
+        type: choice
+        options:
+          - standard
+          - deep
+          - compliance
+      output_format:
+        description: 'Output format'
+        required: true
+        default: 'sarif'
+        type: choice
+        options:
+          - sarif
+          - json
+          - html
+
+jobs:
+  ferret-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install ferret-scan
+        run: npm install -g ferret-scan@latest
+
+      - name: Run security scan
+        id: scan
+        env:
+          SCAN_MODE: ${{ github.event.inputs.scan_mode || 'standard' }}
+          OUTPUT_FORMAT: ${{ github.event.inputs.output_format || 'sarif' }}
+        run: |
+          # Determine output file extension
+          case "$OUTPUT_FORMAT" in
+            sarif) EXT="sarif" ;;
+            json) EXT="json" ;;
+            html) EXT="html" ;;
+            *) EXT="sarif" ;;
+          esac
+
+          # Run scan with appropriate flags
+          case "$SCAN_MODE" in
+            deep)
+              ferret scan --deep --semantic --correlate --format "$OUTPUT_FORMAT" -o "ferret-results.$EXT"
+              ;;
+            compliance)
+              ferret scan --compliance soc2 --format "$OUTPUT_FORMAT" -o "ferret-results.$EXT"
+              ;;
+            *)
+              ferret scan --ci --format "$OUTPUT_FORMAT" -o "ferret-results.$EXT"
+              ;;
+          esac
+
+          # Set outputs for subsequent steps
+          echo "results_file=ferret-results.$EXT" >> "$GITHUB_OUTPUT"
+          echo "format=$OUTPUT_FORMAT" >> "$GITHUB_OUTPUT"
+
+      - name: Upload SARIF results
+        if: steps.scan.outputs.format == 'sarif'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.scan.outputs.results_file }}
+          category: ferret-scan
+
+      - name: Upload scan results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ferret-scan-results-${{ github.run_number }}
+          path: ${{ steps.scan.outputs.results_file }}
+          retention-days: 30
+
+      - name: Comment PR with results summary
+        if: github.event_name == 'pull_request' && steps.scan.outputs.format == 'json'
+        uses: actions/github-script@v7
+        env:
+          RESULTS_FILE: ${{ steps.scan.outputs.results_file }}
+        with:
+          script: |
+            const fs = require('fs');
+
+            try {
+              const results = JSON.parse(fs.readFileSync(process.env.RESULTS_FILE, 'utf8'));
+
+              const findings = results.findings || [];
+              const critical = findings.filter(f => f.severity === 'CRITICAL').length;
+              const high = findings.filter(f => f.severity === 'HIGH').length;
+              const medium = findings.filter(f => f.severity === 'MEDIUM').length;
+              const low = findings.filter(f => f.severity === 'LOW').length;
+
+              const total = findings.length;
+              const riskScore = results.riskScore || 0;
+
+              let summary = `## 🔍 Ferret Security Scan Results\n\n`;
+
+              if (total === 0) {
+                summary += `✅ **No security issues found!**\n\n`;
+                summary += `🛡️ Risk Score: ${riskScore}/100\n`;
+              } else {
+                summary += `🚨 **${total} security issue${total > 1 ? 's' : ''} detected**\n\n`;
+                summary += `| Severity | Count |\n`;
+                summary += `|----------|-------|\n`;
+                if (critical > 0) summary += `| 🔴 Critical | ${critical} |\n`;
+                if (high > 0) summary += `| 🟠 High | ${high} |\n`;
+                if (medium > 0) summary += `| 🟡 Medium | ${medium} |\n`;
+                if (low > 0) summary += `| ⚪ Low | ${low} |\n`;
+                summary += `\n🛡️ Risk Score: ${riskScore}/100\n\n`;
+
+                if (critical > 0 || high > 0) {
+                  summary += `⚠️ **This PR introduces high-severity security issues. Please review before merging.**\n\n`;
+                }
+
+                // Add top findings
+                const topFindings = findings
+                  .filter(f => f.severity === 'CRITICAL' || f.severity === 'HIGH')
+                  .slice(0, 5);
+
+                if (topFindings.length > 0) {
+                  summary += `### Top Issues:\n`;
+                  topFindings.forEach((finding, i) => {
+                    summary += `${i + 1}. **${finding.rule}** in \`${finding.relativePath}\`\n`;
+                    summary += `   - ${finding.description}\n`;
+                    summary += `   - Line ${finding.line}\n\n`;
+                  });
+                }
+              }
+
+              summary += `<details>\n<summary>📊 Scan Details</summary>\n\n`;
+              summary += `- **Files Scanned:** ${results.filesScanned || 0}\n`;
+              summary += `- **Rules Applied:** ${results.rulesApplied || 0}\n`;
+              summary += `- **Scan Duration:** ${results.scanDuration || 'N/A'}\n`;
+              summary += `- **Version:** ${results.version || 'N/A'}\n`;
+              summary += `\n</details>\n`;
+
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            } catch (error) {
+              console.error('Error parsing results:', error);
+            }
+
+      - name: Fail on critical findings
+        if: always()
+        env:
+          RESULTS_FILE: ${{ steps.scan.outputs.results_file }}
+          OUTPUT_FORMAT: ${{ steps.scan.outputs.format }}
+        run: |
+          if [ -f "$RESULTS_FILE" ]; then
+            if command -v jq >/dev/null 2>&1; then
+              if [ "$OUTPUT_FORMAT" = "json" ]; then
+                CRITICAL_COUNT=$(jq '.findings | map(select(.severity == "CRITICAL")) | length' "$RESULTS_FILE")
+                if [ "$CRITICAL_COUNT" -gt 0 ]; then
+                  echo "❌ Found $CRITICAL_COUNT critical security issues"
+                  exit 1
+                fi
+              fi
+            fi
+          fi
+          echo "✅ No critical security issues found"
+
+  update-security-advisories:
+    name: Update Security Database
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install ferret-scan
+        run: npm install -g ferret-scan@latest
+
+      - name: Update threat intelligence
+        run: |
+          ferret intel update --auto-commit
+
+      - name: Create PR for updates
+        if: success()
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'chore: update security threat intelligence database'
+          title: 'Security: Update threat intelligence database'
+          body: |
+            This PR updates the threat intelligence database with the latest security indicators.
+
+            - Updated malicious package signatures
+            - Added new domain indicators
+            - Refreshed pattern rules
+
+            This is an automated update generated by the Ferret security scanner.
+          branch: update-threat-intel
+          delete-branch: true

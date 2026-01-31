@@ -1,0 +1,74 @@
+# Development Docker Compose Configuration
+version: '3.8'
+
+services:
+  # Development Ferret Scanner with hot reload
+  ferret-dev:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ferret-dev
+    environment:
+      - NODE_ENV=development
+      - LOG_LEVEL=debug
+      - FERRET_DEV_MODE=true
+    volumes:
+      # Mount source code for hot reload
+      - ../src:/app/src:rw
+      - ../bin:/app/bin:rw
+      - ../package*.json:/app/
+      - ../tsconfig.json:/app/
+      # Mount workspace for testing
+      - ${WORKSPACE_PATH:-../test/fixtures}:/workspace:ro
+      # Mount output directory
+      - ${OUTPUT_PATH:-../output}:/output:rw
+    working_dir: /workspace
+    command: ["watch", "/workspace", "--format", "json", "-o", "/output", "--debug"]
+    networks:
+      - ferret-dev-network
+    ports:
+      - "9229:9229"  # Node.js debug port
+    stdin_open: true
+    tty: true
+
+  # Test runner service
+  ferret-test:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: builder
+    container_name: ferret-test
+    environment:
+      - NODE_ENV=test
+      - LOG_LEVEL=error
+    volumes:
+      - ../src:/app/src:rw
+      - ../test:/app/test:rw
+      - ../package*.json:/app/
+      - ../tsconfig.json:/app/
+      - ../jest.config.js:/app/
+    working_dir: /app
+    command: ["npm", "test", "--", "--watchAll"]
+    networks:
+      - ferret-dev-network
+    profiles:
+      - test
+
+  # Documentation server
+  docs-server:
+    image: nginx:alpine
+    container_name: ferret-docs
+    volumes:
+      - ../docs:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8080:80"
+    networks:
+      - ferret-dev-network
+    profiles:
+      - docs
+
+networks:
+  ferret-dev-network:
+    driver: bridge

@@ -1,0 +1,79 @@
+# Source files
+src/
+test/
+tests/
+
+# Build artifacts
+*.log
+*.tmp
+.coverage/
+coverage/
+.nyc_output/
+
+# Development files
+.env*
+.git/
+.gitignore
+.github/
+.vscode/
+.idea/
+
+# TypeScript
+tsconfig.json
+tsconfig.*.json
+*.tsbuildinfo
+
+# ESLint
+.eslintrc*
+.eslintignore
+.eslintcache
+
+# Jest
+jest.config.*
+
+# Development tools
+.prettierrc*
+.prettierignore
+
+# CI/CD
+.travis.yml
+.circleci/
+.gitlab-ci.yml
+
+# Docker (keep main files for users)
+docker-compose.dev.yml
+docker/nginx.conf
+
+# Documentation source
+docs/
+*.md.bak
+
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# Output directories
+output/
+workspace/
+intel/
+config/
+
+# Runtime directories
+.ferret-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Temporary files
+tmp/
+temp/

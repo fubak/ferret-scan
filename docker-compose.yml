@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # Ferret Security Scanner - Production Service
+  ferret:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ferret-scanner
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - FERRET_DATA_DIR=/app/.ferret-data
+      - FERRET_OUTPUT_DIR=/output
+    volumes:
+      # Mount workspace for scanning
+      - ${WORKSPACE_PATH:-./workspace}:/workspace:ro
+      # Mount output directory for results
+      - ${OUTPUT_PATH:-./output}:/output:rw
+      # Mount threat intelligence data (optional)
+      - ${INTEL_PATH:-./intel}:/app/.ferret-intel:rw
+      # Mount configuration (optional)
+      - ${CONFIG_PATH:-./config}:/app/.ferret-config:ro
+    working_dir: /workspace
+    command: ["scan", "/workspace", "--format", "json", "-o", "/output/results.json"]
+    networks:
+      - ferret-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+
+  # Ferret Watch Mode - Continuous Monitoring
+  ferret-watch:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ferret-watcher
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - FERRET_WATCH_ENABLED=true
+    volumes:
+      - ${WORKSPACE_PATH:-./workspace}:/workspace:ro
+      - ${OUTPUT_PATH:-./output}:/output:rw
+      - ${INTEL_PATH:-./intel}:/app/.ferret-intel:rw
+    working_dir: /workspace
+    command: ["watch", "/workspace", "--format", "json", "-o", "/output"]
+    networks:
+      - ferret-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    profiles:
+      - watch
+
+  # Ferret API Service - REST API for integrations
+  ferret-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ferret-api
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+      - PORT=3000
+      - API_ENABLED=true
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - ${WORKSPACE_PATH:-./workspace}:/workspace:ro
+      - ${OUTPUT_PATH:-./output}:/output:rw
+      - ${INTEL_PATH:-./intel}:/app/.ferret-intel:rw
+    command: ["api", "--port", "3000", "--host", "0.0.0.0"]
+    networks:
+      - ferret-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    profiles:
+      - api
+
+  # Threat Intelligence Updater - Scheduled updates
+  ferret-intel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: ferret-intel-updater
+    restart: no
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - ${INTEL_PATH:-./intel}:/app/.ferret-intel:rw
+    command: ["intel", "update", "--auto"]
+    networks:
+      - ferret-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    user: "1001:1001"
+    cap_drop:
+      - ALL
+    profiles:
+      - intel
+
+networks:
+  ferret-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  ferret-data:
+    driver: local
+  ferret-output:
+    driver: local
+  ferret-intel:
+    driver: local

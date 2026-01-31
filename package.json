@@ -19,39 +19,79 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "prepare": "npm run build",
+    "prepublishOnly": "npm run build && npm run test && npm run lint",
     "scan": "node bin/ferret.js scan",
     "check:resources": "node -e \"console.log('RAM:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB')\""
   },
   "keywords": [
     "claude",
     "claude-code",
+    "claude-ai",
+    "anthropic",
+    "ai-security",
+    "security-scanner",
+    "security-audit",
+    "vulnerability-scanner",
+    "static-analysis",
     "security",
     "scanner",
-    "ai-security",
     "prompt-injection",
-    "malware",
+    "prompt-security",
+    "jailbreak-detection",
+    "malware-detection",
+    "threat-intelligence",
+    "sarif",
+    "sast",
+    "devsecops",
+    "security-tools",
     "cli",
     "devtools",
-    "security-tools"
+    "automation",
+    "ci-cd",
+    "github-actions",
+    "docker"
   ],
-  "author": "",
+  "author": {
+    "name": "Ferret Security Team",
+    "email": "security@ferret-scan.dev"
+  },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/ferret-security/ferret-scan.git"
   },
   "bugs": {
-    "url": ""
+    "url": "https://github.com/ferret-security/ferret-scan/issues"
   },
-  "homepage": "",
+  "homepage": "https://github.com/ferret-security/ferret-scan#readme",
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/ferret-security"
+  },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
   },
-  "files": [
-    "dist",
-    "bin",
-    "rules"
+  "os": [
+    "!win32"
   ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ],
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "bin/ferret.js",
+    "src/rules/*.json",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "dependencies": {
     "boxen": "^7.1.1",
     "chalk": "^5.3.0",
