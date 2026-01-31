@@ -1,0 +1,120 @@
+/**
+ * Persistence Detection Rules
+ * Detects attempts to maintain access across sessions
+ */
+
+import type { Rule } from '../types.js';
+
+export const persistenceRules: Rule[] = [
+  {
+    id: 'PERS-001',
+    name: 'Crontab Modification',
+    category: 'persistence',
+    severity: 'HIGH',
+    description: 'Detects crontab modifications which can establish persistent access',
+    patterns: [
+      /crontab\s+-e/gi,
+      /crontab\s+-l/gi,
+      /crontab\s+</gi,
+      /\/etc\/cron/gi,
+      /\/var\/spool\/cron/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Remove crontab modifications. Persistent scheduled tasks should be reviewed.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'PERS-002',
+    name: 'Shell RC File Modification',
+    category: 'persistence',
+    severity: 'HIGH',
+    description: 'Detects modifications to shell configuration files',
+    patterns: [
+      /~\/\.bashrc/gi,
+      /~\/\.zshrc/gi,
+      /~\/\.profile/gi,
+      /~\/\.bash_profile/gi,
+      />>\s*~\/\.(bash|zsh|profile)/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Avoid modifying shell RC files. These persist across sessions.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'PERS-003',
+    name: 'Git Hook Modification',
+    category: 'persistence',
+    severity: 'MEDIUM',
+    description: 'Detects modifications to git hooks which execute on git operations',
+    patterns: [
+      /\.git\/hooks\/(pre|post)-/gi,
+      /git\/hooks\/commit/gi,
+      /git\/hooks\/push/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Review git hook modifications. These execute automatically on git operations.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'PERS-004',
+    name: 'Systemd Service Creation',
+    category: 'persistence',
+    severity: 'CRITICAL',
+    description: 'Detects creation of systemd services for persistent execution',
+    patterns: [
+      /systemctl\s+enable/gi,
+      /\/etc\/systemd\/system/gi,
+      /\.service\s*$/gm,
+      /systemctl\s+start/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Never create systemd services from hooks or skills.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'PERS-005',
+    name: 'LaunchAgent/LaunchDaemon (macOS)',
+    category: 'persistence',
+    severity: 'CRITICAL',
+    description: 'Detects creation of macOS launch agents or daemons',
+    patterns: [
+      /LaunchAgents/gi,
+      /LaunchDaemons/gi,
+      /launchctl\s+load/gi,
+      /\.plist\s*$/gm,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Never create Launch Agents or Daemons from configuration files.',
+    references: [],
+    enabled: true,
+  },
+  {
+    id: 'PERS-006',
+    name: 'Startup Script Modification',
+    category: 'persistence',
+    severity: 'HIGH',
+    description: 'Detects modifications to system startup scripts',
+    patterns: [
+      /\/etc\/rc\.local/gi,
+      /\/etc\/init\.d/gi,
+      /\/etc\/profile\.d/gi,
+      /autostart/gi,
+    ],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
+    components: ['hook', 'skill', 'agent', 'claude-md', 'plugin'],
+    remediation: 'Avoid modifying startup scripts for persistence.',
+    references: [],
+    enabled: true,
+  },
+];
+
+export default persistenceRules;
