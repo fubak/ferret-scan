@@ -18,7 +18,7 @@ interface DiscoveryOptions {
 interface DiscoveryResult {
   files: DiscoveredFile[];
   skipped: number;
-  errors: Array<{ path: string; error: string }>;
+  errors: { path: string; error: string }[];
 }
 
 /**

@@ -12,7 +12,6 @@ import type {
   CliOptions,
   Severity,
   ThreatCategory,
-  OutputFormat
 } from '../types.js';
 import { DEFAULT_CONFIG } from '../types.js';
 import logger from './logger.js';
@@ -134,7 +133,7 @@ export function getClaudeConfigPaths(): string[] {
  */
 export function loadConfig(cliOptions: CliOptions): ScannerConfig {
   // Start with defaults
-  let config: ScannerConfig = { ...DEFAULT_CONFIG };
+  const config: ScannerConfig = { ...DEFAULT_CONFIG };
 
   // Load config file if exists
   const configPath = cliOptions.config ?? findConfigFile(process.cwd());
@@ -191,7 +190,7 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
   }
 
   if (cliOptions.format) {
-    config.format = cliOptions.format as OutputFormat;
+    config.format = cliOptions.format;
   }
 
   if (cliOptions.output) {

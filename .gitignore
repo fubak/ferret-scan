@@ -43,3 +43,4 @@ pnpm-lock.yaml
 
 # osgrep cache
 .osgrep/
+.osgrep

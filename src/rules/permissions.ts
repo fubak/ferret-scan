@@ -41,6 +41,22 @@ export const permissionRules: Rule[] = [
     remediation: 'Avoid sudo in hooks and skills. Operations should run with user privileges.',
     references: [],
     enabled: true,
+    // Filter out installation instructions in documentation
+    // Note: Don't use 'g' flag for excludePatterns (causes regex state issues with .test())
+    excludePatterns: [
+      /sudo\s+apt(-get)?\s+install/i, // Package installation docs
+      /sudo\s+yum\s+install/i,
+      /sudo\s+dnf\s+install/i,
+      /sudo\s+pacman\s+-S/i,
+      /sudo\s+brew\s+install/i,
+    ],
+    excludeContext: [
+      /readme/i,
+      /installation|install\s+(instructions|guide|steps)/i,
+      /getting\s+started/i,
+      /prerequisites/i,
+      /requirements/i,
+    ],
   },
   {
     id: 'PERM-003',

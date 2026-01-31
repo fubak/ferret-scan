@@ -123,6 +123,60 @@ function findMatches(
 }
 
 /**
+ * Check if a match should be excluded based on rule filters
+ */
+function shouldExcludeMatch(
+  rule: Rule,
+  matchText: string,
+  lineContent: string,
+  contextLines: string[]
+): boolean {
+  // Check minimum match length
+  if (rule.minMatchLength && matchText.length < rule.minMatchLength) {
+    return true;
+  }
+
+  // Check exclude patterns (false positive filters)
+  if (rule.excludePatterns) {
+    for (const excludePattern of rule.excludePatterns) {
+      if (excludePattern.test(lineContent)) {
+        logger.debug(`[${rule.id}] Excluded by excludePattern: ${lineContent.slice(0, 50)}`);
+        return true;
+      }
+    }
+  }
+
+  // Check exclude context (documentation indicators)
+  if (rule.excludeContext) {
+    const fullContext = contextLines.join('\n');
+    for (const excludeCtx of rule.excludeContext) {
+      if (excludeCtx.test(fullContext)) {
+        logger.debug(`[${rule.id}] Excluded by excludeContext`);
+        return true;
+      }
+    }
+  }
+
+  // Check require context (must be present)
+  if (rule.requireContext && rule.requireContext.length > 0) {
+    const fullContext = contextLines.join('\n');
+    let hasRequiredContext = false;
+    for (const reqCtx of rule.requireContext) {
+      if (reqCtx.test(fullContext)) {
+        hasRequiredContext = true;
+        break;
+      }
+    }
+    if (!hasRequiredContext) {
+      logger.debug(`[${rule.id}] Missing required context`);
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Check if a rule applies to a file
  */
 function ruleApplies(rule: Rule, file: DiscoveredFile): boolean {
@@ -168,6 +222,16 @@ export function matchRule(
     const firstMatch = lineMatches[0];
     if (!firstMatch) continue;
 
+    const matchText = firstMatch.match[0];
+    const lineContent = lines[lineNumber - 1] ?? '';
+    const contextForCheck = getContext(lines, lineNumber, options.contextLines);
+    const contextStrings = contextForCheck.map(c => c.content);
+
+    // Check if this match should be excluded (false positive filter)
+    if (shouldExcludeMatch(rule, matchText, lineContent, contextStrings)) {
+      continue;
+    }
+
     const finding: Finding = {
       ruleId: rule.id,
       ruleName: rule.name,
@@ -177,8 +241,8 @@ export function matchRule(
       relativePath: file.relativePath,
       line: lineNumber,
       column: firstMatch.column,
-      match: firstMatch.match[0],
-      context: getContext(lines, lineNumber, options.contextLines),
+      match: matchText,
+      context: contextForCheck,
       remediation: rule.remediation,
       timestamp: new Date(),
       riskScore: calculateRiskScore(
@@ -190,7 +254,7 @@ export function matchRule(
 
     findings.push(finding);
     logger.debug(
-      `[${rule.id}] Found in ${file.relativePath}:${lineNumber}: ${firstMatch.match[0].slice(0, 50)}`
+      `[${rule.id}] Found in ${file.relativePath}:${lineNumber}: ${matchText.slice(0, 50)}`
     );
   }
 
@@ -223,11 +287,14 @@ export function matchRules(
 /**
  * Create a PatternMatcher instance
  */
-export function createPatternMatcher(options: MatchOptions) {
+export function createPatternMatcher(options: MatchOptions): {
+  matchRule: (rule: Rule, file: DiscoveredFile, content: string) => Finding[];
+  matchRules: (rules: Rule[], file: DiscoveredFile, content: string) => Finding[];
+} {
   return {
-    matchRule: (rule: Rule, file: DiscoveredFile, content: string) =>
+    matchRule: (rule: Rule, file: DiscoveredFile, content: string): Finding[] =>
       matchRule(rule, file, content, options),
-    matchRules: (rules: Rule[], file: DiscoveredFile, content: string) =>
+    matchRules: (rules: Rule[], file: DiscoveredFile, content: string): Finding[] =>
       matchRules(rules, file, content, options),
   };
 }

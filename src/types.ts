@@ -57,6 +57,14 @@ export interface Rule {
   references: string[];
   /** Whether this rule is enabled by default */
   enabled: boolean;
+  /** Patterns that exclude a match (false positive filters) */
+  excludePatterns?: RegExp[];
+  /** Context patterns that must also be present for a match */
+  requireContext?: RegExp[];
+  /** Context patterns that invalidate a match (documentation indicators) */
+  excludeContext?: RegExp[];
+  /** Minimum match length to trigger (filters short matches) */
+  minMatchLength?: number;
 }
 
 /** A security finding from the scanner */

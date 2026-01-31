@@ -80,19 +80,38 @@ export const supplyChainRules: Rule[] = [
     name: 'Typosquatting Package Names',
     category: 'supply-chain',
     severity: 'HIGH',
-    description: 'Detects potential typosquatting variants of popular packages',
+    description: 'Detects potential typosquatting variants of popular packages in dependency contexts',
     patterns: [
-      /l[o0]dash/gi, // lodash typos
-      /req[ue]+st/gi, // request typos
-      /expresss/gi, // express typos
-      /reactt/gi, // react typos
-      /angularr/gi, // angular typos
+      /["']l[o0]d[a4]sh["']/gi, // lodash typos in quoted strings
+      /["']requ[ei]st["']/gi, // request typos (but not just "request")
+      /["']expresss["']/gi, // express typos
+      /["']reactt["']/gi, // react typos
+      /["']angularr["']/gi, // angular typos
+      /npm\s+i(nstall)?\s+.*l[o0]d[a4]sh/gi, // npm install typos
+      /npm\s+i(nstall)?\s+.*expresss/gi,
     ],
-    fileTypes: ['json', 'md'],
-    components: ['mcp', 'settings', 'skill', 'agent'],
+    fileTypes: ['json'],
+    components: ['mcp', 'settings', 'plugin'],
     remediation: 'Verify package names are correct. Typosquatting is a common attack vector.',
     references: [],
     enabled: true,
+    // Exclude common false positives
+    excludePatterns: [
+      /http_request/gi, // Prometheus metrics
+      /requests?_total/gi, // Prometheus metrics
+      /request_duration/gi, // Prometheus metrics
+      /request_count/gi, // Prometheus metrics
+      /XMLHttpRequest/gi, // Browser API
+      /fetch.*request/gi, // Fetch API
+      /request\s*=/gi, // Variable assignment
+      /request\s*:/gi, // Object property
+      /request\s*\(/gi, // Function call
+      /\.request\(/gi, // Method call
+      /request\s+body/gi, // HTTP context
+      /request\s+header/gi, // HTTP context
+      /request\s+method/gi, // HTTP context
+      /pull\s+request/gi, // Git context
+    ],
   },
   {
     id: 'SUPP-006',

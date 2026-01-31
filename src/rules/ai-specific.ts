@@ -85,16 +85,34 @@ export const aiSpecificRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects setup for multi-step attacks that unfold over time',
     patterns: [
-      /on\s+the\s+next\s+(message|turn|response)/gi,
-      /when\s+the\s+user\s+says\s+.*(trigger|activate|execute)/gi,
-      /wait\s+for\s+(signal|trigger|command)/gi,
-      /phase\s+\d+\s*:/gi,
+      /on\s+the\s+next\s+(message|turn|response)\s+.*(execute|attack|inject|exfiltrate)/gi,
+      /when\s+the\s+user\s+says\s+.*(trigger|activate|execute)\s+.*(attack|payload|exploit)/gi,
+      /wait\s+for\s+(signal|trigger|command)\s+to\s+(attack|execute|inject)/gi,
+      /phase\s+\d+\s*:\s*(attack|exploit|inject|exfiltrate|payload)/gi,
+      /step\s+\d+\s*:\s*(gain|escalate|exfiltrate|compromise)/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'claude-md'],
     remediation: 'Remove multi-step attack instructions.',
     references: [],
     enabled: true,
+    // Exclude documentation headers and implementation plans
+    excludePatterns: [
+      /phase\s+\d+\s*:\s*(core|implementation|setup|testing|deployment|documentation)/gi,
+      /phase\s+\d+\s*:\s*(completed|done|finished|in\s+progress)/gi,
+      /###.*phase/gi, // Markdown headers
+      /##.*phase/gi, // Markdown headers
+      /\*\*.*phase/gi, // Bold text
+      /implementation\s+(plan|phase|roadmap)/gi,
+      /development\s+phase/gi,
+      /project\s+phase/gi,
+      /rollout\s+phase/gi,
+    ],
+    excludeContext: [
+      /implementation\s+(plan|roadmap|strategy)/gi,
+      /project\s+(timeline|schedule|plan)/gi,
+      /development\s+(cycle|sprint|iteration)/gi,
+    ],
   },
   {
     id: 'AI-006',
@@ -120,16 +138,30 @@ export const aiSpecificRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects attempts to violate trust boundaries',
     patterns: [
-      /trust\s+(all|any|this)\s+(input|source|user)/gi,
-      /skip\s+(validation|verification|checks)/gi,
-      /don't\s+(verify|validate|check)\s+/gi,
-      /assume\s+(safe|trusted|authorized)/gi,
+      /trust\s+(all|any)\s+(input|source|user)\s+(without|blindly)/gi,
+      /skip\s+(all\s+)?(validation|verification|security)\s+(checks|entirely)/gi,
+      /don't\s+(ever\s+)?(verify|validate|check)\s+(any|user|input)/gi,
+      /assume\s+(all\s+)?(input\s+is\s+)?(safe|trusted|authorized)/gi,
+      /disable\s+(security|validation|verification)/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'claude-md'],
     remediation: 'Never bypass validation or verification.',
     references: [],
     enabled: true,
+    // Exclude documentation about what NOT to do
+    excludePatterns: [
+      /never\s+trust/gi,
+      /don't\s+trust/gi,
+      /should\s+not\s+trust/gi,
+      /must\s+not\s+skip/gi,
+      /avoid\s+skipping/gi,
+    ],
+    excludeContext: [
+      /security\s+(best\s+)?practices/gi,
+      /what\s+not\s+to\s+do/gi,
+      /anti[- ]?pattern/gi,
+    ],
   },
   {
     id: 'AI-008',

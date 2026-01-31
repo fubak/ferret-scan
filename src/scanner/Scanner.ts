@@ -73,9 +73,7 @@ function groupByCategory(findings: Finding[]): Record<ThreatCategory, Finding[]>
   const grouped: Partial<Record<ThreatCategory, Finding[]>> = {};
 
   for (const finding of findings) {
-    if (!grouped[finding.category]) {
-      grouped[finding.category] = [];
-    }
+    grouped[finding.category] ??= [];
     grouped[finding.category]!.push(finding);
   }
 
@@ -157,7 +155,7 @@ function scanFile(
 export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const startTime = new Date();
   const allFindings: Finding[] = [];
-  const errors: Array<{ file?: string; message: string; code?: string; fatal: boolean }> = [];
+  const errors: { file?: string; message: string; code?: string; fatal: boolean }[] = [];
 
   logger.info(`Starting scan of ${config.paths.length} path(s)`);
 

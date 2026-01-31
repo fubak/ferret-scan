@@ -82,6 +82,18 @@ export const credentialRules: Rule[] = [
     remediation: 'Avoid reading .env or credential files in hooks and skills.',
     references: [],
     enabled: true,
+    // Filter out documentation about .env file handling
+    excludePatterns: [
+      /\.env\.example/gi, // References to example files
+      /\.env\s+(file\s+)?(configuration|handling|detection)/gi,
+      /if\s+.*\.env.*exists/gi, // Conditional checks in docs
+      /warns?\s+(if|when).*\.env/gi, // Warning descriptions
+    ],
+    excludeContext: [
+      /auto[- ]?detect/gi,
+      /environment\s+(from|detection|configuration)/gi,
+      /documentation|readme/gi,
+    ],
   },
   {
     id: 'CRED-005',
@@ -103,6 +115,28 @@ export const credentialRules: Rule[] = [
     remediation: 'Never hardcode API keys or secrets. Use environment variables or secret management.',
     references: [],
     enabled: true,
+    // Filter out test passwords, validation messages, and placeholders
+    excludePatterns: [
+      /password\s*[:=]\s*["'](test|example|demo|sample|fake|dummy|placeholder)/gi,
+      /password\s*[:=]\s*["'].*required/gi, // "Password is required"
+      /password\s*[:=]\s*["'].*must\s+(be|have|contain)/gi, // Validation messages
+      /password\s*[:=]\s*["'].*at\s+least/gi, // "must be at least 8 chars"
+      /password\s*[:=]\s*["'].*characters?/gi, // Length validation messages
+      /password\s*[:=]\s*["'].*invalid/gi, // "Invalid password"
+      /password\s*[:=]\s*["'].*enter/gi, // "Please enter password"
+      /password\s*[:=]\s*["']your[_\s]?password/gi, // Placeholder text
+      /password\s*[:=]\s*["']<[^>]+>/gi, // Placeholder like <password>
+      /password\s*[:=]\s*["']\*{3,}/gi, // Masked passwords like ****
+      /password\s*[:=]\s*["']x{8,}/gi, // Placeholder like xxxxxxxx
+      /api[_-]?key\s*[:=]\s*["'](test|example|demo|your[_-]?api[_-]?key)/gi,
+      /secret[_-]?key\s*[:=]\s*["'](test|example|demo|your[_-]?secret)/gi,
+    ],
+    excludeContext: [
+      /\b(test|spec|mock|fixture|example|sample)\b/gi,
+      /validation\s+(message|error|text)/gi,
+      /error\s+message/gi,
+      /placeholder/gi,
+    ],
   },
   {
     id: 'CRED-006',
@@ -122,6 +156,22 @@ export const credentialRules: Rule[] = [
     remediation: 'Remove instructions that direct credential collection or exposure.',
     references: [],
     enabled: true,
+    // Filter out UI elements, security scanning descriptions, and form field documentation
+    excludePatterns: [
+      /show\s+password\s+(toggle|field|input|icon|button)/gi,
+      /password\s+(toggle|field|input|visibility)/gi,
+      /find\s+(leaked|exposed).*credential/gi, // Security scanning descriptions
+      /token\s+(usage|count|limit)/gi, // Token metrics, not harvesting
+    ],
+    excludeContext: [
+      /\bUI\b|user\s+interface/gi,
+      /form\s+(field|element|input|design)/gi,
+      /toggle\s+(button|icon|visibility)/gi,
+      /security\s+(scan|audit|check|detection)/gi,
+      /secret\s+detection/gi,
+      /eye\s+icon/gi,
+      /input\s+(field|element)/gi,
+    ],
   },
   {
     id: 'CRED-007',

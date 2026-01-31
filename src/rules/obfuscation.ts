@@ -58,6 +58,16 @@ export const obfuscationRules: Rule[] = [
     remediation: 'Remove zero-width characters. These can be used to hide malicious content.',
     references: [],
     enabled: true,
+    // Filter out emoji ZWJ sequences (used in compound emojis like 👨‍💻)
+    excludePatterns: [
+      /[\u{1F300}-\u{1F9FF}]\u200D/gu, // Emoji followed by ZWJ
+      /\u200D[\u{1F300}-\u{1F9FF}]/gu, // ZWJ followed by emoji
+      /[\u{1F468}-\u{1F469}]\u200D/gu, // Person emoji + ZWJ (family/profession emojis)
+    ],
+    excludeContext: [
+      /emoji|gitmoji/gi,
+      /commit\s+(message|type|convention)/gi,
+    ],
   },
   {
     id: 'OBF-004',
@@ -105,6 +115,14 @@ export const obfuscationRules: Rule[] = [
     remediation: 'Review long whitespace sequences. These could hide steganographic content.',
     references: [],
     enabled: true,
+    // Filter out ASCII art and diagrams
+    excludeContext: [
+      /[┌┐└┘├┤┬┴┼─│]/g, // Box drawing characters (ASCII art)
+      /[╔╗╚╝╠╣╦╩╬═║]/g, // Double-line box drawing
+      /[+\-|]{3,}/g, // Simple ASCII art borders
+      /diagram|flowchart|architecture/gi,
+      /```(ascii|text|diagram)/gi,
+    ],
   },
   {
     id: 'OBF-007',
