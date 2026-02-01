@@ -1,6 +1,6 @@
 {
   "name": "ferret-scan",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Security scanner for AI CLI configurations - detect prompt injections, credential leaks, and malicious patterns in AI agent configs",
   "type": "module",
   "main": "dist/index.js",

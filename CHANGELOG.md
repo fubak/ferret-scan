@@ -49,3 +49,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Community rule marketplace
 - Advanced threat hunting capabilities
 - SIEM/SOAR integrations
+
+## [1.0.7] - 2026-02-01
+
+### Fixed
+- Async file discovery for spinner animation during discovery phase
+- Both "Discovering files..." and "Scanning..." spinners now animate smoothly
+
+## [1.0.6] - 2026-02-01
+
+### Fixed
+- Async file reading (`fs.promises.readFile`) for spinner animation during scan phase
+- Spinner now animates during file scanning on large codebases
+
+## [1.0.5] - 2026-02-01
+
+### Fixed
+- Time-based yielding (every 100ms) for more reliable spinner updates
+
+## [1.0.4] - 2026-02-01
+
+### Fixed
+- Yield on every file for spinner animation (intermediate fix)
+
+## [1.0.3] - 2026-02-01
+
+### Fixed
+- Increased yield frequency for spinner updates
+
+## [1.0.2] - 2026-02-01
+
+### Added
+- Progress indicators during scanning using ora spinner
+- Real-time file count and findings display during scan
+- TTY detection to disable spinners in CI environments
+
+## [1.0.1] - 2026-01-31
+
+### Fixed
+- Repository URLs corrected from `ferret-security/ferret-scan` to `fubak/ferret-scan`
+- Added `typescript` as production dependency (required at runtime for AST analysis)
