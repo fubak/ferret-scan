@@ -202,7 +202,7 @@ function scanFile(
  * Yield to event loop to allow spinner updates
  */
 function yieldToEventLoop(): Promise<void> {
-  return new Promise(resolve => setImmediate(resolve));
+  return new Promise(resolve => setTimeout(resolve, 1));
 }
 
 /**
@@ -256,9 +256,10 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   for (const file of discovery.files) {
     logger.debug(`Scanning: ${file.relativePath}`);
 
-    if (spinner && totalFiles > 10) {
-      // Only update spinner text for larger scans to avoid flicker
+    // Update spinner and yield to let it render
+    if (spinner) {
       spinner.text = `Scanning ${scannedCount + 1}/${totalFiles}: ${file.relativePath.slice(-50)}${findingsCount > 0 ? ` (${findingsCount} findings)` : ''}`;
+      await yieldToEventLoop();
     }
 
     const result = scanFile(file, config);
@@ -274,11 +275,6 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     allFindings.push(...result.findings);
     scannedCount++;
     findingsCount = allFindings.length;
-
-    // Yield to event loop every 100 files to allow spinner to update
-    if (showProgress && scannedCount % 100 === 0) {
-      await yieldToEventLoop();
-    }
   }
 
   if (spinner) {
