@@ -2,7 +2,7 @@
  * Scanner - Core orchestrator for Ferret security scanning
  */
 
-import { readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import type {
   ScannerConfig,
   ScanResult,
@@ -135,12 +135,12 @@ function sortFindings(findings: Finding[]): Finding[] {
 /**
  * Scan a single file
  */
-function scanFile(
+async function scanFile(
   file: DiscoveredFile,
   config: ScannerConfig
-): { findings: Finding[]; error?: string } {
+): Promise<{ findings: Finding[]; error?: string }> {
   try {
-    const content = readFileSync(file.path, 'utf-8');
+    const content = await readFile(file.path, 'utf-8');
     const rules = getRulesForScan(config.categories, config.severities);
     const allFindings: Finding[] = [];
 
@@ -269,7 +269,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
       }
     }
 
-    const result = scanFile(file, config);
+    const result = await scanFile(file, config);
 
     if (result.error) {
       errors.push({
