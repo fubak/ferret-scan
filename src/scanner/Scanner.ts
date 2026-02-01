@@ -202,7 +202,7 @@ function scanFile(
  * Yield to event loop to allow spinner updates
  */
 function yieldToEventLoop(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 1));
+  return new Promise(resolve => setTimeout(resolve, 50));
 }
 
 /**
@@ -248,6 +248,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const totalFiles = discovery.files.length;
   let scannedCount = 0;
   let findingsCount = 0;
+  let lastYield = Date.now();
 
   if (showProgress && totalFiles > 0) {
     spinner = ora(`Scanning files... 0/${totalFiles}`).start();
@@ -256,10 +257,16 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   for (const file of discovery.files) {
     logger.debug(`Scanning: ${file.relativePath}`);
 
-    // Update spinner and yield to let it render
+    // Update spinner text and yield periodically to let it animate
     if (spinner) {
       spinner.text = `Scanning ${scannedCount + 1}/${totalFiles}: ${file.relativePath.slice(-50)}${findingsCount > 0 ? ` (${findingsCount} findings)` : ''}`;
-      await yieldToEventLoop();
+
+      // Yield every 100ms to allow spinner animation
+      const now = Date.now();
+      if (now - lastYield >= 100) {
+        await yieldToEventLoop();
+        lastYield = Date.now();
+      }
     }
 
     const result = scanFile(file, config);
