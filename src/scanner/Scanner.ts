@@ -199,6 +199,13 @@ function scanFile(
 }
 
 /**
+ * Yield to event loop to allow spinner updates
+ */
+function yieldToEventLoop(): Promise<void> {
+  return new Promise(resolve => setImmediate(resolve));
+}
+
+/**
  * Main scan function
  */
 export async function scan(config: ScannerConfig): Promise<ScanResult> {
@@ -267,6 +274,11 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     allFindings.push(...result.findings);
     scannedCount++;
     findingsCount = allFindings.length;
+
+    // Yield to event loop every 100 files to allow spinner to update
+    if (showProgress && scannedCount % 100 === 0) {
+      await yieldToEventLoop();
+    }
   }
 
   if (spinner) {
