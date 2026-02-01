@@ -21,6 +21,7 @@ import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/Cor
 import { loadThreatDatabase } from '../intelligence/ThreatFeed.js';
 import { matchIndicators, shouldMatchIndicators } from '../intelligence/IndicatorMatcher.js';
 import logger from '../utils/logger.js';
+import ora from 'ora';
 
 /**
  * Create an empty scan summary
@@ -204,14 +205,24 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const startTime = new Date();
   const allFindings: Finding[] = [];
   const errors: { file?: string; message: string; code?: string; fatal: boolean }[] = [];
+  const showProgress = !config.ci && process.stdout.isTTY;
 
   logger.info(`Starting scan of ${config.paths.length} path(s)`);
 
-  // Discover files
+  // Discover files with spinner
+  let spinner: ReturnType<typeof ora> | null = null;
+  if (showProgress) {
+    spinner = ora('Discovering files...').start();
+  }
+
   const discovery = discoverFiles(config.paths, {
     maxFileSize: config.maxFileSize,
     ignore: config.ignore,
   });
+
+  if (spinner) {
+    spinner.succeed(`Discovered ${discovery.files.length} files to scan (${discovery.skipped} skipped)`);
+  }
 
   // Add discovery errors
   for (const error of discovery.errors) {
@@ -226,9 +237,23 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     logger.warn('No files found to scan');
   }
 
-  // Scan each file
+  // Scan each file with progress
+  const totalFiles = discovery.files.length;
+  let scannedCount = 0;
+  let findingsCount = 0;
+
+  if (showProgress && totalFiles > 0) {
+    spinner = ora(`Scanning files... 0/${totalFiles}`).start();
+  }
+
   for (const file of discovery.files) {
     logger.debug(`Scanning: ${file.relativePath}`);
+
+    if (spinner && totalFiles > 10) {
+      // Only update spinner text for larger scans to avoid flicker
+      spinner.text = `Scanning ${scannedCount + 1}/${totalFiles}: ${file.relativePath.slice(-50)}${findingsCount > 0 ? ` (${findingsCount} findings)` : ''}`;
+    }
+
     const result = scanFile(file, config);
 
     if (result.error) {
@@ -240,6 +265,12 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     }
 
     allFindings.push(...result.findings);
+    scannedCount++;
+    findingsCount = allFindings.length;
+  }
+
+  if (spinner) {
+    spinner.succeed(`Scanned ${totalFiles} files${findingsCount > 0 ? ` - found ${findingsCount} issues` : ' - no issues found'}`);
   }
 
   // Cross-file correlation analysis if enabled
