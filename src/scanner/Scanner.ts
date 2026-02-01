@@ -222,7 +222,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     spinner = ora('Discovering files...').start();
   }
 
-  const discovery = discoverFiles(config.paths, {
+  const discovery = await discoverFiles(config.paths, {
     maxFileSize: config.maxFileSize,
     ignore: config.ignore,
   });

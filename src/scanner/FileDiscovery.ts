@@ -4,7 +4,8 @@
  * Supports: Claude Code, Cursor, Windsurf, Continue, Aider, Cline, and generic AI configs
  */
 
-import { readdirSync, statSync, existsSync } from 'node:fs';
+import { readdir, stat, access } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import { resolve, extname, basename, relative } from 'node:path';
 import type { Ignore } from '../utils/ignore.js';
 import type { DiscoveredFile, FileType, ComponentType } from '../types.js';
@@ -179,17 +180,17 @@ function isAnalyzableFile(filePath: string): boolean {
 /**
  * Recursively discover files in a directory
  */
-function discoverFilesInDirectory(
+async function discoverFilesInDirectory(
   dir: string,
   baseDir: string,
   ig: Ignore,
   options: DiscoveryOptions,
   result: DiscoveryResult
-): void {
+): Promise<void> {
   let entries: string[];
 
   try {
-    entries = readdirSync(dir);
+    entries = await readdir(dir);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     result.errors.push({ path: dir, error: message });
@@ -210,7 +211,7 @@ function discoverFilesInDirectory(
 
     let stats;
     try {
-      stats = statSync(fullPath);
+      stats = await stat(fullPath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       result.errors.push({ path: fullPath, error: message });
@@ -219,7 +220,7 @@ function discoverFilesInDirectory(
 
     if (stats.isDirectory()) {
       // Recurse into directory
-      discoverFilesInDirectory(fullPath, baseDir, ig, options, result);
+      await discoverFilesInDirectory(fullPath, baseDir, ig, options, result);
     } else if (stats.isFile()) {
       // Check if file should be analyzed
       if (!isAnalyzableFile(fullPath)) {
@@ -256,21 +257,33 @@ function discoverFilesInDirectory(
 }
 
 /**
+ * Check if path exists
+ */
+async function pathExists(filePath: string): Promise<boolean> {
+  try {
+    await access(filePath, constants.F_OK);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Discover a single file
  */
-function discoverSingleFile(
+async function discoverSingleFile(
   filePath: string,
   options: DiscoveryOptions,
   result: DiscoveryResult
-): void {
-  if (!existsSync(filePath)) {
+): Promise<void> {
+  if (!(await pathExists(filePath))) {
     result.errors.push({ path: filePath, error: 'File does not exist' });
     return;
   }
 
   let stats;
   try {
-    stats = statSync(filePath);
+    stats = await stat(filePath);
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     result.errors.push({ path: filePath, error: message });
@@ -308,10 +321,10 @@ function discoverSingleFile(
 /**
  * Main file discovery function
  */
-export function discoverFiles(
+export async function discoverFiles(
   paths: string[],
   options: DiscoveryOptions
-): DiscoveryResult {
+): Promise<DiscoveryResult> {
   const result: DiscoveryResult = {
     files: [],
     skipped: 0,
@@ -326,19 +339,19 @@ export function discoverFiles(
   for (const inputPath of paths) {
     const resolvedPath = resolve(inputPath);
 
-    if (!existsSync(resolvedPath)) {
+    if (!(await pathExists(resolvedPath))) {
       logger.warn(`Path does not exist: ${resolvedPath}`);
       result.errors.push({ path: resolvedPath, error: 'Path does not exist' });
       continue;
     }
 
-    const stats = statSync(resolvedPath);
+    const stats = await stat(resolvedPath);
 
     if (stats.isDirectory()) {
       const ig = createIgnoreFilter(resolvedPath, options.ignore);
-      discoverFilesInDirectory(resolvedPath, resolvedPath, ig, options, result);
+      await discoverFilesInDirectory(resolvedPath, resolvedPath, ig, options, result);
     } else if (stats.isFile()) {
-      discoverSingleFile(resolvedPath, options, result);
+      await discoverSingleFile(resolvedPath, options, result);
     }
   }
 
