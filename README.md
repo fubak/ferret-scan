@@ -228,6 +228,7 @@ ferret scan . --category credentials   # Filter by category
 ferret scan . --format sarif           # SARIF output for GitHub
 ferret scan . --ci --fail-on high      # CI mode with exit codes
 ferret scan . --watch                  # Watch mode
+ferret scan . --auto-fix               # Automatically apply safe fixes
 ```
 
 ### `ferret rules`
@@ -251,7 +252,8 @@ ferret scan . --baseline .ferret-baseline.json  # Exclude known issues
 ```bash
 ferret fix scan . --dry-run            # Preview fixes
 ferret fix scan .                      # Apply safe fixes
-ferret fix quarantine suspicious.md    # Quarantine dangerous files
+ferret fix quarantine --list           # List quarantined files
+ferret fix quarantine --restore <id>   # Restore quarantined file
 ```
 
 ### `ferret intel`
@@ -260,6 +262,93 @@ ferret fix quarantine suspicious.md    # Quarantine dangerous files
 ferret intel status                    # Threat database status
 ferret intel search "jailbreak"        # Search indicators
 ferret intel add --type pattern --value "malicious" --severity high
+```
+
+### `ferret hooks`
+
+Manage Git hooks for automatic security scanning:
+
+```bash
+ferret hooks install                   # Install pre-commit and pre-push hooks
+ferret hooks install --pre-commit      # Install pre-commit hook only
+ferret hooks install --fail-on high    # Set severity threshold for blocking
+ferret hooks uninstall                 # Remove ferret Git hooks
+ferret hooks status                    # Check installed hooks
+```
+
+### `ferret mcp validate`
+
+Validate MCP server configurations for security issues:
+
+```bash
+ferret mcp validate                    # Validate all .mcp.json files
+ferret mcp validate /path/to/.mcp.json # Validate specific file
+ferret mcp validate -v                 # Verbose output with issue details
+```
+
+### `ferret deps analyze`
+
+Analyze package dependencies for security risks:
+
+```bash
+ferret deps analyze                    # Analyze package.json
+ferret deps analyze /path/to/package.json
+ferret deps analyze --no-audit         # Skip npm audit
+ferret deps analyze -v                 # Verbose output
+```
+
+### `ferret capabilities analyze`
+
+Map AI agent capability permissions:
+
+```bash
+ferret capabilities analyze            # Analyze AI CLI configs
+ferret caps analyze /path/to/configs   # Alias command
+ferret capabilities analyze -o report.md  # Save report to file
+```
+
+### `ferret policy`
+
+Manage and enforce security policies:
+
+```bash
+ferret policy init                     # Create default policy file
+ferret policy init --template strict   # Create strict policy
+ferret policy init --template minimal  # Create minimal policy
+ferret policy check                    # Check scan against policy
+ferret policy check --policy custom.json  # Use custom policy file
+ferret policy show                     # Display current policy
+```
+
+### `ferret diff`
+
+Compare scan results over time:
+
+```bash
+ferret diff save                       # Save current scan for comparison
+ferret diff save -o baseline.json      # Save to specific file
+ferret diff compare baseline.json current.json  # Compare two scans
+ferret diff compare baseline.json current.json -f json  # JSON output
+```
+
+### `ferret interactive`
+
+Interactive TUI mode for reviewing findings:
+
+```bash
+ferret interactive                     # Start interactive mode
+ferret i                               # Alias
+ferret interactive /path/to/scan       # Scan and enter interactive mode
+```
+
+### `ferret webhook`
+
+Test webhook notifications:
+
+```bash
+ferret webhook https://hooks.slack.com/xxx --test  # Test Slack webhook
+ferret webhook https://discord.com/api/webhooks/xxx --test  # Test Discord
+ferret webhook https://example.com/hook --type generic --test
 ```
 
 ## CI/CD Integration
@@ -301,6 +390,16 @@ security_scan:
 
 ### Pre-commit Hook
 
+**Option 1: Use Ferret's built-in hooks** (recommended)
+```bash
+# Install managed hooks
+npx ferret-scan hooks install
+
+# Uninstall when needed
+npx ferret-scan hooks uninstall
+```
+
+**Option 2: Manual hook**
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
@@ -314,17 +413,58 @@ echo "✅ Security scan passed"
 
 ## Configuration
 
-Create `.ferretrc.json` in your project root:
+Create `.ferretrc.json` in your project root (supports JSON Schema for IDE autocompletion):
 
 ```json
 {
-  "severity": ["critical", "high", "medium"],
-  "categories": ["credentials", "injection", "exfiltration"],
-  "ignore": ["**/test/**", "**/examples/**"],
-  "failOn": "high",
-  "aiDetection": {
-    "enabled": true,
-    "confidence": 0.8
+  "$schema": "https://raw.githubusercontent.com/fubak/ferret-scan/main/src/schemas/ferret-config.schema.json",
+  "projectName": "my-project",
+  "scan": {
+    "include": ["**/*"],
+    "exclude": ["**/node_modules/**", "**/test/**"],
+    "maxFileSize": 1048576
+  },
+  "rules": {
+    "disabled": ["INFO-001"],
+    "customRulesPath": ".ferret-rules.yml"
+  },
+  "severity": {
+    "minSeverity": "LOW",
+    "failOn": "HIGH"
+  },
+  "features": {
+    "entropyAnalysis": true,
+    "mcpValidation": true,
+    "dependencyAnalysis": false,
+    "capabilityMapping": true,
+    "ignoreComments": true
+  },
+  "webhooks": [
+    {
+      "url": "https://hooks.slack.com/services/xxx",
+      "type": "slack",
+      "minSeverity": "HIGH"
+    }
+  ],
+  "policy": {
+    "enforce": true,
+    "path": ".ferret-policy.json"
+  },
+  "gitHooks": {
+    "preCommit": {
+      "enabled": true,
+      "stagedOnly": true,
+      "failOn": "HIGH"
+    },
+    "prePush": {
+      "enabled": true,
+      "failOn": "CRITICAL"
+    }
+  },
+  "exitCodes": {
+    "success": 0,
+    "findingsFound": 1,
+    "policyViolation": 2
   }
 }
 ```
@@ -345,6 +485,96 @@ docker run --rm \
 ```
 
 ## Advanced Features
+
+### Git Hooks Integration
+Automatically scan on commits and pushes:
+```bash
+ferret hooks install              # Blocks commits with high/critical findings
+ferret hooks install --fail-on critical  # Only block on critical
+```
+
+### Custom Rules
+Define your own security rules in YAML or JSON:
+```yaml
+# .ferret-rules.yml
+version: "1.0"
+rules:
+  - id: CUSTOM-001
+    name: "Company Secret Pattern"
+    category: credentials
+    severity: CRITICAL
+    patterns:
+      - "ACME_SECRET_[A-Z0-9]{32}"
+    remediation: "Remove hardcoded company secrets"
+```
+
+### Entropy-Based Secret Detection
+Detect high-entropy strings that may be secrets:
+```bash
+ferret scan . --entropy-analysis  # Find potential secrets by entropy
+```
+
+### MCP Server Validation
+Deep validation of MCP server configurations:
+```bash
+ferret mcp validate               # Check for dangerous commands, env vars, URLs
+```
+
+### Policy Enforcement
+Define and enforce organizational security policies:
+```bash
+ferret policy init --template strict
+ferret policy check               # Exit non-zero if policy violated
+```
+
+### Scan Comparison
+Track security posture changes over time:
+```bash
+ferret diff save -o baseline.json
+# ... make changes ...
+ferret diff compare baseline.json <(ferret scan . -f json)
+```
+
+### Webhook Notifications
+Get notified on Slack, Discord, or Teams:
+```bash
+# Configure in .ferretrc.json
+{
+  "webhooks": [
+    { "url": "https://hooks.slack.com/xxx", "minSeverity": "HIGH" }
+  ]
+}
+```
+
+### Dependency Risk Analysis
+Analyze package.json for vulnerable or risky packages:
+```bash
+ferret deps analyze               # Checks npm audit + known risky packages
+```
+
+### AI Agent Capability Mapping
+Understand what permissions AI agents have:
+```bash
+ferret capabilities analyze       # Maps file/network/shell access
+```
+
+### Interactive Mode
+Review findings in a TUI:
+```bash
+ferret interactive
+# Commands: list, show, next, prev, filter, sort, export, quit
+```
+
+### Ignore Comments
+Suppress specific findings inline:
+```javascript
+// ferret-ignore CRED-001 -- False positive: example code
+const example = "sk-ant-example";
+
+// ferret-disable
+// ... code block to ignore ...
+// ferret-enable
+```
 
 ### Semantic Analysis
 Deep AST-based code analysis for complex patterns:
@@ -371,6 +601,7 @@ ferret scan . --threat-intel
 | **Speed** | ~1,000 files/second |
 | **Memory** | ~100MB base |
 | **Rules** | 65+ detection patterns |
+| **Features** | 15 security analysis modules |
 | **Accuracy** | 99%+ detection, <1% false positives |
 
 ## Contributing
