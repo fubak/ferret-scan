@@ -45,6 +45,20 @@ import {
 } from '../dist/remediation/Quarantine.js';
 import { logger } from '../dist/utils/logger.js';
 
+// New feature imports
+import { installGitHooks, uninstallGitHooks, runPreCommitScan, getGitHooksStatus } from '../dist/features/gitHooks.js';
+import { loadCustomRules, validateCustomRulesFile } from '../dist/features/customRules.js';
+import { analyzeEntropy, entropyFindingsToFindings } from '../dist/features/entropyAnalysis.js';
+import { validateMcpConfig, findAndValidateMcpConfigs, mcpAssessmentsToFindings } from '../dist/features/mcpValidator.js';
+import { compareScanResults, formatDiffSummary, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
+import { sendWebhook, detectWebhookType } from '../dist/features/webhooks.js';
+import { analyzeDependencies, dependencyAssessmentsToFindings, findAndAnalyzeDependencies } from '../dist/features/dependencyRisk.js';
+import { analyzeCapabilities, findAndAnalyzeCapabilities, generateCapabilityReport } from '../dist/features/capabilityMapping.js';
+import { loadPolicy, evaluatePolicy, formatPolicyResult, initPolicy, findPolicyFile, DEFAULT_POLICY } from '../dist/features/policyEnforcement.js';
+import { parseIgnoreComments, filterIgnoredFindings, generateIgnoreComment } from '../dist/features/ignoreComments.js';
+import { determineExitCode, generateExitCodeSummary, formatExitCodeForCI, DEFAULT_EXIT_CODES } from '../dist/features/exitCodes.js';
+import { startInteractiveSession, displayFindings } from '../dist/features/interactiveTui.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -816,6 +830,498 @@ program
   .action(() => {
     console.log(`Ferret v${packageJson.version}`);
     console.log('Security scanner for AI CLI configurations');
+  });
+
+// Git hooks commands
+const hooksCmd = program
+  .command('hooks')
+  .description('Manage Git hooks integration');
+
+hooksCmd
+  .command('install')
+  .description('Install ferret Git hooks (pre-commit, pre-push)')
+  .option('--pre-commit', 'Install pre-commit hook only')
+  .option('--pre-push', 'Install pre-push hook only')
+  .option('--fail-on <severity>', 'Severity level to block commits', 'high')
+  .option('--staged-only', 'Only scan staged files in pre-commit', true)
+  .action(async (options) => {
+    try {
+      const hookConfig = {
+        preCommit: {
+          enabled: !options.prePush || options.preCommit,
+          stagedOnly: options.stagedOnly,
+          failOn: options.failOn.toUpperCase(),
+        },
+        prePush: {
+          enabled: !options.preCommit || options.prePush,
+          failOn: 'CRITICAL',
+        },
+      };
+
+      const result = await installGitHooks(process.cwd(), hookConfig);
+
+      if (result.success) {
+        console.log('✅ Git hooks installed successfully');
+        for (const hook of result.installedHooks) {
+          console.log(`   ${hook}`);
+        }
+      } else {
+        console.error(`❌ Failed to install hooks: ${result.error}`);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('Error installing hooks:', error.message);
+      process.exit(1);
+    }
+  });
+
+hooksCmd
+  .command('uninstall')
+  .description('Remove ferret Git hooks')
+  .action(async () => {
+    try {
+      const result = await uninstallGitHooks(process.cwd());
+
+      if (result.success) {
+        console.log('✅ Git hooks removed successfully');
+      } else {
+        console.error(`❌ Failed to remove hooks: ${result.error}`);
+        process.exit(1);
+      }
+    } catch (error) {
+      console.error('Error removing hooks:', error.message);
+      process.exit(1);
+    }
+  });
+
+hooksCmd
+  .command('status')
+  .description('Show Git hooks status')
+  .action(async () => {
+    try {
+      const status = await getGitHooksStatus(process.cwd());
+
+      console.log('Git Hooks Status:');
+      console.log('━'.repeat(40));
+      console.log(`Pre-commit: ${status.preCommit ? '✅ Installed' : '❌ Not installed'}`);
+      console.log(`Pre-push:   ${status.prePush ? '✅ Installed' : '❌ Not installed'}`);
+    } catch (error) {
+      console.error('Error checking hooks status:', error.message);
+      process.exit(1);
+    }
+  });
+
+// MCP validation commands
+const mcpCmd = program
+  .command('mcp')
+  .description('Validate MCP server configurations');
+
+mcpCmd
+  .command('validate')
+  .description('Validate MCP configuration files')
+  .argument('[path]', 'Path to .mcp.json file or directory to search')
+  .option('-v, --verbose', 'Verbose output')
+  .action((path, options) => {
+    try {
+      const targetPath = path || process.cwd();
+
+      console.log('🔍 Validating MCP configurations...\n');
+
+      const { configs, totalIssues } = findAndValidateMcpConfigs(targetPath);
+
+      if (configs.length === 0) {
+        console.log('No MCP configuration files found');
+        return;
+      }
+
+      for (const config of configs) {
+        console.log(`📄 ${config.path}`);
+
+        if (config.errors.length > 0) {
+          console.log('   ❌ Errors:');
+          for (const error of config.errors) {
+            console.log(`      ${error}`);
+          }
+          continue;
+        }
+
+        if (config.assessments.length === 0) {
+          console.log('   ✅ No servers configured');
+          continue;
+        }
+
+        for (const assessment of config.assessments) {
+          const riskColor = assessment.riskLevel === 'critical' ? '🔴' :
+                           assessment.riskLevel === 'high' ? '🟠' :
+                           assessment.riskLevel === 'medium' ? '🟡' : '🟢';
+
+          console.log(`   ${riskColor} Server: ${assessment.serverName} (${assessment.riskLevel})`);
+
+          if (options.verbose && assessment.issues.length > 0) {
+            for (const issue of assessment.issues) {
+              console.log(`      [${issue.severity}] ${issue.description}`);
+            }
+          }
+        }
+        console.log('');
+      }
+
+      console.log(`Total issues found: ${totalIssues}`);
+      process.exit(totalIssues > 0 ? 1 : 0);
+
+    } catch (error) {
+      console.error('Error validating MCP configs:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Dependency analysis commands
+const depsCmd = program
+  .command('deps')
+  .description('Analyze dependency security risks');
+
+depsCmd
+  .command('analyze')
+  .description('Analyze package.json for dependency risks')
+  .argument('[path]', 'Path to package.json or directory')
+  .option('--no-audit', 'Skip npm audit')
+  .option('-v, --verbose', 'Verbose output')
+  .action((path, options) => {
+    try {
+      const targetPath = path || resolve(process.cwd(), 'package.json');
+
+      console.log('📦 Analyzing dependencies...\n');
+
+      const result = analyzeDependencies(targetPath, options.audit !== false);
+
+      console.log(`Packages analyzed: ${result.totalPackages}`);
+      console.log(`Critical risks: ${result.summary.critical}`);
+      console.log(`High risks: ${result.summary.high}`);
+      console.log(`Medium risks: ${result.summary.medium}`);
+      console.log(`Vulnerable packages: ${result.summary.vulnerable}`);
+      console.log('');
+
+      const riskyPackages = result.assessments.filter(a => a.riskLevel !== 'none');
+
+      if (riskyPackages.length > 0 && options.verbose) {
+        console.log('Risky packages:');
+        for (const assessment of riskyPackages) {
+          const riskColor = assessment.riskLevel === 'critical' ? '🔴' :
+                           assessment.riskLevel === 'high' ? '🟠' :
+                           assessment.riskLevel === 'medium' ? '🟡' : '🟢';
+
+          console.log(`  ${riskColor} ${assessment.package.name}@${assessment.package.version}`);
+
+          for (const issue of assessment.issues) {
+            console.log(`     [${issue.severity}] ${issue.description}`);
+          }
+
+          for (const vuln of assessment.vulnerabilities) {
+            console.log(`     [VULN] ${vuln.title}`);
+          }
+        }
+      }
+
+      const hasHighRisk = result.summary.critical > 0 || result.summary.high > 0;
+      process.exit(hasHighRisk ? 1 : 0);
+
+    } catch (error) {
+      console.error('Error analyzing dependencies:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Capability mapping commands
+const capsCmd = program
+  .command('capabilities')
+  .alias('caps')
+  .description('Map AI agent capabilities');
+
+capsCmd
+  .command('analyze')
+  .description('Analyze AI CLI capability permissions')
+  .argument('[path]', 'Path to scan for AI CLI configs')
+  .option('-o, --output <file>', 'Output report file')
+  .action((path, options) => {
+    try {
+      const targetPath = path || process.cwd();
+
+      console.log('🔍 Analyzing AI agent capabilities...\n');
+
+      const { profiles, totalCapabilities, criticalCapabilities } = findAndAnalyzeCapabilities(targetPath);
+
+      if (profiles.length === 0) {
+        console.log('No AI CLI configuration files found');
+        return;
+      }
+
+      for (const profile of profiles) {
+        const riskColor = profile.overallRisk === 'critical' ? '🔴' :
+                         profile.overallRisk === 'high' ? '🟠' :
+                         profile.overallRisk === 'medium' ? '🟡' : '🟢';
+
+        console.log(`${riskColor} ${profile.agentType}`);
+        console.log(`   Config: ${profile.configFile}`);
+        console.log(`   Overall Risk: ${profile.overallRisk}`);
+        console.log(`   Capabilities: ${profile.capabilities.length}`);
+
+        for (const cap of profile.capabilities.filter(c => c.permission === 'allowed')) {
+          const capRisk = cap.riskLevel === 'critical' ? '🔴' :
+                         cap.riskLevel === 'high' ? '🟠' :
+                         cap.riskLevel === 'medium' ? '🟡' : '🟢';
+          console.log(`     ${capRisk} ${cap.type}`);
+        }
+
+        if (profile.recommendations.length > 0) {
+          console.log('   Recommendations:');
+          for (const rec of profile.recommendations) {
+            console.log(`     - ${rec}`);
+          }
+        }
+        console.log('');
+      }
+
+      console.log(`Total capabilities: ${totalCapabilities}`);
+      console.log(`Critical capabilities: ${criticalCapabilities}`);
+
+      if (options.output) {
+        const report = generateCapabilityReport(profiles);
+        const { writeFileSync } = await import('node:fs');
+        writeFileSync(options.output, report);
+        console.log(`\nReport saved to: ${options.output}`);
+      }
+
+      process.exit(criticalCapabilities > 0 ? 1 : 0);
+
+    } catch (error) {
+      console.error('Error analyzing capabilities:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Policy commands
+const policyCmd = program
+  .command('policy')
+  .description('Manage security policies');
+
+policyCmd
+  .command('init')
+  .description('Initialize a new policy file')
+  .option('--template <name>', 'Policy template: default, strict, minimal', 'default')
+  .option('-o, --output <file>', 'Output file path')
+  .action((options) => {
+    try {
+      const filePath = initPolicy(process.cwd(), options.template);
+      console.log(`✅ Policy file created: ${filePath}`);
+      console.log(`   Template: ${options.template}`);
+    } catch (error) {
+      console.error('Error creating policy:', error.message);
+      process.exit(1);
+    }
+  });
+
+policyCmd
+  .command('check')
+  .description('Check scan results against policy')
+  .argument('[path]', 'Path to scan')
+  .option('--policy <file>', 'Policy file path')
+  .action(async (path, options) => {
+    try {
+      // Load policy
+      const policyPath = options.policy || findPolicyFile(process.cwd());
+
+      if (!policyPath) {
+        console.log('No policy file found. Use "ferret policy init" to create one.');
+        console.log('Using default policy...\n');
+      }
+
+      const policy = policyPath ? loadPolicy(policyPath) : DEFAULT_POLICY;
+
+      if (!policy) {
+        console.error('Failed to load policy');
+        process.exit(1);
+      }
+
+      // Run scan
+      const config = loadConfig({ path });
+      const result = await scan(config);
+
+      // Evaluate against policy
+      const evaluation = evaluatePolicy(result, policy);
+
+      console.log(formatPolicyResult(evaluation));
+
+      process.exit(evaluation.exitCode);
+
+    } catch (error) {
+      console.error('Error checking policy:', error.message);
+      process.exit(1);
+    }
+  });
+
+policyCmd
+  .command('show')
+  .description('Show current policy')
+  .option('--policy <file>', 'Policy file path')
+  .action((options) => {
+    try {
+      const policyPath = options.policy || findPolicyFile(process.cwd());
+      const policy = policyPath ? loadPolicy(policyPath) : DEFAULT_POLICY;
+
+      if (!policy) {
+        console.log('No policy found');
+        return;
+      }
+
+      console.log(`Policy: ${policy.name}`);
+      console.log(`Version: ${policy.version}`);
+      console.log(`Description: ${policy.description || 'No description'}`);
+      console.log('');
+      console.log('Rules:');
+      for (const rule of policy.rules) {
+        console.log(`  [${rule.action.toUpperCase()}] ${rule.id}: ${rule.description}`);
+      }
+      console.log('');
+      console.log('Settings:');
+      console.log(`  Max Critical: ${policy.settings.maxCritical ?? 'unlimited'}`);
+      console.log(`  Max High: ${policy.settings.maxHigh ?? 'unlimited'}`);
+      console.log(`  Max Total: ${policy.settings.maxTotal ?? 'unlimited'}`);
+
+    } catch (error) {
+      console.error('Error showing policy:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Diff/compare commands
+const diffCmd = program
+  .command('diff')
+  .description('Compare scan results');
+
+diffCmd
+  .command('compare')
+  .description('Compare two scan results')
+  .argument('<baseline>', 'Baseline scan result file')
+  .argument('<current>', 'Current scan result file')
+  .option('-f, --format <format>', 'Output format: text, json', 'text')
+  .action((baseline, current, options) => {
+    try {
+      const baselineResult = loadScanResult(baseline);
+      const currentResult = loadScanResult(current);
+
+      if (!baselineResult) {
+        console.error(`Failed to load baseline: ${baseline}`);
+        process.exit(1);
+      }
+
+      if (!currentResult) {
+        console.error(`Failed to load current: ${current}`);
+        process.exit(1);
+      }
+
+      const diff = compareScanResults(baselineResult, currentResult);
+
+      if (options.format === 'json') {
+        console.log(JSON.stringify(diff, null, 2));
+      } else {
+        console.log(formatDiffSummary(diff));
+      }
+
+      // Exit with 1 if there are new findings
+      process.exit(diff.newFindings.length > 0 ? 1 : 0);
+
+    } catch (error) {
+      console.error('Error comparing scans:', error.message);
+      process.exit(1);
+    }
+  });
+
+diffCmd
+  .command('save')
+  .description('Save current scan results for later comparison')
+  .argument('[path]', 'Path to scan')
+  .option('-o, --output <file>', 'Output file', 'ferret-scan-result.json')
+  .action(async (path, options) => {
+    try {
+      const config = loadConfig({ path });
+      const result = await scan(config);
+
+      saveScanResult(result, options.output);
+      console.log(`✅ Scan result saved to: ${options.output}`);
+      console.log(`   Findings: ${result.findings.length}`);
+
+    } catch (error) {
+      console.error('Error saving scan:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Interactive mode command
+program
+  .command('interactive')
+  .alias('i')
+  .description('Start interactive TUI mode')
+  .argument('[path]', 'Path to scan')
+  .action(async (path) => {
+    try {
+      let scanResult = null;
+
+      if (path || await getAIConfigPaths().length > 0) {
+        console.log('🔍 Running initial scan...\n');
+        const config = loadConfig({ path });
+        scanResult = await scan(config);
+      }
+
+      await startInteractiveSession(scanResult);
+
+    } catch (error) {
+      console.error('Error starting interactive mode:', error.message);
+      process.exit(1);
+    }
+  });
+
+// Webhook test command
+program
+  .command('webhook')
+  .description('Test webhook notifications')
+  .argument('<url>', 'Webhook URL to test')
+  .option('--type <type>', 'Webhook type: slack, discord, teams, generic')
+  .option('--test', 'Send a test notification')
+  .action(async (url, options) => {
+    try {
+      const type = options.type || detectWebhookType(url);
+      console.log(`Detected webhook type: ${type}`);
+
+      if (options.test) {
+        // Create a mock scan result for testing
+        const mockResult = {
+          findings: [],
+          summary: { total: 0, critical: 0, high: 0, medium: 0, low: 0 },
+          analyzedFiles: 10,
+          duration: 1234,
+          endTime: new Date(),
+          overallRiskScore: 0,
+        };
+
+        console.log('Sending test notification...');
+        const result = await sendWebhook(mockResult, {
+          url,
+          type,
+          includeDetails: true,
+        });
+
+        if (result.success) {
+          console.log(`✅ Webhook test successful (status: ${result.statusCode})`);
+        } else {
+          console.error(`❌ Webhook test failed: ${result.error}`);
+          process.exit(1);
+        }
+      }
+
+    } catch (error) {
+      console.error('Error testing webhook:', error.message);
+      process.exit(1);
+    }
   });
 
 // Parse and run

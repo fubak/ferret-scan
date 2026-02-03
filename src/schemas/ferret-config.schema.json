@@ -1,0 +1,378 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://ferret-scan.dev/schemas/ferret-config.json",
+  "title": "Ferret Security Scanner Configuration",
+  "description": "Configuration schema for ferret-scan security scanner",
+  "type": "object",
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference for IDE autocompletion"
+    },
+    "extends": {
+      "type": "string",
+      "description": "Path to another config file to extend"
+    },
+    "projectName": {
+      "type": "string",
+      "description": "Name of the project being scanned"
+    },
+    "scan": {
+      "type": "object",
+      "description": "Scan configuration options",
+      "properties": {
+        "include": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns for files to include in scan"
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns for files to exclude from scan"
+        },
+        "maxFileSize": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1048576,
+          "description": "Maximum file size in bytes to scan"
+        },
+        "followSymlinks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Follow symbolic links when scanning"
+        },
+        "respectGitignore": {
+          "type": "boolean",
+          "default": true,
+          "description": "Respect .gitignore patterns"
+        },
+        "concurrency": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32,
+          "default": 4,
+          "description": "Number of concurrent file scans"
+        }
+      }
+    },
+    "rules": {
+      "type": "object",
+      "description": "Rule configuration",
+      "properties": {
+        "enabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of rule IDs to enable (overrides defaults)"
+        },
+        "disabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of rule IDs to disable"
+        },
+        "severityOverrides": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+          },
+          "description": "Override severity for specific rules"
+        },
+        "customRulesPath": {
+          "type": "string",
+          "description": "Path to custom rules YAML/JSON file"
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "description": "Output configuration",
+      "properties": {
+        "format": {
+          "type": "string",
+          "enum": ["text", "json", "sarif", "html", "markdown", "csv"],
+          "default": "text",
+          "description": "Output format for scan results"
+        },
+        "file": {
+          "type": "string",
+          "description": "Output file path (stdout if not specified)"
+        },
+        "includeContext": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include code context in output"
+        },
+        "contextLines": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 3,
+          "description": "Number of context lines to include"
+        },
+        "colorize": {
+          "type": "boolean",
+          "default": true,
+          "description": "Colorize terminal output"
+        },
+        "verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable verbose output"
+        }
+      }
+    },
+    "severity": {
+      "type": "object",
+      "description": "Severity threshold configuration",
+      "properties": {
+        "minSeverity": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+          "default": "INFO",
+          "description": "Minimum severity to report"
+        },
+        "failOn": {
+          "type": "string",
+          "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "never"],
+          "default": "HIGH",
+          "description": "Fail (exit non-zero) if findings meet this severity"
+        }
+      }
+    },
+    "baseline": {
+      "type": "object",
+      "description": "Baseline configuration for tracking known issues",
+      "properties": {
+        "path": {
+          "type": "string",
+          "default": ".ferret-baseline.json",
+          "description": "Path to baseline file"
+        },
+        "autoUpdate": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically update baseline with new findings"
+        },
+        "ignoreBaseline": {
+          "type": "boolean",
+          "default": false,
+          "description": "Ignore baseline and report all findings"
+        }
+      }
+    },
+    "features": {
+      "type": "object",
+      "description": "Feature flags for optional functionality",
+      "properties": {
+        "entropyAnalysis": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable entropy-based secret detection"
+        },
+        "mcpValidation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable MCP server configuration validation"
+        },
+        "dependencyAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable dependency risk analysis"
+        },
+        "capabilityMapping": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable AI agent capability mapping"
+        },
+        "ignoreComments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Respect ferret-ignore comments in code"
+        }
+      }
+    },
+    "entropy": {
+      "type": "object",
+      "description": "Entropy analysis configuration",
+      "properties": {
+        "minEntropy": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 8,
+          "default": 4.5,
+          "description": "Minimum entropy threshold for detection"
+        },
+        "minLength": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 16,
+          "description": "Minimum string length to analyze"
+        },
+        "maxLength": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 256,
+          "description": "Maximum string length to analyze"
+        }
+      }
+    },
+    "webhooks": {
+      "type": "array",
+      "description": "Webhook notification configuration",
+      "items": {
+        "type": "object",
+        "required": ["url"],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Webhook URL"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["slack", "discord", "teams", "generic"],
+            "description": "Webhook type (auto-detected if not specified)"
+          },
+          "minSeverity": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
+            "description": "Minimum severity to trigger notification"
+          },
+          "includeDetails": {
+            "type": "boolean",
+            "default": true,
+            "description": "Include finding details in notification"
+          },
+          "headers": {
+            "type": "object",
+            "additionalProperties": { "type": "string" },
+            "description": "Custom headers for generic webhooks"
+          },
+          "timeout": {
+            "type": "integer",
+            "minimum": 1000,
+            "default": 10000,
+            "description": "Request timeout in milliseconds"
+          }
+        }
+      }
+    },
+    "policy": {
+      "type": "object",
+      "description": "Policy enforcement configuration",
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Path to policy file"
+        },
+        "enforce": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable policy enforcement"
+        },
+        "failOnViolation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Exit with non-zero code on policy violation"
+        }
+      }
+    },
+    "gitHooks": {
+      "type": "object",
+      "description": "Git hooks configuration",
+      "properties": {
+        "preCommit": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable pre-commit hook"
+            },
+            "stagedOnly": {
+              "type": "boolean",
+              "default": true,
+              "description": "Only scan staged files"
+            },
+            "failOn": {
+              "type": "string",
+              "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "never"],
+              "default": "HIGH",
+              "description": "Block commit if findings meet this severity"
+            }
+          }
+        },
+        "prePush": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "default": false,
+              "description": "Enable pre-push hook"
+            },
+            "failOn": {
+              "type": "string",
+              "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO", "never"],
+              "default": "CRITICAL",
+              "description": "Block push if findings meet this severity"
+            }
+          }
+        }
+      }
+    },
+    "exitCodes": {
+      "type": "object",
+      "description": "Custom exit code configuration",
+      "properties": {
+        "success": {
+          "type": "integer",
+          "default": 0,
+          "description": "Exit code for successful scan with no blocking findings"
+        },
+        "findingsFound": {
+          "type": "integer",
+          "default": 1,
+          "description": "Exit code when blocking findings are found"
+        },
+        "policyViolation": {
+          "type": "integer",
+          "default": 2,
+          "description": "Exit code for policy violations"
+        },
+        "scanError": {
+          "type": "integer",
+          "default": 3,
+          "description": "Exit code for scan errors"
+        },
+        "configError": {
+          "type": "integer",
+          "default": 4,
+          "description": "Exit code for configuration errors"
+        }
+      }
+    },
+    "ci": {
+      "type": "object",
+      "description": "CI/CD specific configuration",
+      "properties": {
+        "failFast": {
+          "type": "boolean",
+          "default": false,
+          "description": "Stop scan on first blocking finding"
+        },
+        "annotations": {
+          "type": "boolean",
+          "default": true,
+          "description": "Output GitHub/GitLab annotations"
+        },
+        "summaryComment": {
+          "type": "boolean",
+          "default": false,
+          "description": "Post summary as PR comment"
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
