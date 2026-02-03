@@ -6,6 +6,7 @@
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { mkdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import type { Finding, ScanResult } from '../types.js';
 import logger from './logger.js';
 
@@ -26,6 +27,41 @@ export interface Baseline {
   lastUpdated: string;
   description?: string;
   findings: BaselineFinding[];
+  /** SHA-256 checksum for integrity verification */
+  checksum?: string;
+}
+
+/**
+ * Calculate checksum for baseline findings
+ */
+function calculateBaselineChecksum(findings: BaselineFinding[]): string {
+  const content = JSON.stringify(
+    findings.map(f => ({ ruleId: f.ruleId, file: f.file, line: f.line, hash: f.hash }))
+  );
+  return createHash('sha256').update(content).digest('hex');
+}
+
+/**
+ * Verify baseline integrity
+ */
+export function verifyBaselineIntegrity(baseline: Baseline): {
+  valid: boolean;
+  reason?: string;
+} {
+  if (!baseline.checksum) {
+    return { valid: true, reason: 'No checksum present (legacy baseline)' };
+  }
+
+  const calculatedChecksum = calculateBaselineChecksum(baseline.findings);
+
+  if (calculatedChecksum !== baseline.checksum) {
+    return {
+      valid: false,
+      reason: `Checksum mismatch: expected ${baseline.checksum.slice(0, 16)}..., got ${calculatedChecksum.slice(0, 16)}...`
+    };
+  }
+
+  return { valid: true };
 }
 
 /**
@@ -44,9 +80,12 @@ function generateFindingHash(finding: Finding): string {
 }
 
 /**
- * Load baseline from file
+ * Load baseline from file with optional integrity verification
  */
-export function loadBaseline(baselinePath: string): Baseline | null {
+export function loadBaseline(
+  baselinePath: string,
+  options: { requireIntegrity?: boolean } = {}
+): Baseline | null {
   try {
     if (!existsSync(baselinePath)) {
       return null;
@@ -60,6 +99,16 @@ export function loadBaseline(baselinePath: string): Baseline | null {
       throw new Error('Invalid baseline format');
     }
 
+    // Verify integrity if checksum is present
+    const integrityResult = verifyBaselineIntegrity(baseline);
+    if (!integrityResult.valid) {
+      logger.error(`Baseline integrity check failed: ${integrityResult.reason}`);
+      if (options.requireIntegrity) {
+        throw new Error(`Baseline tampering detected: ${integrityResult.reason}`);
+      }
+      logger.warn('Proceeding with potentially tampered baseline - use requireIntegrity option to enforce');
+    }
+
     logger.debug(`Loaded baseline with ${baseline.findings.length} accepted findings`);
     return baseline;
 
@@ -70,7 +119,7 @@ export function loadBaseline(baselinePath: string): Baseline | null {
 }
 
 /**
- * Save baseline to file
+ * Save baseline to file with integrity checksum
  */
 export function saveBaseline(baseline: Baseline, baselinePath: string): void {
   try {
@@ -81,11 +130,14 @@ export function saveBaseline(baseline: Baseline, baselinePath: string): void {
     // Update lastUpdated timestamp
     baseline.lastUpdated = new Date().toISOString();
 
+    // Calculate and store checksum for integrity verification
+    baseline.checksum = calculateBaselineChecksum(baseline.findings);
+
     // Write baseline file
     const content = JSON.stringify(baseline, null, 2);
     writeFileSync(baselinePath, content, 'utf-8');
 
-    logger.info(`Baseline saved to ${baselinePath} with ${baseline.findings.length} findings`);
+    logger.info(`Baseline saved to ${baselinePath} with ${baseline.findings.length} findings (checksum: ${baseline.checksum.slice(0, 8)}...)`);
 
   } catch (error) {
     logger.error(`Failed to save baseline to ${baselinePath}:`, error);

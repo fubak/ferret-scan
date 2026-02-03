@@ -15,6 +15,7 @@ import type {
 } from '../types.js';
 import { DEFAULT_CONFIG } from '../types.js';
 import logger from './logger.js';
+import { ConfigFileSchema, safeParseJSON } from './schemas.js';
 
 const CONFIG_FILE_NAMES = [
   '.ferretrc.json',
@@ -52,14 +53,20 @@ function findConfigFile(startDir: string): string | null {
 }
 
 /**
- * Load configuration file
+ * Load configuration file with schema validation
  */
 function loadConfigFile(configPath: string): ConfigFile {
   try {
     const content = readFileSync(configPath, 'utf-8');
-    const config = JSON.parse(content) as ConfigFile;
+    const result = safeParseJSON(content, ConfigFileSchema);
+
+    if (!result.success) {
+      logger.warn(`Invalid config file format: ${result.error}`);
+      return {};
+    }
+
     logger.debug(`Loaded config from: ${configPath}`);
-    return config;
+    return result.data as ConfigFile;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     logger.warn(`Failed to load config file ${configPath}: ${message}`);

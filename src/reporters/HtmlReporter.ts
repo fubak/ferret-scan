@@ -13,12 +13,15 @@ interface HtmlReportOptions {
 }
 
 /**
- * Escape HTML special characters
+ * Escape HTML special characters to prevent XSS
  */
 function escapeHtml(text: string): string {
-  const div = { innerHTML: '', textContent: text };
-  return div.innerHTML || text
-    .replace(/&/g, '&amp;')
+  if (typeof text !== 'string') {
+    return '';
+  }
+
+  return text
+    .replace(/&/g, '&amp;')   // Must be first to avoid double-escaping
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')

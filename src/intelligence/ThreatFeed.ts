@@ -6,6 +6,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import logger from '../utils/logger.js';
+import { ThreatDatabaseSchema, safeParseJSON } from '../utils/schemas.js';
 
 /**
  * Threat intelligence indicator types
@@ -196,7 +197,7 @@ const BUILTIN_INDICATORS: ThreatIndicator[] = [
 ];
 
 /**
- * Load threat intelligence database
+ * Load threat intelligence database with schema validation
  */
 export function loadThreatDatabase(intelDir: string = DEFAULT_INTEL_DIR): ThreatDatabase {
   const dbPath = resolve(intelDir, 'threat-db.json');
@@ -208,8 +209,15 @@ export function loadThreatDatabase(intelDir: string = DEFAULT_INTEL_DIR): Threat
 
   try {
     const content = readFileSync(dbPath, 'utf-8');
-    const db = JSON.parse(content) as ThreatDatabase;
+    const result = safeParseJSON(content, ThreatDatabaseSchema);
 
+    if (!result.success) {
+      logger.warn(`Invalid threat database format: ${result.error}`);
+      return createDefaultDatabase();
+    }
+
+    // Cast to ThreatDatabase (Zod schema validates structure)
+    const db = result.data as unknown as ThreatDatabase;
     logger.debug(`Loaded threat database with ${db.indicators.length} indicators`);
     return db;
   } catch (error) {
