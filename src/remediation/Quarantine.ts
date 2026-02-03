@@ -8,6 +8,7 @@ import { resolve, dirname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { Finding } from '../types.js';
 import logger from '../utils/logger.js';
+import { validatePathWithinBase, isPathWithinBase } from '../utils/pathSecurity.js';
 
 /**
  * Quarantine entry metadata
@@ -274,7 +275,8 @@ export function quarantineFile(
  */
 export function restoreQuarantinedFile(
   entryId: string,
-  quarantineDir: string = DEFAULT_OPTIONS.quarantineDir
+  quarantineDir: string = DEFAULT_OPTIONS.quarantineDir,
+  allowedRestoreBase?: string
 ): boolean {
   try {
     const db = loadQuarantineDatabase(quarantineDir);
@@ -294,6 +296,17 @@ export function restoreQuarantinedFile(
       logger.error(`Quarantined file not found: ${entry.quarantinePath}`);
       return false;
     }
+
+    // SECURITY: Validate originalPath if allowedRestoreBase is specified
+    if (allowedRestoreBase) {
+      if (!isPathWithinBase(entry.originalPath, allowedRestoreBase)) {
+        logger.error(`Restore path outside allowed directory: ${entry.originalPath}`);
+        return false;
+      }
+    }
+
+    // SECURITY: Validate the quarantine path is within quarantine directory
+    validatePathWithinBase(entry.quarantinePath, quarantineDir, 'restoreQuarantinedFile');
 
     // Ensure original directory exists
     mkdirSync(dirname(entry.originalPath), { recursive: true });

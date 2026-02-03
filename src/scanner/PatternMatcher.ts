@@ -15,7 +15,19 @@ import logger from '../utils/logger.js';
 
 interface MatchOptions {
   contextLines: number;
+  /** Maximum matches per pattern (default: 1000) */
+  maxMatchesPerPattern?: number;
+  /** Maximum total matches per file (default: 5000) */
+  maxMatchesPerFile?: number;
+  /** Maximum execution time per file in ms (default: 5000) */
+  maxExecutionTimeMs?: number;
 }
+
+const DEFAULT_LIMITS = {
+  maxMatchesPerPattern: 1000,
+  maxMatchesPerFile: 5000,
+  maxExecutionTimeMs: 5000,
+};
 
 interface PatternMatch {
   pattern: RegExp;
@@ -92,15 +104,36 @@ function calculateRiskScore(
 }
 
 /**
- * Find all pattern matches in content using global regex search
+ * Find all pattern matches in content using global regex search with rate limiting
  */
 function findMatches(
   content: string,
-  patterns: RegExp[]
+  patterns: RegExp[],
+  options: MatchOptions = { contextLines: 3 }
 ): PatternMatch[] {
   const matches: PatternMatch[] = [];
+  const maxPerPattern = options.maxMatchesPerPattern ?? DEFAULT_LIMITS.maxMatchesPerPattern;
+  const maxTotal = options.maxMatchesPerFile ?? DEFAULT_LIMITS.maxMatchesPerFile;
+  const maxTimeMs = options.maxExecutionTimeMs ?? DEFAULT_LIMITS.maxExecutionTimeMs;
+
+  const startTime = Date.now();
+  let totalMatches = 0;
+  let timeoutReached = false;
 
   for (const pattern of patterns) {
+    // Check total match limit
+    if (totalMatches >= maxTotal) {
+      logger.warn(`Maximum total matches (${maxTotal}) reached, stopping pattern matching`);
+      break;
+    }
+
+    // Check time limit
+    if (Date.now() - startTime > maxTimeMs) {
+      logger.warn(`Pattern matching timeout (${maxTimeMs}ms) reached`);
+      timeoutReached = true;
+      break;
+    }
+
     // Create a new regex with global flag
     const globalPattern = new RegExp(
       pattern.source,
@@ -108,7 +141,22 @@ function findMatches(
     );
 
     let match: RegExpExecArray | null;
+    let patternMatches = 0;
+
     while ((match = globalPattern.exec(content)) !== null) {
+      // Check per-pattern limit
+      if (patternMatches >= maxPerPattern) {
+        logger.warn(`Maximum matches per pattern (${maxPerPattern}) reached for pattern`);
+        break;
+      }
+
+      // Periodic time check (every 100 matches)
+      if (patternMatches % 100 === 0 && Date.now() - startTime > maxTimeMs) {
+        logger.warn(`Pattern matching timeout during execution`);
+        timeoutReached = true;
+        break;
+      }
+
       const { line, column } = getLineAndColumn(content, match.index);
       matches.push({
         pattern,
@@ -116,7 +164,17 @@ function findMatches(
         lineNumber: line,
         column,
       });
+
+      patternMatches++;
+      totalMatches++;
+
+      // Prevent infinite loops on zero-length matches
+      if (match[0].length === 0) {
+        globalPattern.lastIndex++;
+      }
     }
+
+    if (timeoutReached) break;
   }
 
   return matches;
@@ -208,7 +266,7 @@ export function matchRule(
 
   const findings: Finding[] = [];
   const lines = splitLines(content);
-  const matches = findMatches(content, rule.patterns);
+  const matches = findMatches(content, rule.patterns, options);
 
   // Group matches by line to avoid duplicates
   const matchesByLine = new Map<number, PatternMatch[]>();

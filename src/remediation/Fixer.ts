@@ -3,13 +3,14 @@
  * Provides safe, reversible fixes for common security issues
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, statSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import type {
   Finding,
   RemediationFix
 } from '../types.js';
 import logger from '../utils/logger.js';
+import { validatePathWithinBase, sanitizeFilename, isPathWithinBase } from '../utils/pathSecurity.js';
 
 /**
  * Remediation result
@@ -41,6 +42,10 @@ export interface RemediationOptions {
   dryRun: boolean;
   /** Maximum file size to process (MB) */
   maxFileSizeMB: number;
+  /** Whitelist of files that were actually scanned (security) */
+  scannedFilesWhitelist?: Set<string>;
+  /** Base directory to restrict writes (security) */
+  allowedWriteBase?: string;
 }
 
 /**
@@ -146,9 +151,12 @@ const BUILTIN_FIXES: RemediationFix[] = [
  */
 function createBackup(filePath: string, backupDir: string): string {
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const fileName = basename(filePath);
+  const fileName = sanitizeFilename(basename(filePath));
   const backupFileName = `${fileName}.backup-${timestamp}`;
   const backupPath = resolve(backupDir, backupFileName);
+
+  // Validate path is within backup directory (prevent path traversal)
+  validatePathWithinBase(backupPath, backupDir, 'createBackup');
 
   // Ensure backup directory exists
   mkdirSync(dirname(backupPath), { recursive: true });
@@ -295,9 +303,43 @@ export async function applyRemediation(
   const config = { ...DEFAULT_OPTIONS, ...options };
 
   try {
+    // SECURITY: Validate file is in scanned whitelist
+    if (config.scannedFilesWhitelist) {
+      const normalizedPath = resolve(finding.file);
+      if (!config.scannedFilesWhitelist.has(normalizedPath)) {
+        logger.warn(`Remediation blocked: file not in scan whitelist: ${finding.file}`);
+        return {
+          success: false,
+          finding,
+          error: 'File was not part of the original scan - remediation blocked for security'
+        };
+      }
+    }
+
+    // SECURITY: Validate file is within allowed write base
+    if (config.allowedWriteBase) {
+      if (!isPathWithinBase(finding.file, config.allowedWriteBase)) {
+        logger.warn(`Remediation blocked: file outside allowed base: ${finding.file}`);
+        return {
+          success: false,
+          finding,
+          error: `File outside allowed remediation directory: ${config.allowedWriteBase}`
+        };
+      }
+    }
+
+    // SECURITY: Verify target is a regular file (not symlink or special file)
+    const fileStats = statSync(finding.file, { throwIfNoEntry: false });
+    if (!fileStats || !fileStats.isFile()) {
+      return {
+        success: false,
+        finding,
+        error: 'Target is not a regular file or does not exist'
+      };
+    }
+
     // Check file size limits
-    const fileSize = (await import('node:fs')).statSync(finding.file).size;
-    const fileSizeMB = fileSize / (1024 * 1024);
+    const fileSizeMB = fileStats.size / (1024 * 1024);
 
     if (fileSizeMB > config.maxFileSizeMB) {
       return {

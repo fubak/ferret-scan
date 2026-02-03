@@ -33,7 +33,7 @@ export const injectionRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects attempts to switch Claude into different operational modes',
     patterns: [
-      /you\s+are\s+now\s+in\s+.*(mode|state)/gi,
+      /you\s+are\s+now\s+in\s+[^\n]{0,100}(mode|state)/gi,
       /enter\s+(developer|admin|debug|unrestricted|jailbreak)\s+mode/gi,
       /switch\s+to\s+(developer|admin|debug|unrestricted)\s+mode/gi,
       /activate\s+(developer|admin|debug|god)\s+mode/gi,
@@ -72,7 +72,7 @@ export const injectionRules: Rule[] = [
     patterns: [
       /disregard\s+(your|safety|ethical)\s+(guidelines|rules|constraints)/gi,
       /you\s+(don't|do\s+not)\s+have\s+(any\s+)?(restrictions|limits|constraints)/gi,
-      /pretend\s+.*not\s+bound\s+by/gi,
+      /pretend\s+[^\n]{0,100}not\s+bound\s+by/gi,
       /act\s+as\s+if\s+you\s+have\s+no\s+(restrictions|limits)/gi,
     ],
     fileTypes: ['md', 'json'],
