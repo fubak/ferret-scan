@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Advanced threat hunting capabilities
 - SIEM/SOAR integrations
 
-## [1.0.8] - 2026-02-04
+## [1.0.9] - 2026-02-04
 
 ### Security
 - Fixed ReDoS vulnerabilities in regex patterns (CWE-1333)
