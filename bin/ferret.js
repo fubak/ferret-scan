@@ -46,11 +46,11 @@ import {
 import { logger } from '../dist/utils/logger.js';
 
 // New feature imports
-import { installGitHooks, uninstallGitHooks, runPreCommitScan, getGitHooksStatus } from '../dist/features/gitHooks.js';
+import { installHooks, uninstallHooks, getHookStatus } from '../dist/features/gitHooks.js';
 import { loadCustomRules, validateCustomRulesFile } from '../dist/features/customRules.js';
 import { analyzeEntropy, entropyFindingsToFindings } from '../dist/features/entropyAnalysis.js';
 import { validateMcpConfig, findAndValidateMcpConfigs, mcpAssessmentsToFindings } from '../dist/features/mcpValidator.js';
-import { compareScanResults, formatDiffSummary, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
+import { compareScanResults, formatComparisonReport, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
 import { sendWebhook, detectWebhookType } from '../dist/features/webhooks.js';
 import { analyzeDependencies, dependencyAssessmentsToFindings, findAndAnalyzeDependencies } from '../dist/features/dependencyRisk.js';
 import { analyzeCapabilities, findAndAnalyzeCapabilities, generateCapabilityReport } from '../dist/features/capabilityMapping.js';
@@ -847,26 +847,24 @@ hooksCmd
   .action(async (options) => {
     try {
       const hookConfig = {
-        preCommit: {
-          enabled: !options.prePush || options.preCommit,
-          stagedOnly: options.stagedOnly,
-          failOn: options.failOn.toUpperCase(),
-        },
-        prePush: {
-          enabled: !options.preCommit || options.prePush,
-          failOn: 'CRITICAL',
-        },
+        preCommit: !options.prePush || options.preCommit !== false,
+        prePush: !!options.prePush,
+        force: !!options.force,
+        failOn: (options.failOn || 'HIGH').toUpperCase(),
       };
 
-      const result = await installGitHooks(process.cwd(), hookConfig);
+      const result = installHooks(hookConfig);
 
       if (result.success) {
         console.log('✅ Git hooks installed successfully');
-        for (const hook of result.installedHooks) {
+        for (const hook of result.installed) {
           console.log(`   ${hook}`);
         }
       } else {
-        console.error(`❌ Failed to install hooks: ${result.error}`);
+        console.error(`❌ Failed to install hooks:`);
+        for (const err of result.errors) {
+          console.error(`   ${err}`);
+        }
         process.exit(1);
       }
     } catch (error) {
@@ -880,12 +878,18 @@ hooksCmd
   .description('Remove ferret Git hooks')
   .action(async () => {
     try {
-      const result = await uninstallGitHooks(process.cwd());
+      const result = uninstallHooks();
 
       if (result.success) {
         console.log('✅ Git hooks removed successfully');
+        for (const hook of result.removed) {
+          console.log(`   ${hook}`);
+        }
       } else {
-        console.error(`❌ Failed to remove hooks: ${result.error}`);
+        console.error(`❌ Failed to remove hooks:`);
+        for (const err of result.errors) {
+          console.error(`   ${err}`);
+        }
         process.exit(1);
       }
     } catch (error) {
@@ -899,12 +903,12 @@ hooksCmd
   .description('Show Git hooks status')
   .action(async () => {
     try {
-      const status = await getGitHooksStatus(process.cwd());
+      const status = getHookStatus();
 
       console.log('Git Hooks Status:');
       console.log('━'.repeat(40));
-      console.log(`Pre-commit: ${status.preCommit ? '✅ Installed' : '❌ Not installed'}`);
-      console.log(`Pre-push:   ${status.prePush ? '✅ Installed' : '❌ Not installed'}`);
+      console.log(`Pre-commit: ${status.preCommit === 'installed' ? '✅ Installed' : status.preCommit === 'other' ? '⚠️  Other hook present' : '❌ Not installed'}`);
+      console.log(`Pre-push:   ${status.prePush === 'installed' ? '✅ Installed' : status.prePush === 'other' ? '⚠️  Other hook present' : '❌ Not installed'}`);
     } catch (error) {
       console.error('Error checking hooks status:', error.message);
       process.exit(1);
@@ -1042,7 +1046,7 @@ capsCmd
   .description('Analyze AI CLI capability permissions')
   .argument('[path]', 'Path to scan for AI CLI configs')
   .option('-o, --output <file>', 'Output report file')
-  .action((path, options) => {
+  .action(async (path, options) => {
     try {
       const targetPath = path || process.cwd();
 
@@ -1224,7 +1228,7 @@ diffCmd
       if (options.format === 'json') {
         console.log(JSON.stringify(diff, null, 2));
       } else {
-        console.log(formatDiffSummary(diff));
+        console.log(formatComparisonReport(diff));
       }
 
       // Exit with 1 if there are new findings
