@@ -44,6 +44,8 @@
 
 **Ferret** is a security scanner purpose-built for AI assistant configurations. It detects prompt injections, credential leaks, jailbreak attempts, and malicious patterns in your AI CLI setup before they become problems.
 
+Threat intelligence uses a local indicator database by default (no external feeds unless you add indicators).
+
 ```
 $ ferret scan .
 
@@ -256,6 +258,16 @@ ferret fix scan .                      # Apply safe fixes
 ferret fix quarantine suspicious.md    # Quarantine dangerous files
 ```
 
+### `ferret intel`
+
+Local threat intelligence management (no external feeds by default):
+
+```bash
+ferret intel status                    # Threat database status
+ferret intel search "jailbreak"        # Search indicators
+ferret intel add --type pattern --value "malicious" --severity high
+```
+
 ## CI/CD Integration
 
 ### GitHub Actions
@@ -349,7 +361,7 @@ ferret scan . --correlation-analysis
 ```
 
 ### Threat Intelligence
-Match against locally stored malicious indicators:
+Match against locally stored malicious indicators (no external feeds by default):
 ```bash
 ferret scan . --threat-intel
 ```
