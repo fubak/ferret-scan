@@ -13,6 +13,7 @@ import { loadConfig, getAIConfigPaths } from '../dist/utils/config.js';
 import { generateConsoleReport } from '../dist/reporters/ConsoleReporter.js';
 import { formatSarifReport } from '../dist/reporters/SarifReporter.js';
 import { formatHtmlReport } from '../dist/reporters/HtmlReporter.js';
+import { formatCsvReport } from '../dist/reporters/CsvReporter.js';
 import { startEnhancedWatchMode } from '../dist/scanner/WatchMode.js';
 import {
   loadBaseline,
@@ -86,7 +87,6 @@ program
   .option('-w, --watch', 'Watch mode - rescan on file changes')
   .option('--ci', 'CI mode - minimal output, suitable for pipelines')
   .option('-v, --verbose', 'Verbose output with context')
-  .option('--ai-detection', 'Enable AI-powered detection (experimental)')
   .option('--threat-intel', 'Enable threat intelligence feeds (experimental)')
   .option('--semantic-analysis', 'Enable AST-based semantic analysis')
   .option('--correlation-analysis', 'Enable cross-file correlation analysis')
@@ -115,7 +115,6 @@ program
         watch: options.watch,
         ci: options.ci,
         verbose: options.verbose,
-        aiDetection: options.aiDetection,
         threatIntel: options.threatIntel,
         semanticAnalysis: options.semanticAnalysis,
         correlationAnalysis: options.correlationAnalysis,
@@ -124,7 +123,7 @@ program
       });
 
       // Apply auto-fix if enabled
-      const shouldAutoFix = options.autoFix;
+      const shouldAutoFix = options.autoFix || options.autoRemediation;
 
       // If no paths specified and no AI CLI configs found, show helpful message
       if (config.paths.length === 0) {
@@ -184,6 +183,15 @@ program
           const { writeFileSync } = await import('node:fs');
           writeFileSync(config.outputFile, output);
           console.log(`SARIF report written to: ${config.outputFile}`);
+        } else {
+          console.log(output);
+        }
+      } else if (config.format === 'csv') {
+        const output = formatCsvReport(result);
+        if (config.outputFile) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(config.outputFile, output);
+          console.log(`CSV report written to: ${config.outputFile}`);
         } else {
           console.log(output);
         }

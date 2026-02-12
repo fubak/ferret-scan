@@ -43,6 +43,7 @@ export {
 
 // Reporters
 export { generateConsoleReport } from './reporters/ConsoleReporter.js';
+export { formatCsvReport } from './reporters/CsvReporter.js';
 
 // Utils
 export { loadConfig, getAIConfigPaths } from './utils/config.js';

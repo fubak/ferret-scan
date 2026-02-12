@@ -2,10 +2,6 @@
 
 Thank you for your interest in contributing to Ferret! This document provides guidelines and instructions for contributing to the project.
 
-## 🤝 Code of Conduct
-
-By participating in this project, you agree to abide by our [Code of Conduct](CODE_OF_CONDUCT.md). Please read it before contributing.
-
 ## 🚀 Getting Started
 
 ### Prerequisites
@@ -76,32 +72,19 @@ Create rules in `src/rules/` following this pattern:
 
 ```typescript
 export const newRule: Rule = {
-  id: 'category-threat-001',
+  id: 'EXFIL-999',
   name: 'Descriptive Threat Name',
   description: 'Clear description of what this detects',
-  category: 'injection' | 'credentials' | 'exfiltration' | /* ... */,
-  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
-  patterns: [
-    {
-      type: 'regex',
-      pattern: 'your-detection-pattern',
-      flags: 'gi'
-    }
-  ],
-  falsePositiveFilters: [
-    {
-      type: 'context',
-      pattern: 'legitimate-use-pattern'
-    }
-  ],
-  references: [
-    'https://example.com/threat-documentation'
-  ],
-  metadata: {
-    cwe: 'CWE-79',
-    mitre: 'T1059',
-    confidence: 0.9
-  }
+  category: 'exfiltration',
+  severity: 'HIGH',
+  patterns: [/curl\\s+.*-d/gi],
+  fileTypes: ['sh', 'md', 'json'],
+  components: ['hook', 'skill', 'settings'],
+  remediation: 'Remove external data transmission or gate it behind explicit approval.',
+  references: ['https://example.com/threat-documentation'],
+  enabled: true,
+  excludePatterns: [/example.com/gi],
+  requireContext: [/api[_-]?key/gi],
 };
 ```
 

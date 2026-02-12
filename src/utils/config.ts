@@ -210,20 +210,11 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
     if (fileConfig.ignore) {
       config.ignore = [...config.ignore, ...fileConfig.ignore];
     }
-    if (fileConfig.customRules) {
-      config.customRules = fileConfig.customRules;
-    }
     if (fileConfig.failOn) {
       config.failOn = fileConfig.failOn;
     }
-    if (fileConfig.aiDetection?.enabled !== undefined) {
-      config.aiDetection = fileConfig.aiDetection.enabled;
-    }
     if (fileConfig.threatIntelligence?.enabled !== undefined) {
       config.threatIntel = fileConfig.threatIntelligence.enabled;
-    }
-    if (fileConfig.behaviorAnalysis?.enabled !== undefined) {
-      config.behaviorAnalysis = fileConfig.behaviorAnalysis.enabled;
     }
   }
 
@@ -267,10 +258,6 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
 
   if (cliOptions.verbose !== undefined) {
     config.verbose = cliOptions.verbose;
-  }
-
-  if (cliOptions.aiDetection !== undefined) {
-    config.aiDetection = cliOptions.aiDetection;
   }
 
   if (cliOptions.threatIntel !== undefined) {

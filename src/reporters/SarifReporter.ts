@@ -4,6 +4,8 @@
  * Spec: https://docs.oasis-open.org/sarif/sarif/v2.1.0/sarif-v2.1.0.html
  */
 
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
 import type { ScanResult } from '../types.js';
 
 interface SarifResult {
@@ -74,6 +76,42 @@ interface SarifDocument {
     };
   }[];
 }
+
+function findPackageJson(startDir: string): string | null {
+  let currentDir = resolve(startDir);
+  const root = dirname(currentDir);
+
+  while (currentDir !== root) {
+    const candidate = resolve(currentDir, 'package.json');
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+    currentDir = dirname(currentDir);
+  }
+
+  return null;
+}
+
+function getPackageInfo(): { version: string } {
+  const envVersion = process.env['npm_package_version'];
+  if (envVersion) {
+    return { version: envVersion };
+  }
+
+  try {
+    const packagePath = findPackageJson(process.cwd());
+    if (!packagePath) {
+      return { version: '0.0.0' };
+    }
+    const pkg = JSON.parse(readFileSync(packagePath, 'utf-8')) as { version?: string };
+    return { version: pkg.version ?? '0.0.0' };
+  } catch {
+    return { version: '0.0.0' };
+  }
+}
+
+const PACKAGE_INFO = getPackageInfo();
+const INFORMATION_URI = 'https://github.com/fubak/ferret-scan';
 
 /**
  * Convert Ferret severity to SARIF level
@@ -169,8 +207,8 @@ export function generateSarifReport(result: ScanResult): SarifDocument {
       tool: {
         driver: {
           name: 'ferret-scan',
-          version: '1.0.0',
-          informationUri: 'https://github.com/anthropics/ferret-scan',
+          version: PACKAGE_INFO.version,
+          informationUri: INFORMATION_URI,
           rules,
         },
       },

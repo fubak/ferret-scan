@@ -5,9 +5,8 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, relative } from 'node:path';
-import { createRequire } from 'node:module';
-const require = createRequire(import.meta.url);
-const ignoreFactory = require('ignore') as () => Ignore;
+import ignore from 'ignore';
+const ignoreFactory = ignore as unknown as () => Ignore;
 
 export interface Ignore {
   add(patterns: string | string[]): Ignore;

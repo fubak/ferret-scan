@@ -284,18 +284,12 @@ export interface ScannerConfig {
   categories: ThreatCategory[];
   /** Patterns to ignore (glob) */
   ignore: string[];
-  /** Path to custom rules directory */
-  customRules?: string;
   /** Minimum severity to fail on */
   failOn: Severity;
   /** Enable watch mode */
   watch: boolean;
-  /** Enable AI-powered detection */
-  aiDetection: boolean;
   /** Enable threat intelligence */
   threatIntel: boolean;
-  /** Enable behavioral analysis */
-  behaviorAnalysis: boolean;
   /** Enable semantic analysis */
   semanticAnalysis: boolean;
   /** Enable cross-file correlation */
@@ -330,7 +324,6 @@ export interface CliOptions {
   watch?: boolean;
   ci?: boolean;
   verbose?: boolean;
-  aiDetection?: boolean;
   threatIntel?: boolean;
   semanticAnalysis?: boolean;
   correlationAnalysis?: boolean;
@@ -343,20 +336,11 @@ export interface ConfigFile {
   severity?: Severity[];
   categories?: ThreatCategory[];
   ignore?: string[];
-  customRules?: string;
   failOn?: Severity;
-  aiDetection?: {
-    enabled: boolean;
-    confidence?: number;
-  };
   threatIntelligence?: {
     enabled: boolean;
     feeds?: string[];
     updateInterval?: string;
-  };
-  behaviorAnalysis?: {
-    enabled: boolean;
-    patterns?: string[];
   };
   remediation?: {
     autoFix?: boolean;
@@ -385,9 +369,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   ignore: ['**/node_modules/**', '**/.git/**'],
   failOn: 'HIGH',
   watch: false,
-  aiDetection: false,
   threatIntel: false,
-  behaviorAnalysis: false,
   semanticAnalysis: false,
   correlationAnalysis: false,
   autoRemediation: false,

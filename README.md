@@ -35,9 +35,8 @@
   <a href="#quick-start">Quick Start</a> •
   <a href="#supported-ai-clis">Supported CLIs</a> •
   <a href="#what-it-detects">Detection</a> •
-  <a href="#advanced-features">Features</a> •
-  <a href="#automatic-scanning-with-ai-cli-hooks">Hooks</a> •
   <a href="#cicd-integration">CI/CD</a> •
+  <a href="#documentation">Documentation</a> •
   <a href="#contributing">Contributing</a>
 </p>
 
@@ -98,13 +97,13 @@ Ferret understands AI CLI structures and catches **AI-specific threats** that ge
 
 | AI CLI | Config Locations | Status |
 |--------|-----------------|--------|
-| **Claude Code** | `.claude/`, `CLAUDE.md`, `.mcp.json`, `skills/`, `hooks/` | ✅ Full Support |
-| **Cursor** | `.cursor/`, `.cursorrules`, `.cursor/rules/` | ✅ Full Support |
-| **Windsurf** | `.windsurf/`, `.windsurfrules`, `.windsurf/rules/` | ✅ Full Support |
-| **Continue** | `.continue/`, `config.json`, `.continuerules` | ✅ Full Support |
+| **Claude Code** | `.claude/`, `CLAUDE.md`, `.mcp.json` | ✅ Full Support |
+| **Cursor** | `.cursor/`, `.cursorrules` | ✅ Full Support |
+| **Windsurf** | `.windsurf/`, `.windsurfrules` | ✅ Full Support |
+| **Continue** | `.continue/`, `config.json` | ✅ Full Support |
 | **Aider** | `.aider/`, `.aider.conf.yml` | ✅ Full Support |
 | **Cline** | `.cline/`, `.clinerules` | ✅ Full Support |
-| **Generic** | `.ai/`, `AI.md`, `AGENT.md`, `agents/` | ✅ Full Support |
+| **Generic** | `.ai/`, `AI.md`, `AGENT.md` | ✅ Full Support |
 
 ## Installation
 
@@ -134,6 +133,7 @@ ferret scan /path/to/project
 ferret scan . --format json -o results.json
 ferret scan . --format sarif -o results.sarif  # For GitHub Code Scanning
 ferret scan . --format html -o report.html     # Interactive report
+ferret scan . --format csv -o report.csv       # Spreadsheet-friendly
 
 # Filter by severity
 ferret scan . --severity high,critical
@@ -256,14 +256,6 @@ ferret fix scan .                      # Apply safe fixes
 ferret fix quarantine suspicious.md    # Quarantine dangerous files
 ```
 
-### `ferret intel`
-
-```bash
-ferret intel status                    # Threat database status
-ferret intel search "jailbreak"        # Search indicators
-ferret intel add --type pattern --value "malicious" --severity high
-```
-
 ## CI/CD Integration
 
 ### GitHub Actions
@@ -323,11 +315,7 @@ Create `.ferretrc.json` in your project root:
   "severity": ["critical", "high", "medium"],
   "categories": ["credentials", "injection", "exfiltration"],
   "ignore": ["**/test/**", "**/examples/**"],
-  "failOn": "high",
-  "aiDetection": {
-    "enabled": true,
-    "confidence": 0.8
-  }
+  "failOn": "high"
 }
 ```
 
@@ -361,314 +349,15 @@ ferret scan . --correlation-analysis
 ```
 
 ### Threat Intelligence
-Match against known malicious indicators:
+Match against locally stored malicious indicators:
 ```bash
 ferret scan . --threat-intel
 ```
 
-### Git Hooks Integration
+## Planned Features
 
-Automatically scan on every commit or push:
-
-```bash
-# Install pre-commit hook
-ferret hooks install
-
-# Install both pre-commit and pre-push hooks
-ferret hooks install --pre-push
-
-# Set minimum severity to block on
-ferret hooks install --fail-on critical
-
-# Check hook status
-ferret hooks status
-
-# Remove hooks
-ferret hooks uninstall
-```
-
-### Custom Rules
-
-Define organization-specific detection patterns:
-
-```yaml
-# .ferret-rules.yml
-rules:
-  - id: ORG-001
-    name: Internal API endpoint exposure
-    pattern: "api\\.internal\\.company\\.com"
-    severity: high
-    category: exfiltration
-    message: "Internal API endpoint should not appear in AI configs"
-```
-
-```bash
-ferret scan . --custom-rules .ferret-rules.yml
-```
-
-### MCP Server Validation
-
-Deep security validation of MCP (Model Context Protocol) configurations:
-
-```bash
-ferret mcp validate .mcp.json
-```
-
-### Dependency Risk Analysis
-
-Analyze package dependencies for known vulnerabilities:
-
-```bash
-ferret deps analyze package.json
-```
-
-### AI Capability Mapping
-
-Audit what capabilities your AI agents have access to:
-
-```bash
-ferret capabilities map .
-```
-
-### Policy Enforcement
-
-Enforce organizational security policies:
-
-```bash
-ferret policy check --policy-file .ferret-policy.json
-```
-
-### Interactive TUI
-
-Review and triage findings interactively:
-
-```bash
-ferret interactive .
-```
-
-### Scan Diff
-
-Compare scans over time to track your security posture:
-
-```bash
-ferret diff results-old.json results-new.json
-```
-
-### Webhook Notifications
-
-Send scan results to team channels:
-
-```bash
-# Slack
-ferret webhook test --slack https://hooks.slack.com/services/xxx
-
-# Discord
-ferret webhook test --discord https://discord.com/api/webhooks/xxx
-
-# Microsoft Teams
-ferret webhook test --teams https://outlook.office.com/webhook/xxx
-```
-
-### Inline Ignore Comments
-
-Suppress specific findings directly in source files:
-
-```markdown
-<!-- ferret-ignore CRED-001 -->
-This line will not trigger CRED-001
-
-<!-- ferret-disable -->
-This entire block is excluded from scanning
-<!-- ferret-enable -->
-```
-
-```bash
-# In shell scripts
-# ferret-ignore BACK-002
-curl https://example.com/setup.sh | bash
-```
-
-## Automatic Scanning with AI CLI Hooks
-
-Ferret can be configured to **automatically scan** your AI CLI configurations whenever skills, agents, commands, hooks, or MCP servers are added or modified. Each AI CLI has its own hook system -- below are setup instructions for each.
-
-### Claude Code
-
-Claude Code supports [hooks](https://docs.anthropic.com/en/docs/claude-code/hooks) that run shell commands on specific events. Add these to your `~/.claude/settings.json` or project `.claude/settings.json`:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "ferret scan . --ci --severity high,critical --format json -o /tmp/ferret-latest.json 2>/dev/null || true"
-      }
-    ],
-    "PreToolUse": [
-      {
-        "matcher": "Bash",
-        "command": "ferret scan . --ci --fail-on critical 2>/dev/null || echo 'FERRET: Critical security issue detected'"
-      }
-    ]
-  }
-}
-```
-
-**What this does:**
-- **PostToolUse** (Write/Edit): Scans after any file is created or modified, catching new threats immediately
-- **PreToolUse** (Bash): Scans before shell commands execute, blocking critically dangerous configurations
-
-You can also use Claude Code's skill hooks to scan when skills are updated:
-
-```json
-{
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit",
-        "command": "echo \"$CLAUDE_TOOL_INPUT\" | grep -qE '\\.(claude|mcp\\.json|cursorrules|clinerules|windsurfrules)' && ferret scan . --ci --fail-on high 2>/dev/null || true"
-      }
-    ]
-  }
-}
-```
-
-### Cursor
-
-Cursor uses `.cursor/rules/` files and `.cursorrules`. Use a file watcher to trigger scans:
-
-```bash
-# Add to your shell profile (.bashrc, .zshrc)
-# Watch Cursor configs and auto-scan on changes
-alias cursor-watch='fswatch -o .cursor/ .cursorrules 2>/dev/null | xargs -n1 -I{} ferret scan . --ci --severity high,critical'
-
-# Or use a git pre-commit hook
-ferret hooks install  # Scans all AI configs on commit
-```
-
-For project-level automation, add a script to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "security:watch": "npx chokidar-cli '.cursor/**' '.cursorrules' -c 'npx ferret-scan scan . --ci --fail-on high'"
-  }
-}
-```
-
-### Windsurf
-
-Windsurf uses `.windsurf/rules/` and `.windsurfrules`. Set up automatic scanning:
-
-```bash
-# File watcher for Windsurf configs
-alias windsurf-watch='fswatch -o .windsurf/ .windsurfrules 2>/dev/null | xargs -n1 -I{} ferret scan . --ci --severity high,critical'
-```
-
-Or integrate into your development workflow:
-
-```json
-{
-  "scripts": {
-    "security:watch": "npx chokidar-cli '.windsurf/**' '.windsurfrules' -c 'npx ferret-scan scan . --ci --fail-on high'"
-  }
-}
-```
-
-### Continue
-
-Continue stores configurations in `.continue/config.json` and `.continue/` directory:
-
-```bash
-# Watch Continue configuration changes
-alias continue-watch='fswatch -o .continue/ 2>/dev/null | xargs -n1 -I{} ferret scan . --ci --severity high,critical'
-```
-
-For persistent monitoring, add to your `package.json`:
-
-```json
-{
-  "scripts": {
-    "security:watch": "npx chokidar-cli '.continue/**' -c 'npx ferret-scan scan . --ci --fail-on high'"
-  }
-}
-```
-
-### Aider
-
-Aider uses `.aider/` and `.aider.conf.yml` for configuration:
-
-```bash
-# Watch Aider config changes
-alias aider-watch='fswatch -o .aider/ .aider.conf.yml 2>/dev/null | xargs -n1 -I{} ferret scan . --ci --severity high,critical'
-```
-
-Aider also supports a `--lint-cmd` option you can leverage:
-
-```bash
-# Run Ferret as a lint step after Aider edits
-aider --lint-cmd "ferret scan . --ci --fail-on high"
-```
-
-### Cline
-
-Cline uses `.cline/` directory and `.clinerules`:
-
-```bash
-# Watch Cline config changes
-alias cline-watch='fswatch -o .cline/ .clinerules 2>/dev/null | xargs -n1 -I{} ferret scan . --ci --severity high,critical'
-```
-
-```json
-{
-  "scripts": {
-    "security:watch": "npx chokidar-cli '.cline/**' '.clinerules' -c 'npx ferret-scan scan . --ci --fail-on high'"
-  }
-}
-```
-
-### Universal: Git Hooks (All CLIs)
-
-The simplest way to protect **all** AI CLI configurations regardless of which tool you use:
-
-```bash
-# Install Ferret's built-in git hooks (recommended)
-ferret hooks install --pre-push
-
-# This installs:
-# - pre-commit: Scans staged files for high+ severity issues
-# - pre-push: Scans entire project for critical issues before push
-```
-
-Or create a custom pre-commit hook that targets AI config files:
-
-```bash
-#!/bin/bash
-# .git/hooks/pre-commit - Scan only changed AI config files
-CHANGED=$(git diff --cached --name-only | grep -E '\.(claude|cursor|windsurf|continue|aider|cline|ai)/|CLAUDE\.md|\.cursorrules|\.windsurfrules|\.clinerules|\.mcp\.json')
-
-if [ -n "$CHANGED" ]; then
-  echo "AI config files changed, running Ferret scan..."
-  ferret scan . --ci --fail-on high
-  if [ $? -ne 0 ]; then
-    echo "Security issues found in AI configs. Commit blocked."
-    exit 1
-  fi
-fi
-```
-
-### Universal: Watch Mode (All CLIs)
-
-Ferret's built-in watch mode monitors all supported AI CLI config locations simultaneously:
-
-```bash
-# Watch all AI config files for changes in real-time
-ferret scan . --watch
-
-# Watch with specific severity filter
-ferret scan . --watch --severity high,critical
-```
+- Threat intel updates from external sources
+- AI-assisted detection for novel prompt injection patterns
 
 ## Performance
 
@@ -678,6 +367,13 @@ ferret scan . --watch --severity high,critical
 | **Memory** | ~100MB base |
 | **Rules** | 65+ detection patterns |
 | **Accuracy** | 99%+ detection, <1% false positives |
+
+## Documentation
+
+- Start here: `docs/README.md`
+- `docs/README.md`
+- `docs/architecture.md`
+- `docs/deployment.md`
 
 ## Contributing
 

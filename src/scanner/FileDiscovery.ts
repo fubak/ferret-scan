@@ -36,6 +36,10 @@ function getFileType(filePath: string): FileType | null {
     'json': 'json',
     'yaml': 'yaml',
     'yml': 'yml',
+    'ts': 'ts',
+    'js': 'js',
+    'tsx': 'tsx',
+    'jsx': 'jsx',
   };
   return fileTypeMap[ext] ?? null;
 }
@@ -171,6 +175,11 @@ function isAnalyzableFile(filePath: string): boolean {
 
   // YAML files
   if (type === 'yaml' || type === 'yml') {
+    return true;
+  }
+
+  // TypeScript / JavaScript files
+  if (type === 'ts' || type === 'js' || type === 'tsx' || type === 'jsx') {
     return true;
   }
 

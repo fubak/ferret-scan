@@ -3,11 +3,11 @@
  * Allows users to create baselines of known/accepted security findings
  */
 
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
-import { mkdirSync } from 'node:fs';
+import { writeFileSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { resolve, dirname, extname } from 'node:path';
 import { createHash } from 'node:crypto';
-import type { Finding, ScanResult } from '../types.js';
+import { mkdirSync } from 'node:fs';
+import type { Finding, ScanResult, Severity } from '../types.js';
 import logger from './logger.js';
 
 export interface BaselineFinding {
@@ -17,6 +17,7 @@ export interface BaselineFinding {
   match: string;
   hash: string;
   acceptedDate: string;
+  severity?: Severity;
   reason?: string;
   expiresDate?: string;
 }
@@ -27,41 +28,6 @@ export interface Baseline {
   lastUpdated: string;
   description?: string;
   findings: BaselineFinding[];
-  /** SHA-256 checksum for integrity verification */
-  checksum?: string;
-}
-
-/**
- * Calculate checksum for baseline findings
- */
-function calculateBaselineChecksum(findings: BaselineFinding[]): string {
-  const content = JSON.stringify(
-    findings.map(f => ({ ruleId: f.ruleId, file: f.file, line: f.line, hash: f.hash }))
-  );
-  return createHash('sha256').update(content).digest('hex');
-}
-
-/**
- * Verify baseline integrity
- */
-export function verifyBaselineIntegrity(baseline: Baseline): {
-  valid: boolean;
-  reason?: string;
-} {
-  if (!baseline.checksum) {
-    return { valid: true, reason: 'No checksum present (legacy baseline)' };
-  }
-
-  const calculatedChecksum = calculateBaselineChecksum(baseline.findings);
-
-  if (calculatedChecksum !== baseline.checksum) {
-    return {
-      valid: false,
-      reason: `Checksum mismatch: expected ${baseline.checksum.slice(0, 16)}..., got ${calculatedChecksum.slice(0, 16)}...`
-    };
-  }
-
-  return { valid: true };
 }
 
 /**
@@ -69,23 +35,13 @@ export function verifyBaselineIntegrity(baseline: Baseline): {
  */
 function generateFindingHash(finding: Finding): string {
   const content = `${finding.ruleId}:${finding.relativePath}:${finding.line}:${finding.match}`;
-  // Simple hash function (could use crypto for better security)
-  let hash = 0;
-  for (let i = 0; i < content.length; i++) {
-    const char = content.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  return Math.abs(hash).toString(36);
+  return createHash('sha256').update(content).digest('hex');
 }
 
 /**
- * Load baseline from file with optional integrity verification
+ * Load baseline from file
  */
-export function loadBaseline(
-  baselinePath: string,
-  options: { requireIntegrity?: boolean } = {}
-): Baseline | null {
+export function loadBaseline(baselinePath: string): Baseline | null {
   try {
     if (!existsSync(baselinePath)) {
       return null;
@@ -99,16 +55,6 @@ export function loadBaseline(
       throw new Error('Invalid baseline format');
     }
 
-    // Verify integrity if checksum is present
-    const integrityResult = verifyBaselineIntegrity(baseline);
-    if (!integrityResult.valid) {
-      logger.error(`Baseline integrity check failed: ${integrityResult.reason}`);
-      if (options.requireIntegrity) {
-        throw new Error(`Baseline tampering detected: ${integrityResult.reason}`);
-      }
-      logger.warn('Proceeding with potentially tampered baseline - use requireIntegrity option to enforce');
-    }
-
     logger.debug(`Loaded baseline with ${baseline.findings.length} accepted findings`);
     return baseline;
 
@@ -119,7 +65,7 @@ export function loadBaseline(
 }
 
 /**
- * Save baseline to file with integrity checksum
+ * Save baseline to file
  */
 export function saveBaseline(baseline: Baseline, baselinePath: string): void {
   try {
@@ -130,14 +76,11 @@ export function saveBaseline(baseline: Baseline, baselinePath: string): void {
     // Update lastUpdated timestamp
     baseline.lastUpdated = new Date().toISOString();
 
-    // Calculate and store checksum for integrity verification
-    baseline.checksum = calculateBaselineChecksum(baseline.findings);
-
     // Write baseline file
     const content = JSON.stringify(baseline, null, 2);
     writeFileSync(baselinePath, content, 'utf-8');
 
-    logger.info(`Baseline saved to ${baselinePath} with ${baseline.findings.length} findings (checksum: ${baseline.checksum.slice(0, 8)}...)`);
+    logger.info(`Baseline saved to ${baselinePath} with ${baseline.findings.length} findings`);
 
   } catch (error) {
     logger.error(`Failed to save baseline to ${baselinePath}:`, error);
@@ -161,6 +104,7 @@ export function createBaseline(
     match: finding.match,
     hash: generateFindingHash(finding),
     acceptedDate: now,
+    severity: finding.severity,
   }));
 
   return {
@@ -195,6 +139,7 @@ export function addToBaseline(
       match: finding.match,
       hash: generateFindingHash(finding),
       acceptedDate: now,
+      severity: finding.severity,
       ...(reason && { reason }),
     }));
 
@@ -347,6 +292,18 @@ export function validateBaseline(
 export function getDefaultBaselinePath(scanPaths: string[]): string {
   // Try to find a good location for baseline file
   const firstPath = scanPaths[0] ?? process.cwd();
+  try {
+    if (existsSync(firstPath) && statSync(firstPath).isFile()) {
+      return resolve(dirname(firstPath), '.ferret-baseline.json');
+    }
+  } catch {
+    // Fall through to heuristic
+  }
+
+  if (extname(firstPath)) {
+    return resolve(dirname(firstPath), '.ferret-baseline.json');
+  }
+
   return resolve(firstPath, '.ferret-baseline.json');
 }
 
@@ -369,8 +326,7 @@ export function getBaselineStats(baseline: Baseline): {
     // Count by rule
     byRule[finding.ruleId] = (byRule[finding.ruleId] ?? 0) + 1;
 
-    // Extract severity from rule ID (if follows pattern like CRED-001)
-    const severity = finding.ruleId.split('-')[0] ?? 'UNKNOWN';
+    const severity = finding.severity ?? 'UNKNOWN';
     bySeverity[severity] = (bySeverity[severity] ?? 0) + 1;
 
     // Track date range
