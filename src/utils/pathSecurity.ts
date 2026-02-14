@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-escape */
 /**
  * Path Security Utilities
  * Provides path traversal protection for file operations

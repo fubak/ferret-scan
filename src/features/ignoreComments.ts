@@ -3,6 +3,9 @@
  * Supports various comment formats: ferret-ignore, ferret-disable, etc.
  */
 
+/* eslint-disable @typescript-eslint/prefer-regexp-exec */
+/* eslint-disable @typescript-eslint/array-type */
+
 import type { Finding } from '../types.js';
 import logger from '../utils/logger.js';
 

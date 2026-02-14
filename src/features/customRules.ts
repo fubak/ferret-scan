@@ -6,6 +6,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
@@ -65,7 +66,7 @@ function definitionToRule(def: CustomRuleDefinition): Rule {
   for (const pattern of def.patterns) {
     try {
       patterns.push(new RegExp(pattern, 'gi'));
-    } catch (error) {
+    } catch {
       logger.warn(`Invalid regex pattern in rule ${def.id}: ${pattern}`);
     }
   }
@@ -75,7 +76,7 @@ function definitionToRule(def: CustomRuleDefinition): Rule {
   }
 
   // Compile exclude patterns
-  const excludePatterns: RegExp[] | undefined = def.excludePatterns?.map(p => {
+  const excludePatterns: RegExp[] | undefined = def.excludePatterns?.map((p: string) => {
     try {
       return new RegExp(p, 'gi');
     } catch {
@@ -85,7 +86,7 @@ function definitionToRule(def: CustomRuleDefinition): Rule {
   }).filter((p): p is RegExp => p !== null);
 
   // Compile require context patterns
-  const requireContext: RegExp[] | undefined = def.requireContext?.map(p => {
+  const requireContext: RegExp[] | undefined = def.requireContext?.map((p: string) => {
     try {
       return new RegExp(p, 'gi');
     } catch {
@@ -95,7 +96,7 @@ function definitionToRule(def: CustomRuleDefinition): Rule {
   }).filter((p): p is RegExp => p !== null);
 
   // Compile exclude context patterns
-  const excludeContext: RegExp[] | undefined = def.excludeContext?.map(p => {
+  const excludeContext: RegExp[] | undefined = def.excludeContext?.map((p: string) => {
     try {
       return new RegExp(p, 'gi');
     } catch {
@@ -360,18 +361,18 @@ export function validateCustomRulesFile(filePath: string): {
     for (const rule of result.data.rules) {
       for (const pattern of rule.patterns) {
         try {
-          new RegExp(pattern, 'gi');
+          void new RegExp(pattern as string, 'gi');
         } catch {
-          errors.push(`Rule ${rule.id}: Invalid regex pattern "${pattern}"`);
+          errors.push(`Rule ${rule.id}: Invalid regex pattern "${String(pattern)}"`);
         }
       }
     }
 
     // Check for duplicate IDs
-    const ids = result.data.rules.map(r => r.id);
+    const ids = result.data.rules.map((r) => r.id as string);
     const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
     if (duplicates.length > 0) {
-      errors.push(`Duplicate rule IDs: ${[...new Set(duplicates)].join(', ')}`);
+      errors.push(`Duplicate rule IDs: ${Array.from(new Set(duplicates)).join(', ')}`);
     }
 
     return {

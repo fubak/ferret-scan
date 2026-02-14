@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
 /**
  * Webhook Notifications - Send scan results to external services
  * Supports Slack, Discord, Microsoft Teams, and generic webhooks

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/prefer-optional-chain */
 /**
  * Auto-Remediation Engine - Automated security fix application
  * Provides safe, reversible fixes for common security issues

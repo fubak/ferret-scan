@@ -4,7 +4,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFileSync, existsSync, mkdirSync, readFileSync, chmodSync } from 'node:fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync, chmodSync, unlinkSync } from 'node:fs';
 import { resolve } from 'node:path';
 import logger from '../utils/logger.js';
 
@@ -240,7 +240,6 @@ export function uninstallHooks(): {
       try {
         const content = readFileSync(hookPath, 'utf-8');
         if (content.includes('Ferret Security Scanner')) {
-          const { unlinkSync } = require('node:fs');
           unlinkSync(hookPath);
           removed.push(hook);
           logger.info(`Removed ${hook} hook`);

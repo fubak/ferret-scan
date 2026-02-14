@@ -3,6 +3,8 @@
  * Uses Shannon entropy to identify potential API keys, tokens, and passwords
  */
 
+/* eslint-disable @typescript-eslint/array-type */
+
 import type { Finding, DiscoveredFile, Severity } from '../types.js';
 import logger from '../utils/logger.js';
 

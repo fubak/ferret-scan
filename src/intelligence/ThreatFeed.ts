@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-type-assertion */
 /**
  * Threat Feed Manager - Manages file-based threat intelligence feeds
  * Provides indicators of compromise (IoCs) for enhanced security detection

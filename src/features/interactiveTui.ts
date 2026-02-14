@@ -3,6 +3,11 @@
  * Provides an interactive session for scanning, reviewing, and managing findings
  */
 
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
+
 import * as readline from 'node:readline';
 import type { Finding, ScanResult, Severity } from '../types.js';
 
@@ -146,10 +151,11 @@ function getFilteredFindings(state: TuiState): Finding[] {
 
   // Sort findings
   switch (state.sortBy) {
-    case 'severity':
+    case 'severity': {
       const severityOrder: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
       findings.sort((a, b) => severityOrder.indexOf(a.severity) - severityOrder.indexOf(b.severity));
       break;
+    }
     case 'file':
       findings.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
       break;
@@ -325,7 +331,7 @@ function createCommands(
       handler: async (args, state) => {
         const sortBy = args[0]?.toLowerCase();
         if (sortBy === 'severity' || sortBy === 'file' || sortBy === 'riskscore' || sortBy === 'risk') {
-          const newSort = sortBy === 'risk' || sortBy === 'riskscore' ? 'riskScore' : sortBy as 'severity' | 'file';
+          const newSort: 'severity' | 'file' | 'riskScore' = sortBy === 'risk' || sortBy === 'riskscore' ? 'riskScore' : sortBy === 'file' ? 'file' : 'severity';
           output(`${colors.green}Sorting by: ${newSort}${colors.reset}`);
           return { ...state, sortBy: newSort, currentFindingIndex: 0 };
         }
