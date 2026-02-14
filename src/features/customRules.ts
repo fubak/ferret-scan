@@ -3,6 +3,10 @@
  * Allows users to define custom security rules without modifying source code
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, extname } from 'node:path';
 import { parse as parseYaml } from 'yaml';
