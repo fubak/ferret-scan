@@ -212,7 +212,7 @@ function getExplicitMitreAtlasTechniqueIdsFromMetadata(finding: Finding): string
   const meta = finding.metadata;
   if (!meta || typeof meta !== 'object') return [];
 
-  const mitre = (meta as Record<string, unknown>)['mitre'];
+  const mitre = (meta)['mitre'];
   if (!mitre || typeof mitre !== 'object') return [];
 
   const atlas = (mitre as Record<string, unknown>)['atlas'];
@@ -325,7 +325,7 @@ export function annotateFindingsWithMitreAtlas(findings: Finding[]): Finding[] {
     const techniques = getMitreAtlasTechniquesForFinding(finding);
     if (techniques.length === 0) continue;
 
-    const existing = (finding.metadata ?? {}) as Record<string, unknown>;
+    const existing = (finding.metadata ?? {});
     const existingMitre = typeof existing['mitre'] === 'object' && existing['mitre'] !== null
       ? (existing['mitre'] as Record<string, unknown>)
       : {};

@@ -29,7 +29,7 @@ function isCacheFresh(path: string, ttlHours: number): boolean {
 
 async function fetchJson(url: string, timeoutMs: number): Promise<unknown> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {
@@ -68,11 +68,11 @@ export function parseMitreAtlasStixBundle(bundle: unknown): Record<string, Mitre
       return rr['source_name'] === 'mitre-atlas' && typeof rr['external_id'] === 'string';
     }) as Record<string, unknown> | undefined;
 
-    const id = typeof atlasRef?.['external_id'] === 'string' ? String(atlasRef['external_id']) : '';
+    const id = typeof atlasRef?.['external_id'] === 'string' ? atlasRef['external_id'] : '';
     if (!/^AML\.T\d{4,}(?:\.\d{3})?$/.test(id)) continue;
 
     const url = typeof atlasRef?.['url'] === 'string'
-      ? String(atlasRef['url'])
+      ? atlasRef['url']
       : `https://atlas.mitre.org/techniques/${id}`;
 
     const killChain = Array.isArray(o['kill_chain_phases']) ? (o['kill_chain_phases'] as unknown[]) : [];
@@ -127,7 +127,7 @@ export async function loadMitreAtlasTechniqueCatalog(
       const techniques = parseMitreAtlasStixBundle(json);
       if (Object.keys(techniques).length > 0) return techniques;
     } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
+      const msg = e instanceof Error ? e.message : e instanceof Error ? e.message : String(e);
       logger.warn(`MITRE ATLAS catalog download failed: ${msg}`);
     }
   }

@@ -3,7 +3,14 @@
  * Generates security rules from threat intelligence using LLM
  */
 
-import type { Rule, ThreatCategory, Severity } from '../types.js';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+
+import type { Rule, ThreatCategory, Severity} from '../types.js';
 import { createLlmProvider, type LlmProvider } from '../features/llmAnalysis.js';
 import logger from '../utils/logger.js';
 

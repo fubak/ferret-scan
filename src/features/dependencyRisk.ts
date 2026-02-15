@@ -4,9 +4,9 @@
  */
 
 /* eslint-disable @typescript-eslint/array-type */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+ 
+ 
+ 
 
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';

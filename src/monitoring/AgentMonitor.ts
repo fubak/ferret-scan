@@ -3,6 +3,15 @@
  * Tracks runtime execution patterns and detects anomalies
  */
 
+ 
+ 
+ 
+ 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/no-floating-promises */
+/* eslint-disable @typescript-eslint/no-deprecated */
+
 import { EventEmitter } from 'events';
 import logger from '../utils/logger.js';
 

@@ -3,6 +3,15 @@
  * Scans AI agent marketplaces and repositories for security issues
  */
 
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+ 
+ 
+ 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
+ 
+
 import { tmpdir } from 'os';
 import { join } from 'path';
 import { mkdtemp, rm } from 'fs/promises';
@@ -48,10 +57,6 @@ export interface MarketplaceScanConfig {
 }
 
 export class MarketplaceScanner {
-    constructor() {
-        // Scanner is now a function, not a class
-    }
-
     async scanMarketplace(config: MarketplaceScanConfig): Promise<PluginScanResult[]> {
         logger.info(`Starting marketplace scan: ${config.source}`);
 

@@ -3,6 +3,15 @@
  * Pre-execution validation and runtime constraint enforcement
  */
 
+ 
+ 
+ 
+ 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
+ 
+ 
+
 import logger from '../utils/logger.js';
 
 export interface ExecutionContext {

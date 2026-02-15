@@ -141,8 +141,8 @@ function normalizeSecretCandidate(value: string): string {
   v = v.trim();
 
   // Trim common trailing punctuation/brackets found in examples (e.g. "TOKEN}", "TOKEN);").
-  v = v.replace(/^[\"'`\[{(<]+/, '');
-  v = v.replace(/[\"'`\]})>,;]+$/, '');
+  v = v.replace(/^["'`[{(<]+/, '');
+  v = v.replace(/["'`\]})>,;]+$/, '');
 
   return v.trim();
 }

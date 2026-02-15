@@ -3,11 +3,11 @@
  * Validates .mcp.json files for dangerous permissions, untrusted sources, etc.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unused-vars */
+ 
+ 
+ 
+ 
+ 
 /* eslint-disable no-useless-escape */
 /* eslint-disable @typescript-eslint/array-type */
 
@@ -187,7 +187,7 @@ function analyzeServer(
     }
 
     // If using npx, require pinned package versions
-    if (command && command.toLowerCase() === 'npx') {
+    if (command?.toLowerCase() === 'npx') {
       const pkgSpec = getFirstNonFlagArg(args);
       if (pkgSpec && !isNpxPackagePinned(pkgSpec)) {
         issues.push({
@@ -331,7 +331,7 @@ export function validateMcpConfigContent(content: string): {
       errors.push(`MCP config schema validation failed: ${parsed.error.issues[0]?.message ?? 'unknown error'}`);
     }
 
-    const cfg = (parsed.success ? parsed.data : (parsedJson as McpConfig)) as McpConfig;
+    const cfg = (parsed.success ? parsed.data : (parsedJson as McpConfig));
     const servers = cfg.mcpServers ?? cfg.servers ?? {};
 
     if (!servers || typeof servers !== 'object' || Object.keys(servers).length === 0) {

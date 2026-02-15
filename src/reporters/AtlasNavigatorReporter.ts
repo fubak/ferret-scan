@@ -25,7 +25,7 @@ interface AtlasNavigatorLayer {
     navigator: string;
   };
   domain: 'atlas-atlas';
-  metadata?: Array<{ name: string; value: string }>;
+  metadata?: { name: string; value: string }[];
   name: string;
   description?: string;
   techniques: AtlasNavigatorTechniqueEntry[];

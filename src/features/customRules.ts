@@ -3,10 +3,10 @@
  * Allows users to define custom security rules without modifying source code
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
+ 
+ 
+ 
+ 
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -83,7 +83,7 @@ function isCacheFresh(path: string, ttlHours: number): boolean {
 
 async function fetchText(url: string, timeoutMs: number): Promise<string> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const timeout = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {
@@ -516,15 +516,15 @@ export function validateCustomRulesFile(filePath: string): {
     for (const rule of result.data.rules) {
       for (const pattern of rule.patterns) {
         try {
-          void new RegExp(pattern as string, 'gi');
+          void new RegExp(pattern, 'gi');
         } catch {
-          errors.push(`Rule ${rule.id}: Invalid regex pattern "${String(pattern)}"`);
+          errors.push(`Rule ${rule.id}: Invalid regex pattern "${pattern}"`);
         }
       }
     }
 
     // Check for duplicate IDs
-    const ids = result.data.rules.map((r) => r.id as string);
+    const ids = result.data.rules.map((r) => r.id);
     const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
     if (duplicates.length > 0) {
       errors.push(`Duplicate rule IDs: ${Array.from(new Set(duplicates)).join(', ')}`);
