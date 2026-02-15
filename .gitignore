@@ -14,6 +14,16 @@ coverage/
 *.swo
 *~
 
+# IDE Extensions (v2.0)
+extensions/**/out/
+extensions/**/node_modules/
+extensions/**/.vscode-test/
+*.vsix
+lsp/**/node_modules/
+lsp/**/dist/
+plugins/**/build/
+plugins/**/out/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -69,6 +79,7 @@ secring.*
 service-account*.json
 
 # Ferret runtime data
+.ferret-cache/
 .ferret-quarantine/
 .ferret-backups/
 .ferret-intel/

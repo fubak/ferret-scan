@@ -15,6 +15,34 @@ import type {
 } from '../types.js';
 import logger from '../utils/logger.js';
 
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesSymbolLike(text: string, symbol: string): boolean {
+  // Match a function/property token within a dotted chain without substring false positives.
+  // Examples:
+  // - pattern "exec" should match "exec(" and "child_process.exec" but not "execute("
+  // - pattern "axios" should match "axios.get" and "axios(" but not "myaxios"
+  const trimmed = symbol.trim();
+  if (!trimmed) return false;
+
+  // Prefix-like patterns (e.g. "fs." or "process.env") used in some semantic rules.
+  if (trimmed.endsWith('.')) {
+    const base = trimmed.slice(0, -1);
+    const escapedBase = escapeRegExp(base);
+    return new RegExp(`(?:^|\\.)${escapedBase}\\.`).test(text);
+  }
+  if (trimmed.includes('.')) {
+    const escapedPrefix = escapeRegExp(trimmed);
+    return new RegExp(`(?:^|\\.)${escapedPrefix}(?:\\.|$)`).test(text);
+  }
+
+  const escaped = escapeRegExp(trimmed);
+  const re = new RegExp(`(?:^|\\.)${escaped}(?:$|[^A-Za-z0-9_$])`);
+  return re.test(text);
+}
+
 /**
  * Extract code blocks from markdown content
  */
@@ -166,7 +194,7 @@ function matchSemanticPattern(
     case 'function-call':
       if (ts.isCallExpression(node)) {
         const functionName = node.expression.getText(sourceFile);
-        if (functionName.includes(pattern.pattern)) {
+        if (matchesSymbolLike(functionName, pattern.pattern)) {
           return { confidence };
         }
       }
@@ -175,7 +203,7 @@ function matchSemanticPattern(
     case 'property-access':
       if (ts.isPropertyAccessExpression(node)) {
         const fullAccess = node.getText(sourceFile);
-        if (fullAccess.includes(pattern.pattern)) {
+        if (matchesSymbolLike(fullAccess, pattern.pattern)) {
           return { confidence };
         }
       }
@@ -185,6 +213,12 @@ function matchSemanticPattern(
       if (ts.isCallExpression(node)) {
         if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
           // Dynamic import detected - pattern for security analysis only
+          const arg = node.arguments[0];
+          // Literal import paths are common and generally safe; focus on non-literals that could be user-controlled.
+          if (arg && (ts.isStringLiteralLike(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) {
+            break;
+          }
+
           if (pattern.pattern === 'dynamic-import' || nodeText.includes(pattern.pattern)) {
             confidence += 0.1; // Higher confidence for dynamic imports
             return { confidence };
@@ -194,12 +228,23 @@ function matchSemanticPattern(
       break;
 
     case 'eval-chain':
-      if (nodeText.toLowerCase().includes('eval') ||
-          nodeText.includes('Function(')) {
-        // Detecting eval patterns for security analysis - not executing
-        if (pattern.pattern === 'eval' || nodeText.includes(pattern.pattern)) {
-          confidence += 0.2; // Higher confidence for eval usage
+      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+        const expr = node.expression;
+        const target = pattern.pattern;
+
+        // Direct calls: eval(...), Function(...)
+        if (ts.isIdentifier(expr) && expr.text === target) {
+          confidence += 0.2;
           return { confidence };
+        }
+
+        // Allow common globals: globalThis.eval(...), window.eval(...)
+        if (ts.isPropertyAccessExpression(expr) && expr.name.text === target) {
+          const receiver = expr.expression;
+          if (ts.isIdentifier(receiver) && (receiver.text === 'globalThis' || receiver.text === 'window')) {
+            confidence += 0.2;
+            return { confidence };
+          }
         }
       }
       break;

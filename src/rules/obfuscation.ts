@@ -91,8 +91,9 @@ export const obfuscationRules: Rule[] = [
     severity: 'MEDIUM',
     description: 'Detects potentially malicious content hidden in HTML comments',
     patterns: [
-      /<!--[\s\S]{100,}?-->/g,
-      /<!--.*?(script|eval|function).*?-->/gis,
+      // Narrow to higher-signal patterns. Generic long HTML comments are common in markdown
+      // and create substantial false positives in vendor documentation.
+      /\x3c!--[\s\S]*?(ignore\s+previous|system\s+prompt|prompt\s+injection|jailbreak|exfiltrat|curl|wget|api[_-]?key|token|secret|password|bearer|ssh|scp|netcat|\bnc\b|powershell|cmd\.exe|bash\b|rm\s+-rf|chmod\s+777|eval\s*\(|base64)[\s\S]*?--\x3e/gis,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],

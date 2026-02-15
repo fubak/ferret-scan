@@ -8,7 +8,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve, extname } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
@@ -56,6 +57,104 @@ export type CustomRulesFile = z.infer<typeof CustomRulesFileSchema>;
  */
 const DEFAULT_FILE_TYPES: FileType[] = ['md', 'json', 'yaml', 'yml'];
 const DEFAULT_COMPONENTS: ComponentType[] = ['skill', 'agent', 'ai-config-md', 'mcp'];
+
+const DEFAULT_REMOTE_CACHE_DIR = '.ferret-cache/custom-rules';
+const DEFAULT_REMOTE_CACHE_TTL_HOURS = 24;
+const DEFAULT_REMOTE_TIMEOUT_MS = 30_000;
+
+function sha256(input: string): string {
+  return createHash('sha256').update(input, 'utf8').digest('hex');
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function isCacheFresh(path: string, ttlHours: number): boolean {
+  if (ttlHours <= 0) return true;
+  try {
+    const stats = statSync(path);
+    const ageHours = (Date.now() - stats.mtimeMs) / (1000 * 60 * 60);
+    return ageHours <= ttlHours;
+  } catch {
+    return false;
+  }
+}
+
+async function fetchText(url: string, timeoutMs: number): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+    }
+    return await res.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function parseCustomRulesContent(
+  content: string,
+  sourceExt: string,
+  sourceLabel: string
+): { success: boolean; rules: Rule[]; errors: string[] } {
+  const errors: string[] = [];
+  const rules: Rule[] = [];
+
+  try {
+    let parsed: unknown;
+    if (sourceExt === '.yaml' || sourceExt === '.yml') {
+      parsed = parseYaml(content);
+    } else if (sourceExt === '.json') {
+      parsed = JSON.parse(content);
+    } else if (!sourceExt) {
+      // Best-effort autodetect: JSON first, then YAML.
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        parsed = parseYaml(content);
+      }
+    } else {
+      return {
+        success: false,
+        rules: [],
+        errors: [`Unsupported custom rules format "${sourceExt}" for ${sourceLabel}. Use .yaml, .yml, or .json`],
+      };
+    }
+
+    const result = CustomRulesFileSchema.safeParse(parsed);
+    if (!result.success) {
+      const issues = result.error.issues.slice(0, 5).map(i =>
+        `${i.path.join('.')}: ${i.message}`
+      );
+      return {
+        success: false,
+        rules: [],
+        errors: [`Invalid custom rules in ${sourceLabel}: ${issues.join('; ')}`],
+      };
+    }
+
+    for (const def of result.data.rules) {
+      try {
+        rules.push(definitionToRule(def));
+      } catch (error) {
+        errors.push(`Failed to load rule ${def.id} from ${sourceLabel}: ${error}`);
+      }
+    }
+
+    logger.info(`Loaded ${rules.length} custom rules from ${sourceLabel}`);
+    return { success: errors.length === 0, rules, errors };
+  } catch (error) {
+    return {
+      success: false,
+      rules: [],
+      errors: [`Failed to parse custom rules from ${sourceLabel}: ${error}`],
+    };
+  }
+}
 
 /**
  * Convert custom rule definition to Rule object
@@ -209,6 +308,62 @@ export function loadCustomRulesFile(filePath: string): {
       errors: [`Failed to parse custom rules file: ${error}`],
     };
   }
+}
+
+export async function loadCustomRulesSource(
+  source: string,
+  options: { cacheDir?: string; cacheTtlHours?: number; timeoutMs?: number } = {}
+): Promise<{ success: boolean; rules: Rule[]; errors: string[] }> {
+  if (!isHttpUrl(source)) {
+    return loadCustomRulesFile(source);
+  }
+
+  const cacheDir = options.cacheDir ?? DEFAULT_REMOTE_CACHE_DIR;
+  const cacheTtlHours = options.cacheTtlHours ?? DEFAULT_REMOTE_CACHE_TTL_HOURS;
+  const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_TIMEOUT_MS;
+
+  let sourceExt = '';
+  try {
+    sourceExt = extname(new URL(source).pathname).toLowerCase();
+  } catch {
+    sourceExt = '';
+  }
+
+  const cacheKey = sha256(source);
+  const cachePath = resolve(cacheDir, `${cacheKey}${sourceExt || '.txt'}`);
+
+  // Use cache if fresh; otherwise fetch and refresh.
+  let content: string | null = null;
+  if (existsSync(cachePath) && isCacheFresh(cachePath, cacheTtlHours)) {
+    try {
+      content = readFileSync(cachePath, 'utf-8');
+    } catch {
+      content = null;
+    }
+  }
+
+  if (content === null) {
+    try {
+      content = await fetchText(source, timeoutMs);
+      mkdirSync(cacheDir, { recursive: true });
+      writeFileSync(cachePath, content, 'utf-8');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Best-effort: fall back to stale cache if present.
+      if (existsSync(cachePath)) {
+        try {
+          content = readFileSync(cachePath, 'utf-8');
+        } catch {
+          content = null;
+        }
+      }
+      if (content === null) {
+        return { success: false, rules: [], errors: [`Failed to fetch custom rules from ${source}: ${msg}`] };
+      }
+    }
+  }
+
+  return parseCustomRulesContent(content, sourceExt, source);
 }
 
 /**
@@ -393,6 +548,7 @@ export function validateCustomRulesFile(filePath: string): {
 
 export default {
   loadCustomRulesFile,
+  loadCustomRulesSource,
   loadCustomRules,
   generateExampleRulesFile,
   validateCustomRulesFile,

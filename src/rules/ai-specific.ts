@@ -219,6 +219,29 @@ export const aiSpecificRules: Rule[] = [
     ],
     enabled: true,
   },
+  {
+    id: 'AI-011',
+    name: 'Modify AI Agent Configuration',
+    category: 'ai-specific',
+    severity: 'HIGH',
+    description: 'Detects instructions that attempt to modify AI agent configuration files (persistence/backdoor setup)',
+    patterns: [
+      /\b(edit|modify|update|append|add|insert)\b[^\n]{0,120}(\.mcp\.json|mcp\.json|CLAUDE\.md|\.cursorrules|\.windsurfrules|\.clinerules|settings\.json|settings\.local\.json|\.claude\/settings\.json)\b/gi,
+      /\b(\.mcp\.json|mcp\.json|CLAUDE\.md|\.cursorrules|\.windsurfrules|\.clinerules|settings\.json|settings\.local\.json)\b[^\n]{0,120}\b(add|append|insert|edit|modify|update)\b/gi,
+      /\b(add|append|insert)\b[^\n]{0,120}\b(mcpServers|allowedTools|tools|permissions|hooks?)\b[^\n]{0,200}(\.mcp\.json|settings\.json|CLAUDE\.md)\b/gi,
+    ],
+    fileTypes: ['md', 'json'],
+    components: ['skill', 'agent', 'ai-config-md', 'settings', 'plugin', 'mcp'],
+    remediation: 'Treat configuration changes as security-sensitive. Verify intent and require review for agent/tool permission changes.',
+    references: [
+      'https://atlas.mitre.org/techniques/AML.T0081',
+    ],
+    enabled: true,
+    excludeContext: [
+      /security\s+scanner/gi,
+      /documentation|readme|docs/gi,
+    ],
+  },
 ];
 
 export default aiSpecificRules;

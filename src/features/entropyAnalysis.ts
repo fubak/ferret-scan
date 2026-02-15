@@ -5,6 +5,7 @@
 
 /* eslint-disable @typescript-eslint/array-type */
 
+import { basename } from 'node:path';
 import type { Finding, DiscoveredFile, Severity } from '../types.js';
 import logger from '../utils/logger.js';
 
@@ -31,25 +32,16 @@ const DEFAULT_CONFIG: EntropyConfig = {
   minLength: 16,
   maxLength: 256,
   secretIndicators: [
-    /^sk[-_]/i,           // Stripe keys
-    /^pk[-_]/i,           // Public keys
-    /^api[-_]?key/i,      // API keys
-    /^token/i,            // Tokens
-    /^secret/i,           // Secrets
-    /^password/i,         // Passwords
-    /^auth/i,             // Auth tokens
-    /^bearer/i,           // Bearer tokens
-    /^ghp_/i,             // GitHub personal tokens
-    /^gho_/i,             // GitHub OAuth tokens
-    /^ghu_/i,             // GitHub user tokens
-    /^ghs_/i,             // GitHub server tokens
-    /^ghr_/i,             // GitHub refresh tokens
-    /^xox[baprs]-/i,      // Slack tokens
-    /^eyJ/,               // JWT tokens (base64 JSON)
-    /^AKIA/,              // AWS access keys
-    /^AIza/,              // Google API keys
-    /^sk-[a-zA-Z0-9]/,    // OpenAI keys
-    /^anthropic/i,        // Anthropic keys
+    // High-signal token prefixes (avoid broad "token/password/bearer" value heuristics).
+    /^sk[-_][A-Za-z0-9][A-Za-z0-9_-]{16,}/, // OpenAI/Stripe-like keys
+    /^sk-ant-[A-Za-z0-9_-]{16,}/i,          // Anthropic
+    /^gsk_[A-Za-z0-9]{20,}/i,               // Groq API keys
+    /^gh[pousr]_[A-Za-z0-9]{20,}/i,         // GitHub tokens
+    /^xox[baprs]-/i,                        // Slack tokens
+    /^eyJ[0-9A-Za-z_-]{10,}\./,             // JWT (header segment prefix + dot)
+    /^AKIA[0-9A-Z]{16}$/,                   // AWS access keys
+    /^AIza[0-9A-Za-z_-]{20,}/,              // Google API keys
+    /^rt_[A-Za-z0-9._-]{20,}/i,             // Refresh tokens (e.g., auth providers)
   ],
   excludePatterns: [
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i, // UUID
@@ -60,7 +52,7 @@ const DEFAULT_CONFIG: EntropyConfig = {
     /^https?:\/\//,       // URLs
     /^\d+$/,              // Pure numbers
     /^[A-Z_]+$/,          // Constants (all caps with underscores)
-    /example|sample|test|demo|placeholder|xxx/i, // Example values
+    /example|sample|demo|placeholder|xxx|changeme|replace[ _-]?me|replace[ _-]?this|your[ _-]?(api[_-]?key|token|secret|password)/i, // Example values
   ],
   suspiciousCharsets: [
     /^[A-Za-z0-9+/=]+$/,  // Base64
@@ -138,6 +130,23 @@ function shouldExclude(str: string, config: EntropyConfig): boolean {
   return config.excludePatterns.some(pattern => pattern.test(str));
 }
 
+function normalizeSecretCandidate(value: string): string {
+  let v = value.trim();
+
+  // Common Authorization header styles. We want to analyze the token part,
+  // not the scheme label (which would break charset/entropy heuristics).
+  v = v.replace(/^bearer\s+/i, '');
+  v = v.replace(/^basic\s+/i, '');
+  v = v.replace(/^token\s+/i, '');
+  v = v.trim();
+
+  // Trim common trailing punctuation/brackets found in examples (e.g. "TOKEN}", "TOKEN);").
+  v = v.replace(/^[\"'`\[{(<]+/, '');
+  v = v.replace(/[\"'`\]})>,;]+$/, '');
+
+  return v.trim();
+}
+
 /**
  * Extract potential secret strings from content
  */
@@ -156,8 +165,8 @@ function extractPotentialSecrets(content: string, config: EntropyConfig): Array<
 
   // Pattern to find quoted strings and assignment values
   const patterns = [
-    // Quoted strings: "value" or 'value'
-    /["']([^"'\n]{16,256})["']/g,
+    // JSON/YAML-ish values: key: "value" or key="value" (avoid matching keys)
+    /[:=]\s*["']([^"'\n]{16,256})["']/g,
     // Assignment: key=value or key: value
     /(?:key|token|secret|password|api[_-]?key|auth|bearer)\s*[=:]\s*["']?([^\s"'\n]{16,256})["']?/gi,
     // Environment variable style: VARIABLE=value
@@ -169,6 +178,11 @@ function extractPotentialSecrets(content: string, config: EntropyConfig): Array<
     while ((match = pattern.exec(content)) !== null) {
       const value = match[1] ?? match[0];
       if (value.length >= config.minLength && value.length <= config.maxLength) {
+        const full = match[0] ?? '';
+        const idxInFull = full.indexOf(value);
+        const valueStart = match.index + (idxInFull >= 0 ? idxInFull : 0);
+        const valueEnd = valueStart + value.length;
+
         // Get surrounding context
         const contextStart = Math.max(0, match.index - 20);
         const contextEnd = Math.min(content.length, match.index + match[0].length + 20);
@@ -176,8 +190,8 @@ function extractPotentialSecrets(content: string, config: EntropyConfig): Array<
 
         results.push({
           value,
-          start: match.index,
-          end: match.index + match[0].length,
+          start: valueStart,
+          end: valueEnd,
           context,
         });
       }
@@ -208,6 +222,19 @@ export function analyzeEntropy(
   file: DiscoveredFile,
   config: Partial<EntropyConfig> = {}
 ): EntropyFinding[] {
+  const name = basename(file.path).toLowerCase();
+  const lockfiles = new Set([
+    'package-lock.json',
+    'npm-shrinkwrap.json',
+    'yarn.lock',
+    'pnpm-lock.yaml',
+    'composer.lock',
+    'pipfile.lock',
+  ]);
+  if (lockfiles.has(name)) {
+    return [];
+  }
+
   const cfg = { ...DEFAULT_CONFIG, ...config };
   const findings: EntropyFinding[] = [];
   const lines = content.split('\n');
@@ -215,15 +242,20 @@ export function analyzeEntropy(
   const potentialSecrets = extractPotentialSecrets(content, cfg);
 
   for (const { value, start } of potentialSecrets) {
-    // Skip excluded patterns
-    if (shouldExclude(value, cfg)) {
+    const candidate = normalizeSecretCandidate(value);
+    if (candidate.length < cfg.minLength || candidate.length > cfg.maxLength) {
       continue;
     }
 
-    const entropy = calculateEntropy(value);
-    const charDist = analyzeCharacterDistribution(value);
-    const matchesIndicator = matchesSecretIndicator(value, cfg);
-    const matchesSuspiciousCharset = cfg.suspiciousCharsets.some(p => p.test(value));
+    // Skip excluded patterns
+    if (shouldExclude(candidate, cfg)) {
+      continue;
+    }
+
+    const entropy = calculateEntropy(candidate);
+    const charDist = analyzeCharacterDistribution(candidate);
+    const matchesIndicator = matchesSecretIndicator(candidate, cfg);
+    const matchesSuspiciousCharset = cfg.suspiciousCharsets.some(p => p.test(candidate));
 
     // Determine if this is likely a secret
     let confidence: 'high' | 'medium' | 'low' = 'low';
@@ -265,12 +297,12 @@ export function analyzeEntropy(
     }
 
     // Redact the value for display
-    const redactedValue = value.length > 8
-      ? value.slice(0, 4) + '*'.repeat(value.length - 8) + value.slice(-4)
-      : '*'.repeat(value.length);
+    const redactedValue = candidate.length > 8
+      ? candidate.slice(0, 4) + '*'.repeat(candidate.length - 8) + candidate.slice(-4)
+      : '*'.repeat(candidate.length);
 
     findings.push({
-      value,
+      value: candidate,
       entropy,
       line,
       column,
