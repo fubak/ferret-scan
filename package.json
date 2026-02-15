@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "ferret": "./bin/ferret.js"
+    "ferret": "bin/ferret.js"
   },
   "scripts": {
     "build": "tsc",
@@ -63,7 +63,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/fubak/ferret-scan.git"
+    "url": "git+https://github.com/fubak/ferret-scan.git"
   },
   "bugs": {
     "url": "https://github.com/fubak/ferret-scan/issues"
