@@ -250,6 +250,8 @@ export interface ScanResult {
   summary: ScanSummary;
   /** Any errors encountered during scanning */
   errors: ScanError[];
+  /** Findings that were suppressed via inline ignore directives */
+  ignoredFindings?: number;
 }
 
 /** Summary statistics for a scan */
@@ -278,12 +280,22 @@ export interface ScanError {
 export interface ScannerConfig {
   /** Paths to scan */
   paths: string[];
+  /** Restrict scanning to high-signal AI config files (reduces noise, faster) */
+  configOnly: boolean;
+  /** Marketplace scanning profile (primarily for Claude marketplace plugins) */
+  marketplaceMode: 'off' | 'configs' | 'all';
+  /** Reduce severity for doc-only findings that would otherwise be noisy (heuristic) */
+  docDampening: boolean;
+  /** Redact secret-like values in output reports */
+  redact: boolean;
   /** Severity levels to report */
   severities: Severity[];
   /** Categories to scan for */
   categories: ThreatCategory[];
   /** Patterns to ignore (glob) */
   ignore: string[];
+  /** Custom rule sources (file paths or URLs) loaded at runtime */
+  customRules: string[];
   /** Minimum severity to fail on */
   failOn: Severity;
   /** Enable watch mode */
@@ -294,6 +306,26 @@ export interface ScannerConfig {
   semanticAnalysis: boolean;
   /** Enable cross-file correlation */
   correlationAnalysis: boolean;
+  /** Enable entropy-based secret detection */
+  entropyAnalysis: boolean;
+  /** Enable MCP configuration validation */
+  mcpValidation: boolean;
+  /** Enable dependency risk analysis (package.json) */
+  dependencyAnalysis: boolean;
+  /** Run `npm audit` as part of dependency analysis (slow, may require network) */
+  dependencyAudit: boolean;
+  /** Enable AI agent capability mapping */
+  capabilityMapping: boolean;
+  /** Respect inline ignore directives (ferret-ignore / ferret-disable) */
+  ignoreComments: boolean;
+  /** Annotate findings with MITRE ATLAS technique metadata */
+  mitreAtlas: boolean;
+  /** Optional MITRE ATLAS technique catalog auto-update (for latest technique metadata) */
+  mitreAtlasCatalog: MitreAtlasCatalogConfig;
+  /** Enable LLM-assisted analysis (requires network + API key) */
+  llmAnalysis: boolean;
+  /** LLM analysis configuration */
+  llm: LlmScanConfig;
   /** Enable auto-remediation */
   autoRemediation: boolean;
   /** Context lines to show around findings */
@@ -311,7 +343,7 @@ export interface ScannerConfig {
 }
 
 /** Supported output formats */
-export type OutputFormat = 'console' | 'json' | 'sarif' | 'html' | 'csv';
+export type OutputFormat = 'console' | 'json' | 'sarif' | 'html' | 'csv' | 'atlas';
 
 /** CLI options passed from command line */
 export interface CliOptions {
@@ -324,9 +356,35 @@ export interface CliOptions {
   watch?: boolean;
   ci?: boolean;
   verbose?: boolean;
+  configOnly?: boolean;
+  marketplace?: string;
+  docDampening?: boolean;
+  redact?: boolean;
+  customRules?: string;
   threatIntel?: boolean;
   semanticAnalysis?: boolean;
   correlationAnalysis?: boolean;
+  entropyAnalysis?: boolean;
+  mcpValidation?: boolean;
+  dependencyAnalysis?: boolean;
+  dependencyAudit?: boolean;
+  capabilityMapping?: boolean;
+  ignoreComments?: boolean;
+  mitreAtlas?: boolean;
+  mitreAtlasCatalog?: boolean;
+  mitreAtlasCatalogForceRefresh?: boolean;
+  thorough?: boolean;
+  llmAnalysis?: boolean;
+  llmProvider?: string;
+  llmModel?: string;
+  llmBaseUrl?: string;
+  llmApiKeyEnv?: string;
+  llmTimeoutMs?: number;
+  llmMaxInputChars?: number;
+  llmCacheDir?: string;
+  llmOnlyIfFindings?: boolean;
+  llmMaxFiles?: number;
+  llmMinConfidence?: number;
   autoRemediation?: boolean;
   config?: string;
 }
@@ -336,7 +394,24 @@ export interface ConfigFile {
   severity?: Severity[];
   categories?: ThreatCategory[];
   ignore?: string[];
+  configOnly?: boolean;
+  marketplaceMode?: 'off' | 'configs' | 'all';
+  docDampening?: boolean;
+  redact?: boolean;
+  customRules?: string | string[];
   failOn?: Severity;
+  features?: {
+    entropyAnalysis?: boolean;
+    mcpValidation?: boolean;
+    dependencyAnalysis?: boolean;
+    dependencyAudit?: boolean;
+    capabilityMapping?: boolean;
+    ignoreComments?: boolean;
+    mitreAtlas?: boolean;
+    llmAnalysis?: boolean;
+  };
+  llm?: Partial<LlmScanConfig>;
+  mitreAtlasCatalog?: Partial<MitreAtlasCatalogConfig>;
   threatIntelligence?: {
     enabled: boolean;
     feeds?: string[];
@@ -352,6 +427,10 @@ export interface ConfigFile {
 /** Default scanner configuration */
 export const DEFAULT_CONFIG: ScannerConfig = {
   paths: [],
+  configOnly: false,
+  marketplaceMode: 'configs',
+  docDampening: true,
+  redact: false,
   severities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'],
   categories: [
     'exfiltration',
@@ -367,11 +446,53 @@ export const DEFAULT_CONFIG: ScannerConfig = {
     'behavioral',
   ],
   ignore: ['**/node_modules/**', '**/.git/**'],
+  customRules: [],
   failOn: 'HIGH',
   watch: false,
   threatIntel: false,
   semanticAnalysis: false,
   correlationAnalysis: false,
+  entropyAnalysis: false,
+  mcpValidation: false,
+  dependencyAnalysis: false,
+  dependencyAudit: false,
+  capabilityMapping: false,
+  ignoreComments: true,
+  mitreAtlas: true,
+  mitreAtlasCatalog: {
+    enabled: false,
+    autoUpdate: true,
+    sourceUrl: 'https://raw.githubusercontent.com/mitre-atlas/atlas-navigator-data/main/dist/stix-atlas.json',
+    cachePath: '.ferret-cache/mitre/stix-atlas.json',
+    cacheTtlHours: 24 * 7,
+    timeoutMs: 30_000,
+    forceRefresh: false,
+  },
+  llmAnalysis: false,
+	  llm: {
+	    provider: 'openai-compatible',
+	    baseUrl: 'https://api.openai.com/v1/chat/completions',
+	    model: 'gpt-4o-mini',
+	    apiKeyEnv: 'OPENAI_API_KEY',
+	    timeoutMs: 30_000,
+	    jsonMode: true,
+	    maxInputChars: 12_000,
+	    maxOutputTokens: 800,
+	    temperature: 0,
+	    systemPromptAddendum: '',
+	    includeMitreAtlasTechniques: false,
+	    maxMitreAtlasTechniques: 200,
+	    cacheDir: '.ferret-cache/llm',
+	    cacheTtlHours: 24 * 7,
+	    maxRetries: 2,
+	    retryBackoffMs: 500,
+	    retryMaxBackoffMs: 5_000,
+	    minRequestIntervalMs: 250,
+	    onlyIfFindings: true,
+	    maxFindingsPerFile: 10,
+	    maxFiles: 25,
+	    minConfidence: 0.6,
+	  },
   autoRemediation: false,
   contextLines: 3,
   maxFileSize: 10 * 1024 * 1024, // 10MB
@@ -379,6 +500,52 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   verbose: false,
   ci: false,
 };
+
+export interface MitreAtlasCatalogConfig {
+  enabled: boolean;
+  autoUpdate: boolean;
+  sourceUrl: string;
+  cachePath: string;
+  cacheTtlHours: number;
+  timeoutMs: number;
+  /** Ignore cache freshness and attempt download each run (falls back to cache on failure) */
+  forceRefresh: boolean;
+}
+
+export interface LlmScanConfig {
+  provider: string;
+  baseUrl: string;
+  model: string;
+  /** Environment variable name that contains the API key */
+  apiKeyEnv: string;
+  timeoutMs: number;
+  /**
+   * Best-effort: ask the provider to enforce JSON output (OpenAI-compatible `response_format`).
+   * Ferret will automatically fall back if unsupported.
+   */
+  jsonMode: boolean;
+  maxInputChars: number;
+  maxOutputTokens: number;
+  temperature: number;
+  /** Optional additional system prompt instructions (appended after Ferret's base prompt) */
+  systemPromptAddendum: string;
+  /** Include an ATLAS technique ID/name list in the LLM prompt (helps map to latest techniques) */
+  includeMitreAtlasTechniques: boolean;
+  /** Max techniques to include in the prompt (bounded to control token usage) */
+  maxMitreAtlasTechniques: number;
+  cacheDir: string;
+  cacheTtlHours: number;
+  /** Retry transient/provider rate limit errors (e.g. HTTP 429) */
+  maxRetries: number;
+  retryBackoffMs: number;
+  retryMaxBackoffMs: number;
+  /** Minimum delay between LLM requests to reduce rate limit flakiness */
+  minRequestIntervalMs: number;
+  onlyIfFindings: boolean;
+  maxFindingsPerFile: number;
+  maxFiles: number;
+  minConfidence: number;
+}
 
 /** Severity weights for risk scoring */
 export const SEVERITY_WEIGHTS: Record<Severity, number> = {

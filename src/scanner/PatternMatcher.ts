@@ -136,6 +136,13 @@ function shouldExcludeMatch(
   lineContent: string,
   contextLines: string[]
 ): boolean {
+  const safeTest = (re: RegExp, value: string): boolean => {
+    // Many rule regexes are authored with /g, but .test() with /g is stateful via lastIndex.
+    // Reset to ensure consistent behavior across matches/files.
+    if (re.global || re.sticky) re.lastIndex = 0;
+    return re.test(value);
+  };
+
   // Check minimum match length
   if (rule.minMatchLength && matchText.length < rule.minMatchLength) {
     return true;
@@ -144,7 +151,7 @@ function shouldExcludeMatch(
   // Check exclude patterns (false positive filters)
   if (rule.excludePatterns) {
     for (const excludePattern of rule.excludePatterns) {
-      if (excludePattern.test(lineContent)) {
+      if (safeTest(excludePattern, lineContent)) {
         logger.debug(`[${rule.id}] Excluded by excludePattern: ${lineContent.slice(0, 50)}`);
         return true;
       }
@@ -155,7 +162,7 @@ function shouldExcludeMatch(
   if (rule.excludeContext) {
     const fullContext = contextLines.join('\n');
     for (const excludeCtx of rule.excludeContext) {
-      if (excludeCtx.test(fullContext)) {
+      if (safeTest(excludeCtx, fullContext)) {
         logger.debug(`[${rule.id}] Excluded by excludeContext`);
         return true;
       }
@@ -167,7 +174,7 @@ function shouldExcludeMatch(
     const fullContext = contextLines.join('\n');
     let hasRequiredContext = false;
     for (const reqCtx of rule.requireContext) {
-      if (reqCtx.test(fullContext)) {
+      if (safeTest(reqCtx, fullContext)) {
         hasRequiredContext = true;
         break;
       }

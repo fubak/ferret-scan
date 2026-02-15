@@ -8,14 +8,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
-- VS Code extension for IDE integration
-- CI/CD plugins for Jenkins, GitLab, Azure DevOps
+- Complete LSP server implementation
+- Complete IntelliJ plugin implementation
+- Community rule sharing backend
+- Real-time monitoring dashboard
+- CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
-- Machine learning model for advanced anomaly detection
-- Compliance framework integration (SOC2, ISO27001)
-- Community rule marketplace
-- Advanced threat hunting capabilities
 - SIEM/SOAR integrations
+
+## [2.0.0] - 2026-02-15
+
+### Added
+- **IDE Integrations**
+  - VS Code extension with real-time security scanning
+  - Inline diagnostics with severity-based warnings
+  - Quick fix code actions for common issues
+  - Security findings tree view in sidebar
+  - LSP server infrastructure for universal IDE support
+  - IntelliJ plugin infrastructure
+
+- **Advanced Behavior Analysis**
+  - Runtime agent execution monitoring
+  - Anomaly detection based on behavioral baselines
+  - Resource usage tracking (CPU, memory, disk)
+  - Network activity monitoring
+  - Sensitive file access detection
+  - Event-based real-time alerting system
+
+- **Marketplace Security**
+  - Claude Skills marketplace scanner
+  - Cursor extensions security analysis
+  - Plugin permission risk detection
+  - Dangerous capability combination analysis
+  - Automated risk scoring and recommendations
+  - Source code scanning integration
+
+- **AI-Powered Features**
+  - LLM-based rule generation from threat intelligence
+  - Automated rule validation and testing
+  - Community rule sharing infrastructure
+  - Confidence scoring for generated rules
+  - MITRE ATLAS technique mapping
+
+- **Sandboxing Integration**
+  - Pre-execution security validation
+  - Runtime constraint enforcement
+  - Policy violation detection
+  - Dangerous command pattern blocking
+  - Resource limit generation
+  - Network and file system access controls
+
+- **Compliance Frameworks**
+  - SOC2 compliance assessment and reporting
+  - ISO 27001 control mapping
+  - GDPR privacy impact assessment
+  - Automated evidence collection
+  - Compliance scoring system
+  - Remediation recommendations
+
+### Changed
+- Version bumped from 1.0.10 to 2.0.0
+- Package description updated to reflect platform capabilities
+- README enhanced with v2.0 features and IDE integration docs
+- Repository structure reorganized for better maintainability
+- Documentation moved to docs/ folder
+
+### Fixed
+- All TypeScript compilation errors in new modules
+- Unused import and variable warnings
+- Build system optimizations
 
 ## [1.0.10] - 2026-02-12
 

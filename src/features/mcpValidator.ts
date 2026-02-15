@@ -105,6 +105,24 @@ const TRUSTED_SOURCES = [
   'mcp-server-',
 ];
 
+function getFirstNonFlagArg(args: string[]): string | null {
+  for (const arg of args) {
+    if (!arg) continue;
+    if (arg.startsWith('-')) continue;
+    return arg;
+  }
+  return null;
+}
+
+function isNpxPackagePinned(pkgSpec: string): boolean {
+  // Scoped packages: @scope/name@1.2.3
+  if (pkgSpec.startsWith('@')) {
+    return /^@[^/]+\/[^@]+@.+$/.test(pkgSpec);
+  }
+  // Unscoped: name@1.2.3
+  return /^[^@/]+@.+$/.test(pkgSpec);
+}
+
 /**
  * Analyze a single MCP server configuration
  */
@@ -166,6 +184,20 @@ function analyzeServer(
         remediation: 'Verify the source of the MCP server and use trusted packages',
       });
       updateRisk('medium');
+    }
+
+    // If using npx, require pinned package versions
+    if (command && command.toLowerCase() === 'npx') {
+      const pkgSpec = getFirstNonFlagArg(args);
+      if (pkgSpec && !isNpxPackagePinned(pkgSpec)) {
+        issues.push({
+          type: 'unpinned-npx',
+          severity: 'MEDIUM',
+          description: `npx package is not version-pinned: ${pkgSpec}`,
+          remediation: 'Pin the MCP server package to an exact version (e.g., name@1.2.3)',
+        });
+        updateRisk('medium');
+      }
     }
 
     // Check for shell expansion
@@ -280,9 +312,9 @@ function analyzeServer(
 }
 
 /**
- * Validate MCP configuration file
+ * Validate MCP configuration JSON content
  */
-export function validateMcpConfig(filePath: string): {
+export function validateMcpConfigContent(content: string): {
   valid: boolean;
   assessments: McpRiskAssessment[];
   errors: string[];
@@ -290,27 +322,20 @@ export function validateMcpConfig(filePath: string): {
   const errors: string[] = [];
   const assessments: McpRiskAssessment[] = [];
 
-  if (!existsSync(filePath)) {
-    return {
-      valid: false,
-      assessments: [],
-      errors: [`MCP config file not found: ${filePath}`],
-    };
-  }
-
   try {
-    const content = readFileSync(filePath, 'utf-8');
-    const parsed = JSON.parse(content) as McpConfig;
+    const parsedJson = JSON.parse(content) as unknown;
+    const parsed = McpConfigSchema.safeParse(parsedJson);
 
-    // Get servers from either mcpServers or servers key
-    const servers = parsed.mcpServers ?? parsed.servers ?? {};
+    if (!parsed.success) {
+      // Keep scanning best-effort, but record validation errors.
+      errors.push(`MCP config schema validation failed: ${parsed.error.issues[0]?.message ?? 'unknown error'}`);
+    }
 
-    if (Object.keys(servers).length === 0) {
-      return {
-        valid: true,
-        assessments: [],
-        errors: [],
-      };
+    const cfg = (parsed.success ? parsed.data : (parsedJson as McpConfig)) as McpConfig;
+    const servers = cfg.mcpServers ?? cfg.servers ?? {};
+
+    if (!servers || typeof servers !== 'object' || Object.keys(servers).length === 0) {
+      return { valid: true, assessments: [], errors };
     }
 
     for (const [name, config] of Object.entries(servers)) {
@@ -321,10 +346,39 @@ export function validateMcpConfig(filePath: string): {
     }
 
     return {
+      // JSON parsed successfully; schema errors are warnings and don't invalidate analysis.
       valid: true,
       assessments,
       errors,
     };
+  } catch (error) {
+    return {
+      valid: false,
+      assessments: [],
+      errors: [`Failed to parse MCP config: ${error}`],
+    };
+  }
+}
+
+/**
+ * Validate MCP configuration file
+ */
+export function validateMcpConfig(filePath: string): {
+  valid: boolean;
+  assessments: McpRiskAssessment[];
+  errors: string[];
+} {
+  if (!existsSync(filePath)) {
+    return {
+      valid: false,
+      assessments: [],
+      errors: [`MCP config file not found: ${filePath}`],
+    };
+  }
+
+  try {
+    const content = readFileSync(filePath, 'utf-8');
+    return validateMcpConfigContent(content);
   } catch (error) {
     return {
       valid: false,
@@ -346,11 +400,17 @@ export function mcpAssessmentsToFindings(
 
   for (const assessment of assessments) {
     for (const issue of assessment.issues) {
+      const category =
+        issue.type.includes('secret') ? 'credentials' :
+        issue.type.includes('untrusted') || issue.type.includes('unpinned') ? 'supply-chain' :
+        issue.type.includes('transport') || issue.type.includes('websocket') ? 'permissions' :
+        'permissions';
+
       findings.push({
         ruleId: `MCP-${issue.type.toUpperCase().replace(/-/g, '')}`,
         ruleName: `MCP Server: ${issue.type.replace(/-/g, ' ')}`,
         severity: issue.severity,
-        category: issue.type.includes('secret') ? 'credentials' : 'permissions',
+        category,
         file: filePath,
         relativePath,
         line: 1,
@@ -422,6 +482,7 @@ export function findAndValidateMcpConfigs(basePath: string): {
 
 export default {
   validateMcpConfig,
+  validateMcpConfigContent,
   mcpAssessmentsToFindings,
   findAndValidateMcpConfigs,
 };

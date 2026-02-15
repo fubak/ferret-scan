@@ -88,7 +88,6 @@ export const exfiltrationRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects instructions in markdown files that direct Claude to exfiltrate data',
     patterns: [
-      /send\s+.*\s+to\s+.*(webhook|endpoint|server|api|url)/gi,
       /exfiltrate\s+.*(key|token|secret|credential|password|data)/gi,
       /upload\s+.*(key|token|secret|credential|password)\s+to/gi,
       /POST\s+.*containing\s+.*(environment|env|secret|key|token)/gi,

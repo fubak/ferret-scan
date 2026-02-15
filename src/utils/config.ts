@@ -102,6 +102,29 @@ function parseCategories(categoriesStr: string | undefined): ThreatCategory[] | 
   return categories.filter(c => validCategories.includes(c));
 }
 
+function uniqueStrings(values: string[]): string[] {
+  return Array.from(new Set(values));
+}
+
+function parseCustomRules(value: string | string[] | undefined): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) {
+    return value.map(v => v.trim()).filter(Boolean);
+  }
+  return value.split(',').map(v => v.trim()).filter(Boolean);
+}
+
+function isHttpUrl(value: string): boolean {
+  return /^https?:\/\//i.test(value);
+}
+
+function resolveCustomRuleSources(sources: string[], baseDir: string): string[] {
+  return sources.map((src) => {
+    if (isHttpUrl(src)) return src;
+    return resolve(baseDir, src);
+  });
+}
+
 /**
  * AI CLI configuration directory patterns
  * Supports multiple AI assistants and their config locations
@@ -142,7 +165,27 @@ const AI_CLI_PATTERNS = {
     dirs: ['.ai'],
     files: ['AI.md', 'AGENT.md', 'AGENTS.md'],
   },
+  // OpenClaw
+  openclaw: {
+    dirs: ['.openclaw'],
+    files: ['openclaw.json'],
+  },
 };
+
+function getCursorUserConfigPaths(home: string): string[] {
+  // Cursor stores user settings outside of ~/.cursor on Linux/macOS.
+  // Scanning ~/.cursor often pulls in cached worktrees and extensions (high noise).
+  const candidates = [
+    // Linux
+    resolve(home, '.config', 'Cursor', 'User', 'settings.json'),
+    resolve(home, '.config', 'Cursor', 'User', 'keybindings.json'),
+    // macOS
+    resolve(home, 'Library', 'Application Support', 'Cursor', 'User', 'settings.json'),
+    resolve(home, 'Library', 'Application Support', 'Cursor', 'User', 'keybindings.json'),
+  ];
+
+  return candidates.filter((p) => existsSync(p));
+}
 
 /**
  * Get AI CLI configuration paths
@@ -153,12 +196,15 @@ export function getAIConfigPaths(): string[] {
   const cwd = process.cwd();
   const home = homedir();
 
+  // Cursor global config (avoid scanning ~/.cursor by default).
+  paths.push(...getCursorUserConfigPaths(home));
+
   // Check all AI CLI patterns
-  for (const cli of Object.values(AI_CLI_PATTERNS)) {
+  for (const [cliName, cli] of Object.entries(AI_CLI_PATTERNS)) {
     // Check directories (both global and project-level)
     for (const dir of cli.dirs) {
       const globalDir = resolve(home, dir);
-      if (existsSync(globalDir)) {
+      if (existsSync(globalDir) && !(cliName === 'cursor' && dir === '.cursor')) {
         paths.push(globalDir);
       }
 
@@ -177,7 +223,7 @@ export function getAIConfigPaths(): string[] {
     }
   }
 
-  return paths;
+  return uniqueStrings(paths);
 }
 
 /**
@@ -194,11 +240,13 @@ export function getClaudeConfigPaths(): string[] {
 export function loadConfig(cliOptions: CliOptions): ScannerConfig {
   // Start with defaults
   const config: ScannerConfig = { ...DEFAULT_CONFIG };
+  let llmIncludeAtlasExplicit = false;
 
   // Load config file if exists
   const configPath = cliOptions.config ?? findConfigFile(process.cwd());
   if (configPath) {
     const fileConfig = loadConfigFile(configPath);
+    const configDir = dirname(configPath);
 
     // Merge file config
     if (fileConfig.severity) {
@@ -210,12 +258,77 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
     if (fileConfig.ignore) {
       config.ignore = [...config.ignore, ...fileConfig.ignore];
     }
+    if (fileConfig.configOnly !== undefined) {
+      config.configOnly = fileConfig.configOnly;
+    }
+    if (fileConfig.marketplaceMode !== undefined) {
+      config.marketplaceMode = fileConfig.marketplaceMode;
+    }
+    if (fileConfig.docDampening !== undefined) {
+      config.docDampening = fileConfig.docDampening;
+    }
+    if (fileConfig.redact !== undefined) {
+      config.redact = fileConfig.redact;
+    }
+    if (fileConfig.customRules) {
+      const sources = parseCustomRules(fileConfig.customRules);
+      const resolved = resolveCustomRuleSources(sources, configDir);
+      config.customRules = uniqueStrings([...config.customRules, ...resolved]);
+    }
     if (fileConfig.failOn) {
       config.failOn = fileConfig.failOn;
     }
     if (fileConfig.threatIntelligence?.enabled !== undefined) {
       config.threatIntel = fileConfig.threatIntelligence.enabled;
     }
+    if (fileConfig.features) {
+      if (fileConfig.features.entropyAnalysis !== undefined) {
+        config.entropyAnalysis = fileConfig.features.entropyAnalysis;
+      }
+      if (fileConfig.features.mcpValidation !== undefined) {
+        config.mcpValidation = fileConfig.features.mcpValidation;
+      }
+      if (fileConfig.features.dependencyAnalysis !== undefined) {
+        config.dependencyAnalysis = fileConfig.features.dependencyAnalysis;
+      }
+      if (fileConfig.features.dependencyAudit !== undefined) {
+        config.dependencyAudit = fileConfig.features.dependencyAudit;
+      }
+      if (fileConfig.features.capabilityMapping !== undefined) {
+        config.capabilityMapping = fileConfig.features.capabilityMapping;
+      }
+      if (fileConfig.features.ignoreComments !== undefined) {
+        config.ignoreComments = fileConfig.features.ignoreComments;
+      }
+      if (fileConfig.features.mitreAtlas !== undefined) {
+        config.mitreAtlas = fileConfig.features.mitreAtlas;
+      }
+      if (fileConfig.features.llmAnalysis !== undefined) {
+        config.llmAnalysis = fileConfig.features.llmAnalysis;
+      }
+    }
+    if (fileConfig.llm) {
+      if (fileConfig.llm.includeMitreAtlasTechniques !== undefined) {
+        llmIncludeAtlasExplicit = true;
+      }
+      config.llm = { ...config.llm, ...fileConfig.llm };
+    }
+    if (fileConfig.mitreAtlasCatalog) {
+      config.mitreAtlasCatalog = { ...config.mitreAtlasCatalog, ...fileConfig.mitreAtlasCatalog };
+    }
+  }
+
+  // Apply "thorough" profile before individual CLI overrides
+  if (cliOptions.thorough) {
+    config.threatIntel = true;
+    config.semanticAnalysis = true;
+    config.correlationAnalysis = true;
+    config.entropyAnalysis = true;
+    config.mcpValidation = true;
+    config.dependencyAnalysis = true;
+    config.capabilityMapping = true;
+    config.ignoreComments = true;
+    config.mitreAtlas = true;
   }
 
   // Apply CLI options (highest priority)
@@ -260,6 +373,33 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
     config.verbose = cliOptions.verbose;
   }
 
+  if (cliOptions.configOnly !== undefined) {
+    config.configOnly = cliOptions.configOnly;
+  }
+
+  if (cliOptions.marketplace !== undefined) {
+    const mode = cliOptions.marketplace.trim().toLowerCase();
+    if (mode === 'off' || mode === 'configs' || mode === 'all') {
+      config.marketplaceMode = mode;
+    } else {
+      logger.warn(`Invalid --marketplace mode "${cliOptions.marketplace}" (expected off|configs|all)`);
+    }
+  }
+
+  if (cliOptions.docDampening !== undefined) {
+    config.docDampening = cliOptions.docDampening;
+  }
+
+  if (cliOptions.redact !== undefined) {
+    config.redact = cliOptions.redact;
+  }
+
+  if (cliOptions.customRules !== undefined) {
+    const sources = parseCustomRules(cliOptions.customRules);
+    const resolved = resolveCustomRuleSources(sources, process.cwd());
+    config.customRules = uniqueStrings([...config.customRules, ...resolved]);
+  }
+
   if (cliOptions.threatIntel !== undefined) {
     config.threatIntel = cliOptions.threatIntel;
   }
@@ -272,8 +412,99 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
     config.correlationAnalysis = cliOptions.correlationAnalysis;
   }
 
+  if (cliOptions.entropyAnalysis !== undefined) {
+    config.entropyAnalysis = cliOptions.entropyAnalysis;
+  }
+
+  if (cliOptions.mcpValidation !== undefined) {
+    config.mcpValidation = cliOptions.mcpValidation;
+  }
+
+  if (cliOptions.dependencyAnalysis !== undefined) {
+    config.dependencyAnalysis = cliOptions.dependencyAnalysis;
+  }
+
+  if (cliOptions.dependencyAudit !== undefined) {
+    config.dependencyAudit = cliOptions.dependencyAudit;
+  }
+
+  if (cliOptions.capabilityMapping !== undefined) {
+    config.capabilityMapping = cliOptions.capabilityMapping;
+  }
+
+  if (cliOptions.ignoreComments !== undefined) {
+    config.ignoreComments = cliOptions.ignoreComments;
+  }
+
+  if (cliOptions.mitreAtlas !== undefined) {
+    config.mitreAtlas = cliOptions.mitreAtlas;
+  }
+
+  if (cliOptions.mitreAtlasCatalog !== undefined) {
+    config.mitreAtlasCatalog.enabled = cliOptions.mitreAtlasCatalog;
+  }
+
+  if (cliOptions.mitreAtlasCatalogForceRefresh !== undefined) {
+    config.mitreAtlasCatalog.forceRefresh = cliOptions.mitreAtlasCatalogForceRefresh;
+    if (cliOptions.mitreAtlasCatalogForceRefresh) {
+      // Force-refresh implies the catalog must be enabled.
+      config.mitreAtlasCatalog.enabled = true;
+    }
+  }
+
+  if (cliOptions.llmAnalysis !== undefined) {
+    config.llmAnalysis = cliOptions.llmAnalysis;
+  }
+
+  if (cliOptions.llmProvider !== undefined) {
+    config.llm.provider = cliOptions.llmProvider;
+  }
+
+  if (cliOptions.llmModel !== undefined) {
+    config.llm.model = cliOptions.llmModel;
+  }
+
+  if (cliOptions.llmBaseUrl !== undefined) {
+    config.llm.baseUrl = cliOptions.llmBaseUrl;
+  }
+
+  if (cliOptions.llmApiKeyEnv !== undefined) {
+    config.llm.apiKeyEnv = cliOptions.llmApiKeyEnv;
+  }
+
+  if (cliOptions.llmTimeoutMs !== undefined) {
+    config.llm.timeoutMs = cliOptions.llmTimeoutMs;
+  }
+
+  if (cliOptions.llmMaxInputChars !== undefined) {
+    config.llm.maxInputChars = cliOptions.llmMaxInputChars;
+  }
+
+  if (cliOptions.llmCacheDir !== undefined) {
+    config.llm.cacheDir = cliOptions.llmCacheDir;
+  }
+
+  if (cliOptions.llmOnlyIfFindings !== undefined) {
+    config.llm.onlyIfFindings = cliOptions.llmOnlyIfFindings;
+  }
+
+  if (cliOptions.llmMaxFiles !== undefined) {
+    config.llm.maxFiles = cliOptions.llmMaxFiles;
+  }
+
+  if (cliOptions.llmMinConfidence !== undefined) {
+    config.llm.minConfidence = cliOptions.llmMinConfidence;
+  }
+
   if (cliOptions.autoRemediation !== undefined) {
     config.autoRemediation = cliOptions.autoRemediation;
+  }
+
+  // If the user enabled both the LLM analyzer and ATLAS catalog auto-update,
+  // default to including the (potentially refreshed) technique list in the prompt
+  // unless they explicitly configured that setting in a config file.
+  if (config.llmAnalysis && config.mitreAtlasCatalog.enabled && !llmIncludeAtlasExplicit) {
+    config.llm.includeMitreAtlasTechniques = true;
   }
 
   return config;

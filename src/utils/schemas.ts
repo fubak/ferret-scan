@@ -90,12 +90,69 @@ export const QuarantineDatabaseSchema = z.object({
 // Config File Schemas
 // ============================================
 
+const SeveritySchema = z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']);
+const SeverityLikeSchema = z.string()
+  .min(1)
+  .max(20)
+  .transform((s) => s.trim().toUpperCase())
+  .pipe(SeveritySchema);
+
 export const ConfigFileSchema = z.object({
-  severity: z.array(z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'])).optional(),
-  categories: z.array(z.string()).optional(),
+  severity: z.array(SeverityLikeSchema).optional(),
+  categories: z.array(z.string().min(1).max(100).transform((s) => s.trim().toLowerCase())).optional(),
   ignore: z.array(z.string().max(500)).max(100).optional(),
-  customRules: z.string().max(4096).optional(),
-  failOn: z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']).optional(),
+  configOnly: z.boolean().optional(),
+  marketplaceMode: z.enum(['off', 'configs', 'all']).optional(),
+  docDampening: z.boolean().optional(),
+  redact: z.boolean().optional(),
+  customRules: z.union([
+    z.string().min(1).max(4096),
+    z.array(z.string().min(1).max(4096)).min(1).max(50),
+  ]).optional(),
+  failOn: SeverityLikeSchema.optional(),
+  features: z.object({
+    entropyAnalysis: z.boolean().optional(),
+    mcpValidation: z.boolean().optional(),
+    dependencyAnalysis: z.boolean().optional(),
+    dependencyAudit: z.boolean().optional(),
+    capabilityMapping: z.boolean().optional(),
+    ignoreComments: z.boolean().optional(),
+    mitreAtlas: z.boolean().optional(),
+    llmAnalysis: z.boolean().optional(),
+  }).optional(),
+  llm: z.object({
+    provider: z.string().min(1).max(100).optional(),
+    baseUrl: z.string().url().optional(),
+    model: z.string().min(1).max(200).optional(),
+    apiKeyEnv: z.string().min(1).max(200).optional(),
+    timeoutMs: z.number().int().min(1000).max(120000).optional(),
+    jsonMode: z.boolean().optional(),
+    maxInputChars: z.number().int().min(1000).max(200000).optional(),
+    maxOutputTokens: z.number().int().min(64).max(8192).optional(),
+    temperature: z.number().min(0).max(2).optional(),
+    systemPromptAddendum: z.string().max(20000).optional(),
+    includeMitreAtlasTechniques: z.boolean().optional(),
+    maxMitreAtlasTechniques: z.number().int().min(0).max(2000).optional(),
+    cacheDir: z.string().min(1).max(4096).optional(),
+    cacheTtlHours: z.number().int().min(0).max(24 * 365).optional(),
+    maxRetries: z.number().int().min(0).max(10).optional(),
+    retryBackoffMs: z.number().int().min(0).max(60000).optional(),
+    retryMaxBackoffMs: z.number().int().min(0).max(600000).optional(),
+    minRequestIntervalMs: z.number().int().min(0).max(60000).optional(),
+    onlyIfFindings: z.boolean().optional(),
+    maxFindingsPerFile: z.number().int().min(1).max(100).optional(),
+    maxFiles: z.number().int().min(1).max(1000).optional(),
+    minConfidence: z.number().min(0).max(1).optional(),
+  }).optional(),
+  mitreAtlasCatalog: z.object({
+    enabled: z.boolean().optional(),
+    autoUpdate: z.boolean().optional(),
+    sourceUrl: z.string().url().optional(),
+    cachePath: z.string().min(1).max(4096).optional(),
+    cacheTtlHours: z.number().int().min(0).max(24 * 365).optional(),
+    timeoutMs: z.number().int().min(1000).max(120000).optional(),
+    forceRefresh: z.boolean().optional(),
+  }).optional(),
   aiDetection: z.object({
     enabled: z.boolean(),
     confidence: z.number().min(0).max(1).optional(),

@@ -116,7 +116,8 @@ function formatSummary(summary: ScanSummary, result: ScanResult): string {
   ];
 
   lines.push(stats.join('  |  '));
-  lines.push(`Files scanned: ${result.analyzedFiles}  |  Time: ${result.duration}ms  |  Risk Score: ${result.overallRiskScore}/100`);
+  const ignored = result.ignoredFindings ? `  |  Ignored: ${result.ignoredFindings}` : '';
+  lines.push(`Files scanned: ${result.analyzedFiles}  |  Time: ${result.duration}ms  |  Risk Score: ${result.overallRiskScore}/100${ignored}`);
 
   return lines.join('\n');
 }

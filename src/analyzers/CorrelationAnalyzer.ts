@@ -8,11 +8,40 @@ import { dirname, relative } from 'node:path';
 import type {
   CorrelationFinding,
   CorrelationRule,
+  ComponentType,
   DiscoveredFile,
   Rule,
   ContextLine,
 } from '../types.js';
 import logger from '../utils/logger.js';
+
+const KNOWN_COMPONENT_TYPES = new Set([
+  'skill',
+  'agent',
+  'hook',
+  'plugin',
+  'mcp',
+  'settings',
+  'ai-config-md',
+  'rules-file',
+]);
+
+function matchesFilePattern(file: DiscoveredFile, pattern: string): boolean {
+  const p = pattern.trim().toLowerCase();
+  if (!p) return false;
+  if (p === '*' || p === 'any') return true;
+
+  // Prefer component matching when the pattern looks like a component type.
+  if (KNOWN_COMPONENT_TYPES.has(p)) {
+    return file.component === (p as ComponentType);
+  }
+
+  return file.relativePath.toLowerCase().includes(p);
+}
+
+function uniqueByPath(files: DiscoveredFile[]): DiscoveredFile[] {
+  return Array.from(new Map(files.map(f => [f.path, f])).values());
+}
 
 /**
  * File relationship map
@@ -120,19 +149,32 @@ function findCrossFilePatterns(
   correlationRules: CorrelationRule[]
 ): CrossFileMatch[] {
   const matches: CrossFileMatch[] = [];
+  const seen = new Set<string>();
+  const perRuleCount = new Map<string, number>();
+  const MAX_MATCHES_PER_RULE = 3;
 
   for (const rule of correlationRules) {
     logger.debug(`Checking correlation rule: ${rule.id}`);
 
     for (const relationship of relationships) {
-      const allFiles = [relationship.file, ...relationship.relatedFiles];
+      const currentCount = perRuleCount.get(rule.id) ?? 0;
+      if (currentCount >= MAX_MATCHES_PER_RULE) break;
 
-      // Check if rule file patterns match
-      const matchingFiles = allFiles.filter(file =>
-        rule.filePatterns.some(pattern =>
-          file.relativePath.toLowerCase().includes(pattern.toLowerCase())
-        )
-      );
+      const maxDistance = typeof rule.maxDistance === 'number' ? rule.maxDistance : 2;
+      const baseDir = dirname(relationship.file.path);
+      const relatedWithinDistance = relationship.relatedFiles.filter((other) => {
+        const dist = calculateDirectoryDistance(baseDir, dirname(other.path));
+        return dist <= maxDistance;
+      });
+
+      const allFiles = [relationship.file, ...relatedWithinDistance];
+
+      // Require that *each* file pattern is present (the type definition says "must be present").
+      // We treat filePatterns as OR within each pattern group, AND across the list.
+      const requiredGroups = rule.filePatterns.map((fp) => allFiles.filter((f) => matchesFilePattern(f, fp)));
+      if (requiredGroups.some((g) => g.length === 0)) continue;
+
+      const matchingFiles = uniqueByPath(requiredGroups.flat());
 
       if (matchingFiles.length < 2) continue; // Need at least 2 files for correlation
 
@@ -140,7 +182,18 @@ function findCrossFilePatterns(
       const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns);
 
       if (contentMatches.length >= rule.contentPatterns.length) {
+        // Ensure this is actually cross-file: require matches across at least 2 distinct files.
+        const uniqueMatchedFiles = new Set(contentMatches.map(m => m.file.path));
+        if (uniqueMatchedFiles.size < 2) continue;
+
         const strength = calculateCorrelationStrength(contentMatches, rule);
+        const keyFiles = Array.from(uniqueMatchedFiles).sort().join('|');
+        const keyPatterns = Array.from(new Set(contentMatches.map(m => m.pattern))).sort().join('|');
+        const key = `${rule.id}|${keyFiles}|${keyPatterns}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        perRuleCount.set(rule.id, currentCount + 1);
 
         matches.push({
           rule,
