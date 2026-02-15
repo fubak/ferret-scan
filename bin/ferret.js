@@ -14,6 +14,7 @@ import { generateConsoleReport } from '../dist/reporters/ConsoleReporter.js';
 import { formatSarifReport } from '../dist/reporters/SarifReporter.js';
 import { formatHtmlReport } from '../dist/reporters/HtmlReporter.js';
 import { formatCsvReport } from '../dist/reporters/CsvReporter.js';
+import { formatAtlasNavigatorLayer } from '../dist/reporters/AtlasNavigatorReporter.js';
 import { startEnhancedWatchMode } from '../dist/scanner/WatchMode.js';
 import {
   loadBaseline,
@@ -59,6 +60,7 @@ import { loadPolicy, evaluatePolicy, formatPolicyResult, initPolicy, findPolicyF
 import { parseIgnoreComments, filterIgnoredFindings, generateIgnoreComment } from '../dist/features/ignoreComments.js';
 import { determineExitCode, generateExitCodeSummary, formatExitCodeForCI, DEFAULT_EXIT_CODES } from '../dist/features/exitCodes.js';
 import { startInteractiveSession, displayFindings } from '../dist/features/interactiveTui.js';
+import { redactScanResult } from '../dist/utils/redaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,7 +81,7 @@ program
   .command('scan')
   .description('Scan AI CLI configurations for security issues')
   .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
-  .option('-f, --format <format>', 'Output format: console, json, sarif, html', 'console')
+  .option('-f, --format <format>', 'Output format: console, json, sarif, html, csv, atlas', 'console')
   .option('-s, --severity <levels>', 'Severity levels to report (comma-separated)', 'critical,high,medium,low,info')
   .option('-c, --categories <cats>', 'Categories to scan (comma-separated)')
   .option('--fail-on <severity>', 'Minimum severity to fail on', 'high')
@@ -90,12 +92,39 @@ program
   .option('--threat-intel', 'Enable threat intelligence feeds (experimental)')
   .option('--semantic-analysis', 'Enable AST-based semantic analysis')
   .option('--correlation-analysis', 'Enable cross-file correlation analysis')
+  .option('--entropy-analysis', 'Enable entropy-based secret detection')
+  .option('--mcp-validation', 'Enable MCP server configuration validation')
+  .option('--dependency-analysis', 'Enable dependency risk analysis (package.json)')
+  .option('--dependency-audit', 'Run npm audit as part of dependency analysis (slow, may require network)')
+  .option('--capability-mapping', 'Enable AI agent capability mapping')
+  .option('--config-only', 'Restrict scanning to high-signal AI config files (reduces noise)')
+  .option('--marketplace <mode>', 'Marketplace scan mode: off, configs, all')
+  .option('--no-doc-dampening', 'Disable documentation severity dampening (reduces false positives in docs)')
+  .option('--redact', 'Redact secret-like values in output reports (for sharing)')
+  .option('--no-ignore-comments', 'Disable inline ignore directives (ferret-ignore / ferret-disable)')
+  .option('--no-mitre-atlas', 'Disable MITRE ATLAS technique annotations')
+  .option('--mitre-atlas-catalog', 'Enable MITRE ATLAS technique catalog auto-update (networked)')
+  .option('--mitre-atlas-catalog-force-refresh', 'Force-refresh MITRE ATLAS catalog each run (networked)')
+  .option('--thorough', 'Enable all available analyses (slow)')
+  .option('--llm-analysis', 'Enable LLM-assisted analysis (requires network + API key)')
+  .option('--llm-provider <name>', 'LLM provider (default: openai-compatible)')
+  .option('--llm-model <model>', 'LLM model name')
+  .option('--llm-base-url <url>', 'LLM API base URL (OpenAI-compatible chat completions endpoint)')
+  .option('--llm-api-key-env <name>', 'Env var that contains the LLM API key (default: OPENAI_API_KEY)')
+  .option('--llm-timeout-ms <ms>', 'LLM request timeout in ms', (v) => parseInt(v, 10))
+  .option('--llm-max-input-chars <n>', 'Max chars sent to LLM per file', (v) => parseInt(v, 10))
+  .option('--llm-cache-dir <dir>', 'LLM cache directory')
+  .option('--llm-only-if-findings', 'Only run LLM analysis on files that already have findings')
+  .option('--llm-all-files', 'Run LLM analysis even if no findings are present in a file')
+  .option('--llm-max-files <n>', 'Max files to analyze with LLM per scan', (v) => parseInt(v, 10))
+  .option('--llm-min-confidence <n>', 'Minimum confidence (0-1) to emit LLM findings', (v) => parseFloat(v))
   .option('--auto-remediation', 'Enable automated fixing (experimental)')
   .option('--auto-fix', 'Automatically apply safe fixes after scanning')
   .option('--config <file>', 'Path to configuration file')
+  .option('--custom-rules <sources>', 'Custom rule sources (comma-separated file paths or URLs)')
   .option('--baseline <file>', 'Path to baseline file for filtering known findings')
   .option('--ignore-baseline', 'Ignore baseline file and show all findings')
-  .action(async (path, options) => {
+  .action(async (path, options, command) => {
     try {
       // Configure logger
       logger.configure({
@@ -103,6 +132,51 @@ program
         ci: options.ci,
         level: options.verbose ? 'debug' : 'info',
       });
+
+      // Commander sets `--no-*` options to a default of true. To allow config files to
+      // override these, only pass through when explicitly set via CLI.
+      const ignoreComments = command.getOptionValueSource('ignoreComments') === 'cli'
+        ? options.ignoreComments
+        : undefined;
+      const mitreAtlas = command.getOptionValueSource('mitreAtlas') === 'cli'
+        ? options.mitreAtlas
+        : undefined;
+
+      const marketplace = command.getOptionValueSource('marketplace') === 'cli'
+        ? options.marketplace
+        : undefined;
+
+      const docDampening = command.getOptionValueSource('docDampening') === 'cli'
+        ? options.docDampening
+        : undefined;
+
+      const redact = command.getOptionValueSource('redact') === 'cli'
+        ? options.redact
+        : undefined;
+
+      const mitreAtlasCatalog = command.getOptionValueSource('mitreAtlasCatalog') === 'cli'
+        ? options.mitreAtlasCatalog
+        : undefined;
+
+      const mitreAtlasCatalogForceRefresh = command.getOptionValueSource('mitreAtlasCatalogForceRefresh') === 'cli'
+        ? options.mitreAtlasCatalogForceRefresh
+        : undefined;
+
+      const configOnly = command.getOptionValueSource('configOnly') === 'cli'
+        ? options.configOnly
+        : undefined;
+
+      const llmAnalysis = command.getOptionValueSource('llmAnalysis') === 'cli'
+        ? options.llmAnalysis
+        : undefined;
+
+      // Allow explicit CLI override for onlyIfFindings via either flag.
+      let llmOnlyIfFindings;
+      if (options.llmAllFiles) {
+        llmOnlyIfFindings = false;
+      } else if (options.llmOnlyIfFindings) {
+        llmOnlyIfFindings = true;
+      }
 
       // Load configuration
       const config = loadConfig({
@@ -115,9 +189,35 @@ program
         watch: options.watch,
         ci: options.ci,
         verbose: options.verbose,
+        customRules: options.customRules,
         threatIntel: options.threatIntel,
         semanticAnalysis: options.semanticAnalysis,
         correlationAnalysis: options.correlationAnalysis,
+        entropyAnalysis: options.entropyAnalysis,
+        mcpValidation: options.mcpValidation,
+        dependencyAnalysis: options.dependencyAnalysis,
+        dependencyAudit: options.dependencyAudit,
+        capabilityMapping: options.capabilityMapping,
+        configOnly,
+        marketplace,
+        docDampening,
+        redact,
+        ignoreComments,
+        mitreAtlas,
+        mitreAtlasCatalog,
+        mitreAtlasCatalogForceRefresh,
+        llmAnalysis,
+        llmProvider: options.llmProvider,
+        llmModel: options.llmModel,
+        llmBaseUrl: options.llmBaseUrl,
+        llmApiKeyEnv: options.llmApiKeyEnv,
+        llmTimeoutMs: options.llmTimeoutMs,
+        llmMaxInputChars: options.llmMaxInputChars,
+        llmCacheDir: options.llmCacheDir,
+        llmOnlyIfFindings,
+        llmMaxFiles: options.llmMaxFiles,
+        llmMinConfidence: options.llmMinConfidence,
+        thorough: options.thorough,
         autoRemediation: options.autoRemediation,
         config: options.config,
       });
@@ -131,7 +231,7 @@ program
         console.error('');
         console.error('Ferret looks for configurations in:');
         console.error('  Claude Code: ~/.claude/, ./.claude/, CLAUDE.md, .mcp.json');
-        console.error('  Cursor:      ./.cursor/, .cursorrules');
+        console.error('  Cursor:      ~/.config/Cursor/User/settings.json, ./.cursor/, .cursorrules');
         console.error('  Windsurf:    ./.windsurf/, .windsurfrules');
         console.error('  Continue:    ./.continue/');
         console.error('  Aider:       ./.aider/, .aider.conf.yml');
@@ -161,15 +261,17 @@ program
         }
       }
 
+      const reportResult = config.redact ? redactScanResult(result) : result;
+
       // Output results
       if (config.format === 'console') {
-        const report = generateConsoleReport(result, {
+        const report = generateConsoleReport(reportResult, {
           verbose: config.verbose,
           ci: config.ci,
         });
         console.log(report);
       } else if (config.format === 'json') {
-        const output = JSON.stringify(result, null, 2);
+        const output = JSON.stringify(reportResult, null, 2);
         if (config.outputFile) {
           const { writeFileSync } = await import('node:fs');
           writeFileSync(config.outputFile, output);
@@ -178,7 +280,7 @@ program
           console.log(output);
         }
       } else if (config.format === 'sarif') {
-        const output = formatSarifReport(result);
+        const output = formatSarifReport(reportResult);
         if (config.outputFile) {
           const { writeFileSync } = await import('node:fs');
           writeFileSync(config.outputFile, output);
@@ -187,7 +289,7 @@ program
           console.log(output);
         }
       } else if (config.format === 'csv') {
-        const output = formatCsvReport(result);
+        const output = formatCsvReport(reportResult);
         if (config.outputFile) {
           const { writeFileSync } = await import('node:fs');
           writeFileSync(config.outputFile, output);
@@ -195,8 +297,17 @@ program
         } else {
           console.log(output);
         }
+      } else if (config.format === 'atlas') {
+        const output = formatAtlasNavigatorLayer(reportResult);
+        if (config.outputFile) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(config.outputFile, output);
+          console.log(`ATLAS Navigator layer written to: ${config.outputFile}`);
+        } else {
+          console.log(output);
+        }
       } else if (config.format === 'html') {
-        const output = formatHtmlReport(result, {
+        const output = formatHtmlReport(reportResult, {
           title: `Security Scan Report - ${new Date().toLocaleDateString()}`,
           darkMode: false,
           showCode: true,
@@ -950,11 +1061,13 @@ mcpCmd
         console.log(`📄 ${config.path}`);
 
         if (config.errors.length > 0) {
-          console.log('   ❌ Errors:');
+          console.log('   ⚠️  Warnings:');
           for (const error of config.errors) {
             console.log(`      ${error}`);
           }
-          continue;
+          if (config.assessments.length === 0) {
+            continue;
+          }
         }
 
         if (config.assessments.length === 0) {

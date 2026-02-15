@@ -113,3 +113,6 @@ pnpm-lock.yaml
 .bash_history
 .zsh_history
 .node_repl_history
+
+# Unrelated projects
+vitly/
