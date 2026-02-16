@@ -142,11 +142,15 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects markdown instructions to collect or expose credentials',
     patterns: [
-      /collect[ \t]+[^\n]{0,100}(api[_-]?key|token|secret|password|credential)/gi,
-      /extract[ \t]+[^\n]{0,100}(api[_-]?key|token|secret|password|credential)/gi,
-      /find[ \t]+[^\n]{0,100}(api[_-]?key|token|secret|password|credential)/gi,
-      /show[ \t]+(me[ \t]+)?(the[ \t]+)?[^\n]{0,50}(api[_-]?key|token|secret|password|credential)/gi,
-      /output[ \t]+[^\n]{0,100}(api[_-]?key|token|secret|password|credential)/gi,
+      /collect[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /extract[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /find[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /show[ \t]+(me[ \t]+)?(the[ \t]+)?[^\n]{0,50}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /output[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      // Natural-language action verbs for credential harvesting
+      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,100}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:dump|export|reveal|expose|list|retrieve|get|fetch)\b[ \t]+[^\n]{0,80}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,60}\b(?:all|every|each)\b[^\n]{0,40}(?:key|secret|password|credential|token)[s]?\b/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],
@@ -159,6 +163,9 @@ export const credentialRules: Rule[] = [
       /password\s+(toggle|field|input|visibility)/gi,
       /find\s+(leaked|exposed).*credential/gi, // Security scanning descriptions
       /token\s+(usage|count|limit)/gi, // Token metrics, not harvesting
+      /send\s+.*password\s+reset/gi, // Password reset flows
+      /email\s+.*password\s+reset/gi,
+      /send\s+.*verification\s+(token|code)/gi, // Verification flows
     ],
     excludeContext: [
       /\bUI\b|user\s+interface/gi,
