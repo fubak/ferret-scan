@@ -398,7 +398,7 @@ async function scanFile(
       } else {
         try {
           logger.debug(`Running semantic analysis on ${file.relativePath}`);
-          const semanticFindings = analyzeFileSemantics(file, content, rules);
+          const semanticFindings = await analyzeFileSemantics(file, content, rules);
           // Convert SemanticFinding to Finding for compatibility
           allFindings.push(...semanticFindings);
 

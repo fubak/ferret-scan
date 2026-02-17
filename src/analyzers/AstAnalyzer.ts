@@ -3,7 +3,7 @@
  * Analyzes code blocks in markdown and TypeScript configurations for complex patterns
  */
 
-import * as ts from 'typescript';
+import type * as ts from 'typescript';
 import type {
   SemanticFinding,
   SemanticPattern,
@@ -14,6 +14,22 @@ import type {
   ContextLine
 } from '../types.js';
 import logger from '../utils/logger.js';
+
+let _ts: typeof import('typescript') | undefined;
+
+async function getTS(): Promise<typeof import('typescript')> {
+  if (!_ts) {
+    try {
+      _ts = await import('typescript');
+    } catch {
+      throw new Error(
+        'The "typescript" package is required for semantic analysis. ' +
+        'Install it with: npm install -D typescript'
+      );
+    }
+  }
+  return _ts;
+}
 
 function escapeRegExp(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -98,20 +114,20 @@ function isAnalyzableLanguage(language: string): boolean {
 /**
  * Create TypeScript AST from code
  */
-function createAST(code: string, fileName = 'analysis.ts'): ts.SourceFile {
-  return ts.createSourceFile(
+function createAST(tsLib: typeof import('typescript'), code: string, fileName = 'analysis.ts'): ts.SourceFile {
+  return tsLib.createSourceFile(
     fileName,
     code,
-    ts.ScriptTarget.Latest,
+    tsLib.ScriptTarget.Latest,
     true,
-    fileName?.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    fileName?.endsWith('.tsx') ? tsLib.ScriptKind.TSX : tsLib.ScriptKind.TS
   );
 }
 
 /**
  * Extract semantic context from AST
  */
-function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
+function extractSemanticContext(tsLib: typeof import('typescript'), sourceFile: ts.SourceFile): SemanticContext {
   const context: SemanticContext = {
     variables: [],
     imports: [],
@@ -120,23 +136,23 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
 
   function visit(node: ts.Node): void {
     switch (node.kind) {
-      case ts.SyntaxKind.ImportDeclaration: {
+      case tsLib.SyntaxKind.ImportDeclaration: {
         const importDecl = node as ts.ImportDeclaration;
-        if (importDecl.moduleSpecifier && ts.isStringLiteral(importDecl.moduleSpecifier)) {
+        if (importDecl.moduleSpecifier && tsLib.isStringLiteral(importDecl.moduleSpecifier)) {
           context.imports!.push(importDecl.moduleSpecifier.text);
         }
         break;
       }
 
-      case ts.SyntaxKind.VariableDeclaration: {
+      case tsLib.SyntaxKind.VariableDeclaration: {
         const varDecl = node as ts.VariableDeclaration;
-        if (varDecl.name && ts.isIdentifier(varDecl.name)) {
+        if (varDecl.name && tsLib.isIdentifier(varDecl.name)) {
           context.variables!.push(varDecl.name.text);
         }
         break;
       }
 
-      case ts.SyntaxKind.CallExpression: {
+      case tsLib.SyntaxKind.CallExpression: {
         const callExpr = node as ts.CallExpression;
         const callText = callExpr.expression.getText(sourceFile);
         context.callChain!.push(callText);
@@ -144,7 +160,7 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
       }
     }
 
-    ts.forEachChild(node, visit);
+    tsLib.forEachChild(node, visit);
   }
 
   visit(sourceFile);
@@ -155,6 +171,7 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
  * Find security patterns in AST
  */
 function findSecurityPatterns(
+  tsLib: typeof import('typescript'),
   sourceFile: ts.SourceFile,
   patterns: SemanticPattern[]
 ): { pattern: SemanticPattern; node: ts.Node; confidence: number }[] {
@@ -162,7 +179,7 @@ function findSecurityPatterns(
 
   function visit(node: ts.Node): void {
     for (const pattern of patterns) {
-      const match = matchSemanticPattern(node, pattern, sourceFile);
+      const match = matchSemanticPattern(tsLib, node, pattern, sourceFile);
       if (match) {
         matches.push({
           pattern,
@@ -172,7 +189,7 @@ function findSecurityPatterns(
       }
     }
 
-    ts.forEachChild(node, visit);
+    tsLib.forEachChild(node, visit);
   }
 
   visit(sourceFile);
@@ -183,6 +200,7 @@ function findSecurityPatterns(
  * Match a semantic pattern against an AST node
  */
 function matchSemanticPattern(
+  tsLib: typeof import('typescript'),
   node: ts.Node,
   pattern: SemanticPattern,
   sourceFile: ts.SourceFile
@@ -192,7 +210,7 @@ function matchSemanticPattern(
 
   switch (pattern.type) {
     case 'function-call':
-      if (ts.isCallExpression(node)) {
+      if (tsLib.isCallExpression(node)) {
         const functionName = node.expression.getText(sourceFile);
         if (matchesSymbolLike(functionName, pattern.pattern)) {
           return { confidence };
@@ -201,7 +219,7 @@ function matchSemanticPattern(
       break;
 
     case 'property-access':
-      if (ts.isPropertyAccessExpression(node)) {
+      if (tsLib.isPropertyAccessExpression(node)) {
         const fullAccess = node.getText(sourceFile);
         if (matchesSymbolLike(fullAccess, pattern.pattern)) {
           return { confidence };
@@ -210,17 +228,15 @@ function matchSemanticPattern(
       break;
 
     case 'dynamic-import':
-      if (ts.isCallExpression(node)) {
-        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-          // Dynamic import detected - pattern for security analysis only
+      if (tsLib.isCallExpression(node)) {
+        if (node.expression.kind === tsLib.SyntaxKind.ImportKeyword) {
           const arg = node.arguments[0];
-          // Literal import paths are common and generally safe; focus on non-literals that could be user-controlled.
-          if (arg && (ts.isStringLiteralLike(arg) || ts.isNoSubstitutionTemplateLiteral(arg))) {
+          if (arg && (tsLib.isStringLiteralLike(arg) || tsLib.isNoSubstitutionTemplateLiteral(arg))) {
             break;
           }
 
           if (pattern.pattern === 'dynamic-import' || nodeText.includes(pattern.pattern)) {
-            confidence += 0.1; // Higher confidence for dynamic imports
+            confidence += 0.1;
             return { confidence };
           }
         }
@@ -228,20 +244,18 @@ function matchSemanticPattern(
       break;
 
     case 'eval-chain':
-      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+      if (tsLib.isCallExpression(node) || tsLib.isNewExpression(node)) {
         const expr = node.expression;
         const target = pattern.pattern;
 
-        // Direct calls: eval(...), Function(...)
-        if (ts.isIdentifier(expr) && expr.text === target) {
+        if (tsLib.isIdentifier(expr) && expr.text === target) {
           confidence += 0.2;
           return { confidence };
         }
 
-        // Allow common globals: globalThis.eval(...), window.eval(...)
-        if (ts.isPropertyAccessExpression(expr) && expr.name.text === target) {
+        if (tsLib.isPropertyAccessExpression(expr) && expr.name.text === target) {
           const receiver = expr.expression;
-          if (ts.isIdentifier(receiver) && (receiver.text === 'globalThis' || receiver.text === 'window')) {
+          if (tsLib.isIdentifier(receiver) && (receiver.text === 'globalThis' || receiver.text === 'window')) {
             confidence += 0.2;
             return { confidence };
           }
@@ -250,7 +264,7 @@ function matchSemanticPattern(
       break;
 
     case 'object-structure':
-      if (ts.isObjectLiteralExpression(node)) {
+      if (tsLib.isObjectLiteralExpression(node)) {
         if (nodeText.includes(pattern.pattern)) {
           return { confidence };
         }
@@ -264,27 +278,27 @@ function matchSemanticPattern(
 /**
  * Create AST node info
  */
-function createASTNodeInfo(node: ts.Node, sourceFile: ts.SourceFile): ASTNodeInfo {
-  const nodeName = getNodeName(node);
+function createASTNodeInfo(tsLib: typeof import('typescript'), node: ts.Node, sourceFile: ts.SourceFile): ASTNodeInfo {
+  const nodeName = getNodeName(tsLib, node);
   return {
-    nodeType: ts.SyntaxKind[node.kind],
+    nodeType: tsLib.SyntaxKind[node.kind],
     ...(nodeName && { name: nodeName }),
-    ...(node.parent && { parent: ts.SyntaxKind[node.parent.kind] }),
-    children: node.getChildren(sourceFile).map(child => ts.SyntaxKind[child.kind])
+    ...(node.parent && { parent: tsLib.SyntaxKind[node.parent.kind] }),
+    children: node.getChildren(sourceFile).map(child => tsLib.SyntaxKind[child.kind])
   };
 }
 
 /**
  * Get node name/identifier
  */
-function getNodeName(node: ts.Node): string | undefined {
-  if (ts.isIdentifier(node)) {
+function getNodeName(tsLib: typeof import('typescript'), node: ts.Node): string | undefined {
+  if (tsLib.isIdentifier(node)) {
     return node.text;
   }
-  if (ts.isFunctionDeclaration(node) && node.name) {
+  if (tsLib.isFunctionDeclaration(node) && node.name) {
     return node.name.text;
   }
-  if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+  if (tsLib.isVariableDeclaration(node) && tsLib.isIdentifier(node.name)) {
     return node.name.text;
   }
   return undefined;
@@ -332,11 +346,11 @@ function createContextLines(
 /**
  * Analyze a single file for semantic patterns
  */
-export function analyzeFile(
+export async function analyzeFile(
   file: DiscoveredFile,
   content: string,
   rules: Rule[]
-): SemanticFinding[] {
+): Promise<SemanticFinding[]> {
   const findings: SemanticFinding[] = [];
 
   try {
@@ -346,6 +360,8 @@ export function analyzeFile(
     if (semanticRules.length === 0) {
       return findings;
     }
+
+    const tsLib = await getTS();
 
     logger.debug(`AST analysis for ${file.relativePath} with ${semanticRules.length} semantic rules`);
 
@@ -362,18 +378,18 @@ export function analyzeFile(
     // Analyze each code block
     for (const codeBlock of codeBlocksToAnalyze) {
       try {
-        const sourceFile = createAST(codeBlock.code, `${file.relativePath}_block_${codeBlock.line}.${codeBlock.language}`);
-        const semanticContext = extractSemanticContext(sourceFile);
+        const sourceFile = createAST(tsLib, codeBlock.code, `${file.relativePath}_block_${codeBlock.line}.${codeBlock.language}`);
+        const semanticContext = extractSemanticContext(tsLib, sourceFile);
 
         // Check each semantic rule
         for (const rule of semanticRules) {
           if (!rule.semanticPatterns) continue;
 
-          const patternMatches = findSecurityPatterns(sourceFile, rule.semanticPatterns);
+          const patternMatches = findSecurityPatterns(tsLib, sourceFile, rule.semanticPatterns);
 
           for (const match of patternMatches) {
             const position = getPositionFromNode(match.node, sourceFile);
-            const astNodeInfo = createASTNodeInfo(match.node, sourceFile);
+            const astNodeInfo = createASTNodeInfo(tsLib, match.node, sourceFile);
             const contextLines = createContextLines(sourceFile, match.node, 3);
 
             const finding: SemanticFinding = {
