@@ -2,42 +2,26 @@
  * ConsoleReporter - Beautiful terminal output for scan results
  */
 
+import chalk from 'chalk';
 import type { ScanResult, Finding, Severity, ScanSummary } from '../types.js';
 
-// ANSI color codes
-const colors = {
-  reset: '\x1b[0m',
-  bold: '\x1b[1m',
-  dim: '\x1b[2m',
-  red: '\x1b[31m',
-  green: '\x1b[32m',
-  yellow: '\x1b[33m',
-  blue: '\x1b[34m',
-  magenta: '\x1b[35m',
-  cyan: '\x1b[36m',
-  white: '\x1b[37m',
-  bgRed: '\x1b[41m',
-  bgYellow: '\x1b[43m',
-  bgBlue: '\x1b[44m',
-};
-
 const FERRET_BANNER = `
-${colors.cyan} ⡠⢂⠔⠚⠟⠓⠒⠒⢂⠐⢄
- ⣷⣧⣀⠀⢀⣀⣤⣄⠈⢢⢸⡀   ${colors.bold}███████╗███████╗██████╗ ██████╗ ███████╗████████╗
-${colors.cyan}⢀⣿⣭⣿⣿⣿⣿⣽⣹⣧⠈⣾⢱⡀  ${colors.bold}██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝
-${colors.cyan}⢸⢿⠋⢸⠂⠈⠹⢿⣿⡿⠀⢸⡷⡇  ${colors.bold}█████╗  █████╗  ██████╔╝██████╔╝█████╗     ██║
-${colors.cyan}⠈⣆⠉⢇⢁⠶⠈⠀⠉⠀⢀⣾⣇⡇  ${colors.bold}██╔══╝  ██╔══╝  ██╔══██╗██╔══██╗██╔══╝     ██║
-${colors.cyan}  ⢑⣦⣤⣤⣤⣤⣴⣶⣿⡿⢨⠃  ${colors.bold}██║     ███████╗██║  ██║██║  ██║███████╗   ██║
-${colors.cyan} ⢰⣿⣿⣟⣯⡿⣽⣻⣾⣽⣇⠏   ${colors.bold}╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝${colors.reset}
-${colors.dim} Security Scanner for AI CLI Configs${colors.reset}
+${chalk.cyan(` ⡠⢂⠔⠚⠟⠓⠒⠒⢂⠐⢄`)}
+${chalk.cyan(` ⣷⣧⣀⠀⢀⣀⣤⣄⠈⢢⢸⡀`)}   ${chalk.bold(`███████╗███████╗██████╗ ██████╗ ███████╗████████╗`)}
+${chalk.cyan(`⢀⣿⣭⣿⣿⣿⣿⣽⣹⣧⠈⣾⢱⡀`)}  ${chalk.bold(`██╔════╝██╔════╝██╔══██╗██╔══██╗██╔════╝╚══██╔══╝`)}
+${chalk.cyan(`⢸⢿⠋⢸⠂⠈⠹⢿⣿⡿⠀⢸⡷⡇`)}  ${chalk.bold(`█████╗  █████╗  ██████╔╝██████╔╝█████╗     ██║`)}
+${chalk.cyan(`⠈⣆⠉⢇⢁⠶⠈⠀⠉⠀⢀⣾⣇⡇`)}  ${chalk.bold(`██╔══╝  ██╔══╝  ██╔══██╗██╔══██╗██╔══╝     ██║`)}
+${chalk.cyan(`  ⢑⣦⣤⣤⣤⣤⣴⣶⣿⡿⢨⠃`)}  ${chalk.bold(`██║     ███████╗██║  ██║██║  ██║███████╗   ██║`)}
+${chalk.cyan(` ⢰⣿⣿⣟⣯⡿⣽⣻⣾⣽⣇⠏`)}   ${chalk.bold(`╚═╝     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝   ╚═╝`)}
+${chalk.dim(` Security Scanner for AI CLI Configs`)}
 `;
 
-const SEVERITY_COLORS: Record<Severity, string> = {
-  CRITICAL: colors.bgRed + colors.white + colors.bold,
-  HIGH: colors.red + colors.bold,
-  MEDIUM: colors.yellow,
-  LOW: colors.blue,
-  INFO: colors.dim,
+const SEVERITY_FORMATTERS: Record<Severity, (text: string) => string> = {
+  CRITICAL: (text: string) => chalk.bgRed.white.bold(text),
+  HIGH: (text: string) => chalk.red.bold(text),
+  MEDIUM: (text: string) => chalk.yellow(text),
+  LOW: (text: string) => chalk.blue(text),
+  INFO: (text: string) => chalk.dim(text),
 };
 
 const SEVERITY_ICONS: Record<Severity, string> = {
@@ -52,9 +36,9 @@ const SEVERITY_ICONS: Record<Severity, string> = {
  * Format a severity badge
  */
 function formatSeverity(severity: Severity): string {
-  const color = SEVERITY_COLORS[severity];
+  const formatter = SEVERITY_FORMATTERS[severity];
   const icon = SEVERITY_ICONS[severity];
-  return `${color}[${icon} ${severity}]${colors.reset}`;
+  return formatter(`[${icon} ${severity}]`);
 }
 
 /**
@@ -64,34 +48,34 @@ function formatFinding(finding: Finding, verbose: boolean): string {
   const lines: string[] = [];
 
   // Header
-  lines.push(`${formatSeverity(finding.severity)} ${colors.bold}${finding.ruleId}${colors.reset} - ${finding.ruleName}`);
+  lines.push(`${formatSeverity(finding.severity)} ${chalk.bold(finding.ruleId)} - ${finding.ruleName}`);
 
   // Location
-  lines.push(`  ${colors.cyan}File:${colors.reset} ${finding.relativePath}:${finding.line}`);
+  lines.push(`  ${chalk.cyan('File:')} ${finding.relativePath}:${finding.line}`);
 
   // Match
   const matchDisplay = finding.match.length > 80
     ? finding.match.slice(0, 77) + '...'
     : finding.match;
-  lines.push(`  ${colors.cyan}Match:${colors.reset} ${colors.yellow}${matchDisplay}${colors.reset}`);
+  lines.push(`  ${chalk.cyan('Match:')} ${chalk.yellow(matchDisplay)}`);
 
   // Context (if verbose)
   if (verbose && finding.context.length > 0) {
     lines.push('');
-    lines.push(`  ${colors.dim}Context:${colors.reset}`);
+    lines.push(`  ${chalk.dim('Context:')}`);
     for (const ctx of finding.context) {
       const lineNum = String(ctx.lineNumber).padStart(4, ' ');
-      const marker = ctx.isMatch ? `${colors.red}>${colors.reset}` : ' ';
-      const lineColor = ctx.isMatch ? colors.yellow : colors.dim;
-      lines.push(`  ${marker} ${colors.dim}${lineNum}${colors.reset} ${colors.dim}|${colors.reset} ${lineColor}${ctx.content}${colors.reset}`);
+      const marker = ctx.isMatch ? chalk.red('>') : ' ';
+      const lineContent = ctx.isMatch ? chalk.yellow(ctx.content) : chalk.dim(ctx.content);
+      lines.push(`  ${marker} ${chalk.dim(lineNum)} ${chalk.dim('|')} ${lineContent}`);
     }
   }
 
   // Remediation
-  lines.push(`  ${colors.green}Remediation:${colors.reset} ${finding.remediation}`);
+  lines.push(`  ${chalk.green('Remediation:')} ${finding.remediation}`);
 
   // Risk score
-  lines.push(`  ${colors.magenta}Risk Score:${colors.reset} ${finding.riskScore}/100`);
+  lines.push(`  ${chalk.magenta('Risk Score:')} ${finding.riskScore}/100`);
 
   return lines.join('\n');
 }
@@ -103,14 +87,14 @@ function formatSummary(summary: ScanSummary, result: ScanResult): string {
   const lines: string[] = [];
 
   lines.push('');
-  lines.push(`${colors.bold}${'━'.repeat(60)}${colors.reset}`);
-  lines.push(`${colors.bold}SUMMARY${colors.reset}`);
-  lines.push(`${colors.bold}${'━'.repeat(60)}${colors.reset}`);
+  lines.push(chalk.bold('━'.repeat(60)));
+  lines.push(chalk.bold('SUMMARY'));
+  lines.push(chalk.bold('━'.repeat(60)));
 
   const stats = [
-    summary.critical > 0 ? `${SEVERITY_COLORS['CRITICAL']}Critical: ${summary.critical}${colors.reset}` : `Critical: ${summary.critical}`,
-    summary.high > 0 ? `${SEVERITY_COLORS['HIGH']}High: ${summary.high}${colors.reset}` : `High: ${summary.high}`,
-    summary.medium > 0 ? `${SEVERITY_COLORS['MEDIUM']}Medium: ${summary.medium}${colors.reset}` : `Medium: ${summary.medium}`,
+    summary.critical > 0 ? SEVERITY_FORMATTERS['CRITICAL'](`Critical: ${summary.critical}`) : `Critical: ${summary.critical}`,
+    summary.high > 0 ? SEVERITY_FORMATTERS['HIGH'](`High: ${summary.high}`) : `High: ${summary.high}`,
+    summary.medium > 0 ? SEVERITY_FORMATTERS['MEDIUM'](`Medium: ${summary.medium}`) : `Medium: ${summary.medium}`,
     `Low: ${summary.low}`,
     `Info: ${summary.info}`,
   ];
@@ -134,8 +118,8 @@ function formatGroupedFindings(result: ScanResult, verbose: boolean): string {
     if (findings.length === 0) continue;
 
     lines.push('');
-    lines.push(`${SEVERITY_COLORS[severity]}${severity} (${findings.length})${colors.reset}`);
-    lines.push(`${colors.dim}${'━'.repeat(60)}${colors.reset}`);
+    lines.push(SEVERITY_FORMATTERS[severity](`${severity} (${findings.length})`));
+    lines.push(chalk.dim('━'.repeat(60)));
     lines.push('');
 
     for (const finding of findings) {
@@ -155,12 +139,12 @@ function formatErrors(result: ScanResult): string {
 
   const lines: string[] = [];
   lines.push('');
-  lines.push(`${colors.yellow}Errors (${result.errors.length})${colors.reset}`);
-  lines.push(`${colors.dim}${'━'.repeat(60)}${colors.reset}`);
+  lines.push(chalk.yellow(`Errors (${result.errors.length})`));
+  lines.push(chalk.dim('━'.repeat(60)));
 
   for (const error of result.errors) {
     const file = error.file ? `${error.file}: ` : '';
-    lines.push(`  ${colors.yellow}!${colors.reset} ${file}${error.message}`);
+    lines.push(`  ${chalk.yellow('!')} ${file}${error.message}`);
   }
 
   return lines.join('\n');
@@ -185,14 +169,14 @@ export function generateConsoleReport(
   lines.push(FERRET_BANNER);
 
   // Scan info
-  lines.push(`${colors.dim}Scanning: ${result.scannedPaths.join(', ')}${colors.reset}`);
-  lines.push(`${colors.dim}Found: ${result.analyzedFiles} configuration files${colors.reset}`);
+  lines.push(chalk.dim(`Scanning: ${result.scannedPaths.join(', ')}`));
+  lines.push(chalk.dim(`Found: ${result.analyzedFiles} configuration files`));
 
   // Findings
   if (result.summary.total === 0) {
     lines.push('');
-    lines.push(`${colors.green}${colors.bold}No security issues found!${colors.reset}`);
-    lines.push(`${colors.green}Your AI CLI configurations look clean.${colors.reset}`);
+    lines.push(chalk.green.bold('No security issues found!'));
+    lines.push(chalk.green('Your AI CLI configurations look clean.'));
   } else {
     lines.push(formatGroupedFindings(result, verbose));
   }

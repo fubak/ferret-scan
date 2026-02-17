@@ -296,6 +296,8 @@ export interface ScannerConfig {
   ignore: string[];
   /** Custom rule sources (file paths or URLs) loaded at runtime */
   customRules: string[];
+  /** Allow loading custom rules from remote URLs (SSRF protection) */
+  allowRemoteRules: boolean;
   /** Minimum severity to fail on */
   failOn: Severity;
   /** Enable watch mode */
@@ -386,6 +388,7 @@ export interface CliOptions {
   llmMaxFiles?: number;
   llmMinConfidence?: number;
   autoRemediation?: boolean;
+  allowRemoteRules?: boolean;
   config?: string;
 }
 
@@ -447,6 +450,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   ],
   ignore: ['**/node_modules/**', '**/.git/**'],
   customRules: [],
+  allowRemoteRules: false,
   failOn: 'HIGH',
   watch: false,
   threatIntel: false,

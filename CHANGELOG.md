@@ -16,6 +16,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - REST API for third-party integrations
 - SIEM/SOAR integrations
 
+## [2.1.0] - 2026-02-16
+
+### Added
+- **NO_COLOR support**: Respects the `NO_COLOR` environment variable per no-color.org standard. Chalk auto-detects terminal capabilities and disables color output when `NO_COLOR` is set
+- **SSRF protection for custom rules**: Remote URLs in `--custom-rules` are now blocked by default. Use the new `--allow-remote-rules` flag to opt in to loading rules from URLs
+- **SIGINT handler**: Graceful shutdown on Ctrl+C during scan with cleanup message and exit code 130
+- **Interactive baseline removal**: `ferret baseline remove` now prompts for confirmation interactively instead of requiring `--yes`
+- **Dockerfile updated**: Multi-stage build with Node.js 20, non-root user, proper signal handling, and minimal image size
+- **npm-shrinkwrap.json**: Deterministic dependency installs for reproducible builds
+- **ESM exports map**: Added `"exports"` field to package.json for proper ESM module resolution
+- **Version command changelog link**: `ferret version` now includes a link to the changelog
+- **Comprehensive test suite**: 244 tests covering rule matching (positive/negative cases for all 9 categories), config loading, reporter output, exit codes, and SARIF validation
+
+### Changed
+- **Chalk replaces raw ANSI codes**: ConsoleReporter now uses chalk consistently instead of raw ANSI escape sequences. This automatically supports `NO_COLOR`, `FORCE_COLOR`, and terminal capability detection
+- **Invalid input warnings**: Unknown `--severity` and `--category` values now produce a warning instead of being silently dropped
+- **typescript moved to devDependencies**: Saves ~60MB on production installs
+
+### Security
+- **SSRF protection**: Custom rules from remote URLs require explicit opt-in via `--allow-remote-rules` to prevent server-side request forgery
+
+### Fixed
+- Missing `allowRemoteRules` field in MarketplaceScanner config
+
 ## [2.0.0] - 2026-02-15
 
 ### Added

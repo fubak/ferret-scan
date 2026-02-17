@@ -404,6 +404,9 @@ npx -p ferret-scan ferret scan .
 # Or install locally
 npm install --save-dev ferret-scan
 npx ferret scan .
+
+# Or run via Docker (no Node.js required)
+docker run --rm -v $(pwd):/workspace:ro ghcr.io/fubak/ferret-scan scan /workspace
 ```
 
 ## Quick Start
@@ -464,8 +467,14 @@ GROQ_API_KEY="..." ferret scan . --thorough \
   --llm-model llama-3.1-8b-instant \
   --mitre-atlas-catalog
 
-# Load custom rules (file paths or URLs)
+# Load custom rules (local files)
 ferret scan . --custom-rules ./.ferret/rules.yml
+
+# Load custom rules from remote URLs (requires opt-in)
+ferret scan . --custom-rules https://example.com/rules.yml --allow-remote-rules
+
+# Disable color output
+NO_COLOR=1 ferret scan .
 ```
 
 ## What It Detects
@@ -718,6 +727,15 @@ fi
 echo "✅ Security scan passed"
 ```
 
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `NO_COLOR` | Disable all color output ([no-color.org](https://no-color.org)) |
+| `FERRET_EXIT_SUCCESS` | Override success exit code (default: 0) |
+| `FERRET_EXIT_FINDINGS` | Override findings exit code (default: 1) |
+| `FERRET_EXIT_ERROR` | Override error exit code (default: 3) |
+
 ## Configuration
 
 Ferret will auto-load config from (first found walking up from CWD):
@@ -775,17 +793,26 @@ Optional: keep MITRE ATLAS technique metadata up to date (downloads STIX bundle 
 
 ## Docker
 
+No Node.js required. The image runs as a non-root user with minimal dependencies.
+
 ```bash
+# Build the image
+docker build -t ferret-scan .
+
 # Basic scan
 docker run --rm -v $(pwd):/workspace:ro \
-  ghcr.io/fubak/ferret-scan scan /workspace
+  ferret-scan scan /workspace
 
 # With output file
 docker run --rm \
   -v $(pwd):/workspace:ro \
   -v $(pwd)/results:/output:rw \
-  ghcr.io/fubak/ferret-scan scan /workspace \
+  ferret-scan scan /workspace \
   --format html -o /output/report.html
+
+# CI mode
+docker run --rm -v $(pwd):/workspace:ro \
+  ferret-scan scan /workspace --ci --fail-on high
 ```
 
 ## Advanced Features
@@ -858,8 +885,11 @@ rules:
 You can also pass sources explicitly (file paths or URLs):
 
 ```bash
+# Local rules files
 ferret scan . --custom-rules ./.ferret/rules.yml
-ferret scan . --custom-rules https://example.com/ferret-rules.yml
+
+# Remote rules require --allow-remote-rules (SSRF protection)
+ferret scan . --custom-rules https://example.com/ferret-rules.yml --allow-remote-rules
 ```
 
 ### Thorough Mode

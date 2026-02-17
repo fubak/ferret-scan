@@ -80,10 +80,19 @@ function loadConfigFile(configPath: string): ConfigFile {
 function parseSeverities(severityStr: string | undefined): Severity[] | undefined {
   if (!severityStr) return undefined;
 
-  const severities = severityStr.split(',').map(s => s.trim().toUpperCase()) as Severity[];
+  const all = severityStr.split(',').map(s => s.trim().toUpperCase());
   const validSeverities: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
+  const valid: Severity[] = [];
 
-  return severities.filter(s => validSeverities.includes(s));
+  for (const s of all) {
+    if (validSeverities.includes(s as Severity)) {
+      valid.push(s as Severity);
+    } else {
+      logger.warn(`Ignoring unknown severity "${s}". Valid values: ${validSeverities.join(', ')}`);
+    }
+  }
+
+  return valid.length > 0 ? valid : undefined;
 }
 
 /**
@@ -92,14 +101,23 @@ function parseSeverities(severityStr: string | undefined): Severity[] | undefine
 function parseCategories(categoriesStr: string | undefined): ThreatCategory[] | undefined {
   if (!categoriesStr) return undefined;
 
-  const categories = categoriesStr.split(',').map(c => c.trim().toLowerCase()) as ThreatCategory[];
+  const all = categoriesStr.split(',').map(c => c.trim().toLowerCase());
   const validCategories: ThreatCategory[] = [
     'exfiltration', 'credentials', 'injection', 'backdoors',
     'supply-chain', 'permissions', 'persistence', 'obfuscation',
     'ai-specific', 'advanced-hiding', 'behavioral'
   ];
+  const valid: ThreatCategory[] = [];
 
-  return categories.filter(c => validCategories.includes(c));
+  for (const c of all) {
+    if (validCategories.includes(c as ThreatCategory)) {
+      valid.push(c as ThreatCategory);
+    } else {
+      logger.warn(`Ignoring unknown category "${c}". Valid values: ${validCategories.join(', ')}`);
+    }
+  }
+
+  return valid.length > 0 ? valid : undefined;
 }
 
 function uniqueStrings(values: string[]): string[] {
@@ -498,6 +516,10 @@ export function loadConfig(cliOptions: CliOptions): ScannerConfig {
 
   if (cliOptions.autoRemediation !== undefined) {
     config.autoRemediation = cliOptions.autoRemediation;
+  }
+
+  if (cliOptions.allowRemoteRules !== undefined) {
+    config.allowRemoteRules = cliOptions.allowRemoteRules;
   }
 
   // If the user enabled both the LLM analyzer and ATLAS catalog auto-update,

@@ -216,6 +216,7 @@ export class MarketplaceScanner {
                 ],
                 ignore: [],
                 customRules: [],
+                allowRemoteRules: false,
                 failOn: 'HIGH',
                 watch: false,
                 threatIntel: false,

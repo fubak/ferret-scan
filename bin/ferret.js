@@ -122,10 +122,22 @@ program
   .option('--auto-fix', 'Automatically apply safe fixes after scanning')
   .option('--config <file>', 'Path to configuration file')
   .option('--custom-rules <sources>', 'Custom rule sources (comma-separated file paths or URLs)')
+  .option('--allow-remote-rules', 'Allow loading custom rules from remote URLs (required for URL sources)')
   .option('--baseline <file>', 'Path to baseline file for filtering known findings')
   .option('--ignore-baseline', 'Ignore baseline file and show all findings')
   .action(async (path, options, command) => {
     try {
+      // SIGINT handler for graceful shutdown
+      let aborted = false;
+      const sigintHandler = () => {
+        if (!aborted) {
+          aborted = true;
+          console.error('\nScan interrupted. Cleaning up...');
+          process.exit(130);
+        }
+      };
+      process.on('SIGINT', sigintHandler);
+
       // Configure logger
       logger.configure({
         verbose: options.verbose,
@@ -219,6 +231,7 @@ program
         llmMinConfidence: options.llmMinConfidence,
         thorough: options.thorough,
         autoRemediation: options.autoRemediation,
+        allowRemoteRules: options.allowRemoteRules,
         config: options.config,
       });
 
@@ -573,10 +586,16 @@ baselineCmd
       }
 
       if (!options.yes) {
-        // Simple confirmation (in a real implementation, you'd use a proper prompt library)
-        console.log(`This will delete the baseline at: ${baselinePath}`);
-        console.log('Use --yes to confirm');
-        process.exit(1);
+        const { createInterface } = await import('node:readline');
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const answer = await new Promise((resolve) => {
+          rl.question(`Remove baseline at ${baselinePath}? [y/N] `, resolve);
+        });
+        rl.close();
+        if (String(answer).trim().toLowerCase() !== 'y') {
+          console.log('Cancelled.');
+          process.exit(0);
+        }
       }
 
       const { unlinkSync } = await import('node:fs');
@@ -949,6 +968,7 @@ program
   .action(() => {
     console.log(`Ferret v${packageJson.version}`);
     console.log('Security scanner for AI CLI configurations');
+    console.log(`Changelog: https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md`);
   });
 
 // Git hooks commands

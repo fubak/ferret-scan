@@ -240,11 +240,23 @@ function getRuleScanRoots(paths: string[]): string[] {
   return Array.from(new Set(roots));
 }
 
+function isRemoteUrl(source: string): boolean {
+  return /^https?:\/\//i.test(source);
+}
+
 async function loadCustomRulesForScan(config: ScannerConfig): Promise<Rule[]> {
   const rules: Rule[] = [];
 
   // Explicit sources from config (file paths or URLs).
   for (const source of config.customRules) {
+    // SSRF protection: block remote URLs unless explicitly allowed
+    if (isRemoteUrl(source) && !config.allowRemoteRules) {
+      logger.warn(
+        `Skipping remote custom rules URL: ${source}. ` +
+        'Use --allow-remote-rules to permit loading rules from URLs.'
+      );
+      continue;
+    }
     const loaded = await loadCustomRulesSource(source);
     if (loaded.errors.length > 0) {
       for (const err of loaded.errors) {
