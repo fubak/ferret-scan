@@ -1,6 +1,6 @@
 {
   "name": "ferret-scan",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Comprehensive AI Agent Security Platform - scan, monitor, and secure AI CLI configurations with IDE integrations, behavior analysis, and compliance frameworks",
   "type": "module",
   "main": "dist/index.js",
