@@ -95,37 +95,34 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## ✨ New: Advanced Features (v2.0)
+## What's New in v2.1.0
 
-**🔌 IDE Integrations**
+- **NO_COLOR support**: Respects the `NO_COLOR` environment variable per [no-color.org](https://no-color.org)
+- **SSRF protection**: Remote custom rules URLs blocked by default; use `--allow-remote-rules` to opt in
+- **SIGINT handler**: Graceful shutdown on Ctrl+C during scan
+- **Interactive baseline removal**: `ferret baseline remove` prompts for confirmation
+- **244 tests**: Comprehensive test suite covering rules, config, reporters, and exit codes
+- **npm-shrinkwrap.json**: Deterministic dependency installs
+
+## Advanced Features
+
+**IDE Integration**
 - **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes
-- **Language Server Protocol**: IDE-agnostic security analysis for Neovim, Emacs, and more
-- **IntelliJ Plugin**: Enterprise-grade support for Java/Kotlin teams
 
-**📊 Behavior Analysis**
-- **Runtime Monitoring**: Track agent execution patterns and resource usage
-- **Anomaly Detection**: Identify unusual behavior and potential security incidents
-- **Cross-Agent Communication**: Monitor interactions between AI agents
+**Analysis Engines**
+- **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
+- **LLM-assisted analysis**: Optional AI-powered threat detection (OpenAI-compatible APIs)
+- **Semantic analysis**: TypeScript AST-based code analysis
+- **Cross-file correlation**: Detect multi-file attack chains
+- **Entropy analysis**: Secret detection via Shannon entropy
+- **Threat intelligence**: Local indicator database matching
 
-**🏪 Marketplace Security**
-- **Plugin Scanning**: Analyze Claude Skills, Cursor extensions, and community plugins
-- **Permission Analysis**: Detect dangerous capability combinations
-- **Risk Assessment**: Automated threat scoring and recommendations
-
-**🤖 AI-Powered Rules**
-- **Automated Rule Generation**: Create security rules from threat intelligence using LLM
-- **Community Platform**: Share and import security rules from the community
-- **Adaptive Detection**: Rules that evolve with the threat landscape
-
-**🔒 Sandboxing Integration**
-- **Pre-execution Validation**: Security checks before agent code runs
-- **Runtime Constraints**: Enforce resource limits and access controls
-- **Capability Boundaries**: Verify and restrict agent capabilities
-
-**✅ Compliance Frameworks**
-- **SOC2 Compliance**: Automated control assessment and reporting
-- **ISO 27001**: Security standard mapping and evidence collection
-- **GDPR**: Privacy impact assessment for AI agents
+**Planned Features**
+- Language Server Protocol (LSP) for universal IDE support
+- IntelliJ plugin
+- Runtime behavior monitoring
+- Compliance framework assessments (SOC2, ISO 27001, GDPR)
+- Community rule sharing platform
 
 ---
 
@@ -479,7 +476,7 @@ NO_COLOR=1 ferret scan .
 
 ## What It Detects
 
-Ferret includes **80 enabled rules** (as of `v1.0.10`) across these categories. Run `ferret rules stats` for the latest counts.
+Ferret includes **80+ enabled rules** across these categories. Run `ferret rules stats` for the latest counts.
 
 | Category | Rules | What It Finds |
 |----------|-------|---------------|
@@ -621,59 +618,6 @@ ferret intel search "jailbreak"        # Search indicators
 ferret intel add --type pattern --value "malicious" --severity high
 ```
 
-### `ferret marketplace` (NEW)
-
-Scan AI agent marketplaces and plugins:
-
-```bash
-ferret marketplace scan claude         # Scan Claude Skills marketplace
-ferret marketplace scan cursor         # Scan Cursor extensions
-ferret marketplace analyze <plugin-id> # Analyze specific plugin
-ferret marketplace list --risky        # Show high-risk plugins
-```
-
-### `ferret monitor` (NEW)
-
-Runtime behavior monitoring:
-
-```bash
-ferret monitor start                   # Start monitoring agent behavior
-ferret monitor status                  # Check monitoring status
-ferret monitor report                  # Generate behavior report
-ferret monitor stop                    # Stop monitoring
-```
-
-### `ferret sandbox` (NEW)
-
-Sandbox integration and validation:
-
-```bash
-ferret sandbox validate <command>      # Pre-execution security check
-ferret sandbox enforce --config <file> # Apply runtime constraints
-ferret sandbox test <agent-config>     # Test agent in sandbox
-```
-
-### `ferret compliance` (NEW)
-
-Compliance framework assessment:
-
-```bash
-ferret compliance assess soc2          # SOC2 compliance assessment
-ferret compliance assess iso27001      # ISO 27001 assessment
-ferret compliance assess gdpr          # GDPR privacy impact assessment
-ferret compliance report --format pdf  # Generate compliance report
-```
-
-### `ferret rules generate` (NEW)
-
-AI-powered rule generation:
-
-```bash
-ferret rules generate --from-threat <report.json>  # Generate from threat intel
-ferret rules generate --community                  # Browse community rules
-ferret rules validate <rule-file>                  # Validate custom rules
-ferret rules publish <rule-file>                   # Share with community
-```
 
 ## CI/CD Integration
 
@@ -706,10 +650,10 @@ security_scan:
   stage: test
   image: node:20
   script:
-    - npx -p ferret-scan ferret scan . --ci --format json -o ferret-results.json
+    - npx -p ferret-scan ferret scan . --ci --format sarif -o ferret-results.sarif
   artifacts:
     reports:
-      sast: ferret-results.json
+      sast: ferret-results.sarif
 ```
 
 ### Pre-commit Hook
@@ -906,6 +850,13 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 ## Planned Features
 
+- Language Server Protocol (LSP) for Neovim, Emacs, Sublime Text
+- IntelliJ plugin for JetBrains IDEs
+- Runtime behavior monitoring and anomaly detection
+- Compliance framework assessments (SOC2, ISO 27001, GDPR)
+- Community rule sharing platform
+- CI/CD plugins for Jenkins, Azure DevOps
+- REST API for third-party integrations
 - Threat intel updates from external sources
 - More LLM providers and local-first presets
 
@@ -913,7 +864,7 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 ### VS Code Extension
 
-Install from VS Code Marketplace or build from source:
+Build from source:
 
 ```bash
 cd extensions/vscode
@@ -939,40 +890,13 @@ npm run compile
 }
 ```
 
-### Language Server Protocol (LSP)
-
-Universal IDE support through LSP:
-
-```bash
-cd lsp/server
-npm install
-npm run build
-node dist/server.js --stdio
-```
-
-**Supported Editors:**
-- Neovim (via nvim-lspconfig)
-- Emacs (via lsp-mode)
-- Sublime Text (via LSP package)
-- Atom (via atom-languageclient)
-
-### IntelliJ Plugin
-
-Enterprise-grade support for JetBrains IDEs:
-
-```bash
-cd plugins/intellij
-./gradlew build
-# Install: Settings -> Plugins -> Install from disk
-```
-
 ## Performance
 
 | Metric | Value |
 |--------|-------|
 | **Speed** | Fast deterministic scanning; optional analyzers (semantic/correlation/deps/LLM) add cost |
 | **Memory** | Depends on enabled analyzers (semantic analysis uses the TypeScript compiler) |
-| **Rules** | 80 enabled rules (as of `v1.0.10`) + optional custom rules |
+| **Rules** | 80+ enabled rules + optional custom rules |
 
 ## Documentation
 
