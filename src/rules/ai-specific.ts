@@ -218,6 +218,27 @@ export const aiSpecificRules: Rule[] = [
       'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
     ],
     enabled: true,
+    // Mirror INJ-003 semantic context suppression: a skill that discusses,
+    // documents, detects, or provides examples of these techniques is not
+    // itself a jailbreak attempt.
+    excludePatterns: [
+      // Line discusses detection/blocking rather than deployment
+      /\b(detect|catch|flag|block|prevent|scan\s+for|identify|reject|report)\b[^\n]{0,80}(jailbreak|DAN|bypass)/gi,
+      /\b(jailbreak|DAN|bypass)\b[^\n]{0,80}\b(detect|catch|flag|block|prevent|found|identified)/gi,
+      // Term appears inside a quoted string
+      /["'][^"'\n]{0,120}\b(jailbreak|DAN)\b[^"'\n]{0,120}["']/gi,
+      // Scanner rule-ID reference on the same line
+      /\[(?:INJ|AI|SEC|CRED)-\d+\]/gi,
+      // Markdown example label
+      /^\s*\*\*(?:Input|Output|Example|Finding|Result)\*\*\s*:/i,
+    ],
+    excludeContext: [
+      /\b(security\s+(rule|finding|scan|check|gate|scanner|score)|ferret.?scan|scan\s+result)/gi,
+      /\b(example\s+of|this\s+detects|used\s+to\s+(bypass|attack)|common\s+(attack|technique)|known\s+(jailbreak|attack))/gi,
+      /\b(security\s+scanner|vulnerability\s+scanner|threat\s+detect|scan\s+for\s+(injection|jailbreak))/gi,
+      /^\s*##\s+Example/im,
+      /publication\s+blocked/gi,
+    ],
   },
   {
     id: 'AI-011',
