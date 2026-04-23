@@ -17,6 +17,11 @@ interface MatchOptions {
   contextLines: number;
 }
 
+interface PatternMatchOptions {
+  maxMatches: number;
+  maxRuntimeMs: number;
+}
+
 interface PatternMatch {
   pattern: RegExp;
   match: RegExpExecArray;
@@ -96,11 +101,19 @@ function calculateRiskScore(
  */
 function findMatches(
   content: string,
-  patterns: RegExp[]
+  patterns: RegExp[],
+  opts: PatternMatchOptions = { maxMatches: 1000, maxRuntimeMs: 5000 }
 ): PatternMatch[] {
+  const startTime = Date.now();
   const matches: PatternMatch[] = [];
 
   for (const pattern of patterns) {
+    // Check time budget before starting each pattern
+    if (Date.now() - startTime > opts.maxRuntimeMs) {
+      logger.warn(`Regex matcher time budget exceeded (${opts.maxRuntimeMs}ms), stopping pattern processing`);
+      return matches;
+    }
+
     // Create a new regex with global flag
     const globalPattern = new RegExp(
       pattern.source,
@@ -109,6 +122,18 @@ function findMatches(
 
     let match: RegExpExecArray | null;
     while ((match = globalPattern.exec(content)) !== null) {
+      // Check time budget on each match
+      if (Date.now() - startTime > opts.maxRuntimeMs) {
+        logger.warn(`Regex matcher time budget exceeded (${opts.maxRuntimeMs}ms) during pattern processing`);
+        return matches;
+      }
+
+      // Check match count limit
+      if (matches.length >= opts.maxMatches) {
+        logger.warn(`Max match limit reached (${opts.maxMatches}), stopping pattern processing`);
+        return matches;
+      }
+
       // Guard against zero-length matches to prevent infinite loops
       if (match[0].length === 0) {
         globalPattern.lastIndex += 1;
@@ -213,7 +238,8 @@ export function matchRule(
 
   const findings: Finding[] = [];
   const lines = splitLines(content);
-  const matches = findMatches(content, rule.patterns);
+  const patternOptions: PatternMatchOptions = { maxMatches: 1000, maxRuntimeMs: 5000 };
+  const matches = findMatches(content, rule.patterns, patternOptions);
 
   // Group matches by line to avoid duplicates
   const matchesByLine = new Map<number, PatternMatch[]>();

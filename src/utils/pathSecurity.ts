@@ -49,6 +49,7 @@ export function sanitizeFilename(filename: string): string {
     .replace(/[\/\\]/g, '_')      // Replace path separators
     .replace(/\.\./g, '_')        // Replace parent directory references
     .replace(/[<>:"|?*]/g, '_')   // Remove invalid filename characters
+    .replace(/\0/g, '_')          // Replace null bytes
     .replace(/^\.+/, '_');        // Remove leading dots
 }
 
