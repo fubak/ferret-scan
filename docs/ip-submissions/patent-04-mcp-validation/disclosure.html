@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Disclosure FS-2026-004 — MCP Server Security Validation with Trusted Source Registry</title>
+<style>
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 1in;
+    color: #000;
+    background: #fff;
+  }
+  h1 { font-family: Arial, sans-serif; font-size: 18pt; text-align: center; margin-bottom: 0.2in; }
+  h2 { font-family: Arial, sans-serif; font-size: 14pt; margin-top: 0.3in; border-bottom: 1px solid #000; }
+  h3 { font-family: Arial, sans-serif; font-size: 12pt; margin-top: 0.2in; }
+  .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 0.3in; }
+  .meta-table td { border: 1px solid #999; padding: 6px 10px; }
+  .meta-table td:first-child { font-weight: bold; width: 30%; background: #f5f5f5; }
+  .claim { margin: 0.15in 0; padding-left: 0.3in; }
+  .claim-num { font-weight: bold; }
+  .figure-caption { text-align: center; font-style: italic; font-size: 10pt; margin-top: 4px; }
+  .prior-art-table { width: 100%; border-collapse: collapse; margin: 0.2in 0; }
+  .prior-art-table th { background: #2c3e50; color: #fff; padding: 8px; font-family: Arial, sans-serif; font-size: 10pt; }
+  .prior-art-table td { border: 1px solid #ccc; padding: 7px 10px; font-size: 10pt; }
+  .prior-art-table tr:nth-child(even) td { background: #f8f8f8; }
+  .alert-box { border: 2px solid #c0392b; background: #fdf0f0; padding: 0.15in; margin: 0.2in 0; border-radius: 4px; }
+  .alert-box strong { color: #c0392b; }
+  code { font-family: "Courier New", monospace; font-size: 10pt; background: #f4f4f4; padding: 1px 4px; border-radius: 2px; }
+  svg text { font-family: Arial, sans-serif; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>PATENT DISCLOSURE DOCUMENT</h1>
+<h1 style="font-size:14pt;">FS-2026-004: Multi-Dimensional Security Validation of Model Context Protocol Server Configurations with Trusted Source Registry</h1>
+
+<table class="meta-table">
+  <tr><td>Disclosure ID</td><td>FS-2026-004</td></tr>
+  <tr><td>Filing Priority</td><td><strong>HIGH</strong> — Provisional within 30 days</td></tr>
+  <tr><td>Technology Domain</td><td>AI Security, Protocol Validation, Developer Tooling</td></tr>
+  <tr><td>Primary Inventor(s)</td><td>[To Be Completed]</td></tr>
+  <tr><td>Assignee (Proposed)</td><td>[Organization Name]</td></tr>
+  <tr><td>First Public Disclosure</td><td>2026-01-31 (npm publication)</td></tr>
+  <tr><td>Grace Period Expires</td><td>2027-01-31</td></tr>
+  <tr><td>Target Provisional Filing</td><td>2026-04-22</td></tr>
+  <tr><td>Primary Source File</td><td>src/features/mcpValidator.ts</td></tr>
+  <tr><td>Related Cases</td><td>FS-2026-001, FS-2026-002, FS-2026-003</td></tr>
+</table>
+
+<div class="alert-box">
+  <strong>&#9888; Filing Urgency:</strong> The npm publication on 2026-01-31 constitutes a public disclosure. U.S. provisional filing deadline: <strong>2027-01-31</strong>. Target: <strong>2026-04-22</strong>. PCT/international filing (no grace period) should have occurred before 2026-01-31 &mdash; evaluate international filing options carefully.
+</div>
+
+<h2>I. BACKGROUND AND PROBLEM STATEMENT</h2>
+
+<p>The Model Context Protocol (MCP), introduced by Anthropic in late 2024, is a standardized protocol for AI coding assistants to access external tools, file systems, databases, and APIs. MCP servers are registered in AI assistant configuration files as JSON objects specifying an execution command, environment variable bindings, and optional metadata. By 2025, hundreds of community-developed MCP servers were available, ranging from official Anthropic-published servers to unofficial third-party and anonymous implementations.</p>
+
+<p>MCP server registration creates a novel attack surface: a malicious MCP server, once registered in a developer's AI assistant configuration, executes with the permissions of the AI assistant process. This enables data exfiltration, credential theft (via environment variable injection), command execution, and supply chain attacks. Prior to this invention, no systematic method existed for validating MCP server configurations against a multi-dimensional security model.</p>
+
+<p>Existing solutions are incomplete in several dimensions: (1) npm package reputation systems evaluate package quality but not MCP-specific threat indicators; (2) software composition analysis (SCA) tools evaluate dependency trees but not runtime environment variable bindings or command semantics; (3) no trusted source registry specifically for MCP servers existed. The present invention addresses all three gaps with a unified six-dimension validation framework.</p>
+
+<h2>II. SUMMARY OF THE INVENTION</h2>
+
+<p>The present invention provides a method and system for evaluating MCP server configurations along six independent security dimensions: command safety, environment variable safety, trusted source verification, naming reputation scoring, permission scope analysis, and server metadata validation. Dimension scores are aggregated using a weighted composite formula to produce a per-server security assessment that drives actionable recommendations (block, warn, or allow).</p>
+
+<p>A key structural novelty is the <strong>trusted source registry</strong>: a curated, versioned list of verified MCP server publishers (e.g., <code>@modelcontextprotocol/*</code>, official GitHub organizations) that provides a strong prior for server trustworthiness, reducing false positive rates for well-known servers while maintaining sensitivity for unknown sources.</p>
+
+<h2>III. DETAILED DESCRIPTION OF THE INVENTION</h2>
+
+<h3>A. MCP Server Configuration Structure</h3>
+
+<p>In the Claude Code AI assistant, MCP servers are defined in <code>settings.json</code> under the <code>mcpServers</code> key. Each server entry contains:</p>
+<ul>
+  <li><strong>command</strong>: The executable command to launch the server (e.g., "npx", "node", "python")</li>
+  <li><strong>args</strong>: Array of command-line arguments including the package name or script path</li>
+  <li><strong>env</strong>: Key-value pairs of environment variables passed to the server process</li>
+</ul>
+
+<p>The invention analyzes all three fields as an integrated unit, as threats often span multiple fields (e.g., a suspicious package name combined with a dangerous environment variable binding).</p>
+
+<h3>B. Six-Dimension Validation Framework</h3>
+
+<!-- Figure 1: Six Dimensions -->
+<svg width="700" height="400" viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <rect width="700" height="400" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="350" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 1 &#8212; Six-Dimension MCP Server Validation Framework</text>
+
+  <!-- Center: Server Input -->
+  <rect x="270" y="160" width="160" height="60" fill="#2c3e50" rx="8"/>
+  <text x="350" y="185" text-anchor="middle" font-size="12" fill="white" font-weight="bold">MCP Server</text>
+  <text x="350" y="203" text-anchor="middle" font-size="11" fill="#aaa">Config Entry</text>
+
+  <!-- Dim 1: Command Safety (top-left) -->
+  <rect x="30" y="40" width="145" height="70" fill="#e74c3c" rx="6"/>
+  <text x="102" y="63" text-anchor="middle" font-size="11" fill="white" font-weight="bold">1. Command</text>
+  <text x="102" y="79" text-anchor="middle" font-size="10" fill="white">Safety</text>
+  <text x="102" y="101" text-anchor="middle" font-size="8.5" fill="#f5b7b1">Dangerous cmd detection</text>
+  <line x1="175" y1="90" x2="270" y2="175" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Dim 2: Env Var Safety (top-center) -->
+  <rect x="200" y="40" width="145" height="70" fill="#e67e22" rx="6"/>
+  <text x="272" y="63" text-anchor="middle" font-size="11" fill="white" font-weight="bold">2. Env Variable</text>
+  <text x="272" y="79" text-anchor="middle" font-size="10" fill="white">Safety</text>
+  <text x="272" y="101" text-anchor="middle" font-size="8.5" fill="#fad7a0">Credential exposure</text>
+  <line x1="272" y1="110" x2="320" y2="160" stroke="#e67e22" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Dim 3: Trusted Source (top-right) -->
+  <rect x="370" y="40" width="145" height="70" fill="#27ae60" rx="6"/>
+  <text x="442" y="63" text-anchor="middle" font-size="11" fill="white" font-weight="bold">3. Trusted</text>
+  <text x="442" y="79" text-anchor="middle" font-size="10" fill="white">Source Registry</text>
+  <text x="442" y="101" text-anchor="middle" font-size="8.5" fill="#a9dfbf">Publisher verification</text>
+  <line x1="442" y1="110" x2="400" y2="160" stroke="#27ae60" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Dim 4: Naming Reputation (bottom-left) -->
+  <rect x="30" y="290" width="145" height="70" fill="#8e44ad" rx="6"/>
+  <text x="102" y="313" text-anchor="middle" font-size="11" fill="white" font-weight="bold">4. Naming</text>
+  <text x="102" y="329" text-anchor="middle" font-size="10" fill="white">Reputation</text>
+  <text x="102" y="351" text-anchor="middle" font-size="8.5" fill="#d7b8ea">Typosquat detection</text>
+  <line x1="175" y1="315" x2="270" y2="220" stroke="#8e44ad" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Dim 5: Permission Scope (bottom-center) -->
+  <rect x="200" y="290" width="145" height="70" fill="#2980b9" rx="6"/>
+  <text x="272" y="313" text-anchor="middle" font-size="11" fill="white" font-weight="bold">5. Permission</text>
+  <text x="272" y="329" text-anchor="middle" font-size="10" fill="white">Scope Analysis</text>
+  <text x="272" y="351" text-anchor="middle" font-size="8.5" fill="#aed6f1">Least-privilege check</text>
+  <line x1="272" y1="290" x2="320" y2="220" stroke="#2980b9" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Dim 6: Metadata Validation (bottom-right) -->
+  <rect x="370" y="290" width="145" height="70" fill="#16a085" rx="6"/>
+  <text x="442" y="313" text-anchor="middle" font-size="11" fill="white" font-weight="bold">6. Metadata</text>
+  <text x="442" y="329" text-anchor="middle" font-size="10" fill="white">Validation</text>
+  <text x="442" y="351" text-anchor="middle" font-size="8.5" fill="#a2ddd4">Version, URL integrity</text>
+  <line x1="442" y1="290" x2="400" y2="220" stroke="#16a085" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Composite output -->
+  <rect x="545" y="155" width="130" height="70" fill="#f39c12" rx="8"/>
+  <text x="610" y="178" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Composite</text>
+  <text x="610" y="194" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Risk Score</text>
+  <text x="610" y="214" text-anchor="middle" font-size="9" fill="white">BLOCK / WARN / ALLOW</text>
+  <line x1="430" y1="190" x2="545" y2="190" stroke="#f39c12" stroke-width="2"/>
+  <polygon points="540,185 550,190 540,195" fill="#f39c12"/>
+</svg>
+<p class="figure-caption">Figure 1. Six validation dimensions applied to each MCP server configuration entry. Scores are aggregated into a composite risk rating that drives a BLOCK, WARN, or ALLOW recommendation.</p>
+
+<h3>C. Dimension Definitions</h3>
+
+<p><strong>Dimension 1 &mdash; Command Safety:</strong> The <code>command</code> and <code>args</code> fields are evaluated against a catalog of dangerous execution patterns (<code>DANGEROUS_COMMANDS</code>). This catalog includes shell invocation wrappers, code download-and-execute chains, and obfuscated execution techniques. Each match contributes a weighted score to the overall risk rating. Novel commands not in the catalog are evaluated by heuristic analysis of the argument vector (e.g., presence of URLs, base64-encoded payloads, or pipe characters).</p>
+
+<p><strong>Dimension 2 &mdash; Environment Variable Safety:</strong> The <code>env</code> field is evaluated against a catalog of high-sensitivity environment variable name patterns (<code>DANGEROUS_ENV_VARS</code>). This catalog includes credential patterns (API keys, tokens, passwords, secrets), infrastructure credentials (cloud provider credentials, database passwords), and sensitive path variables. The invention additionally checks for indirect credential references: cases where an env var name references another env var containing credentials (e.g., <code>TOKEN: "$GITHUB_TOKEN"</code>), indicating that the server will receive a copy of a sensitive credential.</p>
+
+<p><strong>Dimension 3 &mdash; Trusted Source Registry:</strong> The package name or URL in the command arguments is checked against a versioned trusted source registry (<code>TRUSTED_SOURCES</code>). This registry lists verified publisher namespaces and package name prefixes. Sources in the registry receive a significant risk reduction, while sources entirely absent from the registry receive a risk premium. The registry is structured as a tiered list: tier-1 (official Anthropic/platform sources), tier-2 (verified community publishers), and tier-3 (individually reviewed packages).</p>
+
+<p><strong>Dimension 4 &mdash; Naming Reputation Scoring:</strong> Package and server names are evaluated against a list of suspicious name patterns (<code>SUSPICIOUS_SERVER_NAMES</code>) using prefix matching, substring matching, and edit-distance analysis. This dimension specifically targets typosquatting attacks (e.g., a package named "modelcontextprotoco1" targeting "modelcontextprotocol") and social engineering patterns (names claiming official affiliation not substantiated by the trusted source registry).</p>
+
+<p><strong>Dimension 5 &mdash; Permission Scope Analysis:</strong> The server's declared capabilities (tool names, resource URIs) are compared against the minimum permissions necessary for the stated function. Servers claiming excessive permissions relative to their declared purpose receive elevated risk scores. This analysis is partially heuristic, using the server name and command as proxies for intended function.</p>
+
+<p><strong>Dimension 6 &mdash; Metadata Validation:</strong> Version strings, GitHub repository URLs, and other metadata fields are validated for format compliance and cross-checked for consistency. Mismatched version strings, private GitHub repositories, and absent or invalid metadata all contribute risk signals.</p>
+
+<h3>D. Composite Risk Scoring and Action Mapping</h3>
+
+<!-- Figure 2: Scoring and Action -->
+<svg width="680" height="260" viewBox="0 0 680 260" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <rect width="680" height="260" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="340" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 2 &#8212; Composite Risk Scoring and Action Decision</text>
+
+  <!-- Formula box -->
+  <rect x="20" y="40" width="380" height="80" fill="white" rx="6" stroke="#2c3e50" stroke-width="1.5"/>
+  <text x="210" y="60" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c3e50">Composite Risk Formula</text>
+  <text x="210" y="82" text-anchor="middle" font-size="10" fill="#333">R = w&#x2081;&#x00B7;C + w&#x2082;&#x00B7;E + w&#x2083;&#x00B7;T + w&#x2084;&#x00B7;N + w&#x2085;&#x00B7;P + w&#x2086;&#x00B7;M</text>
+  <text x="210" y="100" text-anchor="middle" font-size="9" fill="#666">C=command, E=env-var, T=trusted-source, N=naming, P=permission, M=metadata</text>
+  <text x="210" y="115" text-anchor="middle" font-size="9" fill="#666">Weights w&#x2081;&#x2013;w&#x2086; tuned to reflect empirical threat frequency</text>
+
+  <!-- Score ranges -->
+  <rect x="20" y="140" width="640" height="100" fill="white" rx="6" stroke="#ddd"/>
+  <text x="340" y="158" text-anchor="middle" font-size="11" font-weight="bold" fill="#2c3e50">Score-to-Action Mapping</text>
+
+  <!-- ALLOW -->
+  <rect x="30" y="168" width="190" height="60" fill="#27ae60" rx="5"/>
+  <text x="125" y="191" text-anchor="middle" font-size="12" fill="white" font-weight="bold">ALLOW</text>
+  <text x="125" y="207" text-anchor="middle" font-size="10" fill="white">Score 0&#x2013;2: Low risk</text>
+  <text x="125" y="221" text-anchor="middle" font-size="9" fill="#a9dfbf">Trusted source + clean dims</text>
+
+  <!-- WARN -->
+  <rect x="235" y="168" width="190" height="60" fill="#e67e22" rx="5"/>
+  <text x="330" y="191" text-anchor="middle" font-size="12" fill="white" font-weight="bold">WARN</text>
+  <text x="330" y="207" text-anchor="middle" font-size="10" fill="white">Score 3&#x2013;5: Medium risk</text>
+  <text x="330" y="221" text-anchor="middle" font-size="9" fill="#fad7a0">Unverified source or 1 dim hit</text>
+
+  <!-- BLOCK -->
+  <rect x="440" y="168" width="210" height="60" fill="#e74c3c" rx="5"/>
+  <text x="545" y="191" text-anchor="middle" font-size="12" fill="white" font-weight="bold">BLOCK</text>
+  <text x="545" y="207" text-anchor="middle" font-size="10" fill="white">Score 6+: High risk</text>
+  <text x="545" y="221" text-anchor="middle" font-size="9" fill="#f5b7b1">Dangerous cmd or 2+ dim hits</text>
+</svg>
+<p class="figure-caption">Figure 2. Composite risk formula aggregates six dimension scores with empirically tuned weights. The aggregate score maps to one of three actions: ALLOW, WARN, or BLOCK.</p>
+
+<h2>IV. INDEPENDENT CLAIMS</h2>
+
+<div class="claim">
+<span class="claim-num">Claim 1 (Method &mdash; Independent):</span> A computer-implemented method for evaluating security risks in Model Context Protocol server configurations, comprising: receiving a server configuration entry including a command field specifying an executable, an arguments field, and an environment variable bindings field; evaluating the configuration entry along a plurality of security dimensions comprising at least: a command safety dimension that analyzes the command and arguments against a catalog of dangerous execution patterns; an environment variable safety dimension that analyzes variable names and values against a catalog of credential and sensitive data patterns; and a trusted source dimension that checks the package name or URL against a curated registry of verified MCP server publishers; computing a composite risk score by applying dimension-specific weights to individual dimension scores; and outputting a security recommendation selected from block, warn, and allow based on the composite risk score.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 2 (System &mdash; Independent):</span> A system for validating security of Model Context Protocol server registrations in AI coding assistant configurations, the system comprising: a trusted source registry storing a tiered list of verified MCP server publisher namespaces; a multi-dimension analyzer configured to evaluate each server configuration against at least six independent security dimensions including command safety, environment variable safety, trusted source verification, naming reputation, permission scope, and metadata validation; a composite risk calculator configured to aggregate dimension scores using dimension-specific weights into a composite risk score; and a recommendation engine configured to output a block, warn, or allow recommendation and a human-readable explanation for each evaluated server.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 3 (Dependent on Claim 1):</span> The method of claim 1, wherein the trusted source dimension further comprises applying a tier structure to the registry such that tier-1 sources (official platform publishers) receive a greater risk reduction than tier-2 sources (verified community publishers), and packages absent from all tiers receive a risk premium.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 4 (Dependent on Claim 1):</span> The method of claim 1, further comprising a naming reputation dimension that applies edit-distance analysis to detect typographical variations of trusted source names within a configurable edit-distance threshold, and flags matches as suspected typosquatting attacks.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 5 (Dependent on Claim 1):</span> The method of claim 1, wherein evaluating the environment variable safety dimension further comprises detecting indirect credential references in which an environment variable value references another environment variable known to contain credentials, and assigning an elevated risk contribution for such indirect references.
+</div>
+
+<h2 class="page-break">V. PRIOR ART ANALYSIS</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Reference</th>
+    <th>Type</th>
+    <th>Subject</th>
+    <th>Gap vs. Invention</th>
+    <th>Anticipates?</th>
+  </tr>
+  <tr>
+    <td>npm audit (npm, Inc.)</td>
+    <td>Tool</td>
+    <td>Dependency vulnerability scanning</td>
+    <td>Evaluates package vulnerabilities, not MCP-specific security dimensions; no trusted source registry; no env var analysis</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>MCP-Scan (Invariant Labs/Snyk)</td>
+    <td>Research Tool (2025)</td>
+    <td>MCP server scanning</td>
+    <td>Focuses on prompt injection in server descriptions; does not implement six-dimension framework or trusted source registry; different threat model</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Snyk Open Source</td>
+    <td>Commercial Tool</td>
+    <td>Software composition analysis</td>
+    <td>Evaluates known vulnerabilities in dependency trees; does not analyze MCP command/env structure; no AI-specific threat model</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Socket.dev</td>
+    <td>Commercial Tool</td>
+    <td>npm package reputation analysis</td>
+    <td>Evaluates package behavior at install time; does not evaluate MCP-specific configuration fields; no runtime environment variable binding analysis</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>US Patent 9,756,068 (WhiteHat Security)</td>
+    <td>Patent</td>
+    <td>Web application vulnerability scoring</td>
+    <td>Multi-dimensional web app vulnerability scoring; no protocol-specific analysis; no AI assistant context; no MCP</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Anthropic MCP Specification (2024)</td>
+    <td>Technical Specification</td>
+    <td>MCP protocol definition</td>
+    <td>Defines the protocol but includes no security validation framework; does not specify trusted source registry or multi-dimension scoring</td>
+    <td>No</td>
+  </tr>
+</table>
+
+<p><strong>Non-obviousness argument:</strong> MCP was introduced in late 2024. No prior system exists that combines a curated trusted source registry with multi-dimensional scoring specifically calibrated for MCP server configuration threat vectors. The six-dimension framework reflects a non-obvious insight: that MCP server security risk cannot be captured by any single indicator (command, package name, or env vars alone) and requires independent evaluation of each attack surface dimension with a weighted composite to handle partial-trust cases (e.g., a trusted source package that nevertheless binds a suspicious environment variable).</p>
+
+<h2>VI. RECOMMENDED FILING STRATEGY</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Action</th>
+    <th>Jurisdiction</th>
+    <th>Deadline</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <td>Provisional Application</td>
+    <td>USPTO (US)</td>
+    <td>2026-04-22 (target)</td>
+    <td>Establishes priority date; 12-month window to convert</td>
+  </tr>
+  <tr>
+    <td>PCT Application</td>
+    <td>International</td>
+    <td>Evaluate options; no US grace period applies for PCT</td>
+    <td>Grace period may not apply outside US; expedite international filing</td>
+  </tr>
+  <tr>
+    <td>Non-Provisional Conversion</td>
+    <td>USPTO (US)</td>
+    <td>2027-04-22</td>
+    <td>Full claims required</td>
+  </tr>
+</table>
+
+<p><strong>Strategic note:</strong> This patent (FS-2026-004) has strong commercial potential as MCP adoption accelerates. Consider filing this as a standalone application with broad independent claims covering any multi-dimensional MCP security evaluation system, rather than bundling with the capability profiling patents.</p>
+
+<hr>
+<p style="font-size:9pt;color:#666;text-align:center;">
+  Ferret-Scan Patent Disclosure FS-2026-004 | Pro Se Filing Document | Prepared 2026-03-22<br>
+  Inventor's working reference for pro se provisional patent application under 35 U.S.C. § 111(b).
+</p>
+
+</body>
+</html>

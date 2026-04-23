@@ -7,6 +7,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import type { ScanResult } from '../types.js';
+import { getMitreAtlasTechniqueIdsForFinding } from '../mitre/atlas.js';
 
 interface SarifResult {
   ruleId: string;
@@ -32,6 +33,7 @@ interface SarifResult {
     category: string;
     riskScore: number;
     remediation: string;
+    mitreAtlas?: string[];
   };
 }
 
@@ -51,6 +53,7 @@ interface SarifRule {
   properties?: {
     category: string;
     tags: string[];
+    mitreAtlas?: string[];
   };
 }
 
@@ -139,6 +142,7 @@ function generateSarifRules(result: ScanResult): SarifRule[] {
 
   for (const finding of result.findings) {
     if (!rulesMap.has(finding.ruleId)) {
+      const mitreAtlas = getMitreAtlasTechniqueIdsForFinding(finding);
       rulesMap.set(finding.ruleId, {
         id: finding.ruleId,
         name: finding.ruleName,
@@ -150,7 +154,12 @@ function generateSarifRules(result: ScanResult): SarifRule[] {
         },
         properties: {
           category: finding.category,
-          tags: [finding.category, finding.severity.toLowerCase()],
+          tags: [
+            finding.category,
+            finding.severity.toLowerCase(),
+            ...mitreAtlas.map(id => `mitre-atlas:${id}`),
+          ],
+          ...(mitreAtlas.length > 0 ? { mitreAtlas } : {}),
         },
       });
     }
@@ -165,6 +174,7 @@ function generateSarifRules(result: ScanResult): SarifRule[] {
 function generateSarifResults(result: ScanResult): SarifResult[] {
   return result.findings.map((finding) => {
     const matchLine = finding.context.find(ctx => ctx.isMatch);
+    const mitreAtlas = getMitreAtlasTechniqueIdsForFinding(finding);
 
     return {
       ruleId: finding.ruleId,
@@ -188,6 +198,7 @@ function generateSarifResults(result: ScanResult): SarifResult[] {
         category: finding.category,
         riskScore: finding.riskScore,
         remediation: finding.remediation,
+        ...(mitreAtlas.length > 0 ? { mitreAtlas } : {}),
       },
     };
   });

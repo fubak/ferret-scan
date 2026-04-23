@@ -1,0 +1,126 @@
+{
+  "name": "ferret-security",
+  "displayName": "Ferret Security Scanner",
+  "description": "Real-time security scanning for AI agent configurations",
+  "version": "1.0.0",
+  "publisher": "ferret-security",
+  "icon": "resources/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Other"
+  ],
+  "keywords": [
+    "security",
+    "ai-agents",
+    "claude",
+    "cursor",
+    "static-analysis"
+  ],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:json",
+    "onLanguage:yaml",
+    "onLanguage:shellscript",
+    "workspaceContains:**/.claude/**",
+    "workspaceContains:**/.cursor/**",
+    "workspaceContains:**/CLAUDE.md"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "ferret.scan",
+        "title": "Ferret: Scan Workspace"
+      },
+      {
+        "command": "ferret.scanFile",
+        "title": "Ferret: Scan Current File"
+      },
+      {
+        "command": "ferret.fix",
+        "title": "Ferret: Auto-Fix Issues"
+      },
+      {
+        "command": "ferret.showRules",
+        "title": "Ferret: Show Security Rules"
+      },
+      {
+        "command": "ferret.clearFindings",
+        "title": "Ferret: Clear Findings"
+      }
+    ],
+    "configuration": {
+      "title": "Ferret Security",
+      "properties": {
+        "ferret.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable/disable Ferret security scanning"
+        },
+        "ferret.scanOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically scan files on save"
+        },
+        "ferret.scanOnType": {
+          "type": "boolean",
+          "default": false,
+          "description": "Scan files while typing (may impact performance)"
+        },
+        "ferret.severity": {
+          "type": "array",
+          "default": ["CRITICAL", "HIGH", "MEDIUM"],
+          "items": {
+            "type": "string",
+            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+          },
+          "description": "Severity levels to show"
+        },
+        "ferret.executablePath": {
+          "type": "string",
+          "default": "ferret",
+          "description": "Path to ferret executable"
+        }
+      }
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "ferretFindings",
+          "name": "Security Findings"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "ferret.scanFile",
+          "group": "ferret@1",
+          "when": "resourceExtname =~ /\\.(md|json|yaml|yml|sh|bash)$/"
+        },
+        {
+          "command": "ferret.fix",
+          "group": "ferret@2",
+          "when": "resourceExtname =~ /\\.(md|json|yaml|yml|sh|bash)$/"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {}
+}

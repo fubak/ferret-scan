@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Specification — FS-2026-004: Multi-Dimensional Risk Scoring for MCP Server Validation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #d0d0d0;
+    font-family: Arial, sans-serif;
+    padding: 24px;
+  }
+
+  .page {
+    width: 760px;
+    min-height: 1000px;
+    background: #fff;
+    margin: 24px auto;
+    padding: 72px 80px 72px 100px;
+    border: 1px solid #888;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.65;
+    color: #000;
+  }
+
+  .page-top-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 24px;
+    letter-spacing: 0.03em;
+  }
+
+  /* Line numbers */
+  .lined-content {
+    position: relative;
+  }
+
+  .line-block {
+    display: block;
+    position: relative;
+    min-height: 1.65em;
+  }
+
+  .ln {
+    position: absolute;
+    left: -52px;
+    width: 36px;
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    top: 0.1em;
+  }
+
+  h1.doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  h2.section-head {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  p.body-para {
+    text-indent: 2em;
+    margin-bottom: 10px;
+  }
+
+  p.no-indent {
+    margin-bottom: 10px;
+  }
+
+  .claim-item {
+    margin-bottom: 8px;
+    padding-left: 2em;
+    text-indent: -2em;
+  }
+
+  .claim-item.main-claim {
+    font-weight: normal;
+  }
+
+  .claim-sub {
+    padding-left: 4em;
+    text-indent: -2em;
+    margin-bottom: 6px;
+  }
+
+  .abstract-box {
+    border: 1px solid #000;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .drawings-ref {
+    font-style: italic;
+  }
+
+  sup { font-size: 8pt; }
+
+  .formula {
+    font-family: 'Courier New', monospace;
+    display: block;
+    margin: 10px 0 10px 3em;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — Title, Cross-Reference, Technical Field, Background -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 1</div>
+
+  <h1 class="doc-title">Multi-Dimensional Risk Scoring System and Method<br>for Validating Model Context Protocol Server<br>Configurations in AI Agent Environments</h1>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Cross-Reference to Related Applications</h2>
+
+    <p class="body-para">
+      <span class="ln">5</span>
+      This application is related to co-pending U.S. Patent Application FS-2026-001, entitled
+      "AI Agent Capability Profile Generation from AI CLI Configuration Files"; co-pending
+      Application FS-2026-002, entitled "Cross-File Attack Chain Correlation in AI CLI
+      Configuration Environments"; co-pending Application FS-2026-003, entitled "AST-Based
+      Markdown Parsing for AI CLI Security Analysis"; and co-pending Application FS-2026-005,
+    </p>
+    <p class="body-para">
+      <span class="ln">10</span>
+      entitled "Ignore-File Expiration and Hygiene Enforcement for AI CLI Environments." All
+      of the foregoing applications are incorporated herein by reference in their entirety.
+    </p>
+
+    <h2 class="section-head">Technical Field</h2>
+
+    <p class="body-para">
+      <span class="ln">15</span>
+      The present invention relates generally to computer security and artificial intelligence
+      infrastructure governance, and more particularly to automated risk assessment systems
+      and methods that apply multi-dimensional scoring to validate Model Context Protocol
+      (MCP) server configuration entries declared within AI agent deployment environments.
+    </p>
+    <p class="body-para">
+      <span class="ln">20</span>
+      More specifically, the invention concerns a composite risk scoring framework that
+      evaluates MCP server configurations across six independent analytical dimensions —
+      command safety, environment variable exposure, source trustworthiness, naming
+      reputation, permission scope breadth, and metadata integrity — and aggregates
+      the resulting dimension scores into a single weighted risk value that drives
+      automated BLOCK, WARN, or ALLOW recommendations.
+    </p>
+
+    <h2 class="section-head">Background of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">25</span>
+      The Model Context Protocol (MCP) is an open standard that enables AI assistants and
+      agent frameworks to communicate with external servers that expose tools, resources,
+      and prompts through a structured interface. AI coding assistant platforms such as
+      Claude Code (Anthropic), Cursor, Windsurf, and Continue allow developers and
+      enterprises to declare one or more MCP servers in project-level or user-level
+      configuration files, typically formatted as JSON objects containing a server name,
+    </p>
+    <p class="body-para">
+      <span class="ln">30</span>
+      an executable command, a set of command-line arguments, and a collection of
+      environment variable assignments. Once declared, an MCP server is launched as a
+      subprocess by the AI agent whenever the agent requires access to the capabilities
+      that server exposes, which may include file system manipulation, network requests,
+      code execution, database queries, external API invocation, and other high-privilege
+      operations on behalf of the AI agent and its user.
+    </p>
+    <p class="body-para">
+      <span class="ln">35</span>
+      The proliferation of third-party MCP servers presents significant supply-chain and
+      runtime security risks. A malicious or misconfigured MCP server entry can cause an
+      AI agent to execute arbitrary binaries, transmit sensitive environment variables to
+      remote endpoints, expand its effective permission surface beyond what the user
+      intended, or invoke tools whose names appear benign but whose implementations
+      perform harmful operations. Unlike traditional software dependencies, MCP server
+    </p>
+    <p class="body-para">
+      <span class="ln">40</span>
+      declarations do not benefit from established software composition analysis (SCA)
+      pipelines, package signing infrastructure, or vulnerability database coverage.
+      The identity and provenance of an MCP server are encoded in free-form string
+      fields — command paths, argument arrays, and environment variable maps — that
+      resist the structured parsing assumptions underlying conventional dependency
+      auditing tools. Organizations deploying AI agents in enterprise settings therefore
+    </p>
+    <p class="body-para">
+      <span class="ln">45</span>
+      lack systematic, automated mechanisms to assess the trustworthiness of MCP server
+      configurations prior to permitting their execution. Existing static analysis tools
+      for AI configuration files either detect only a narrow class of obvious vulnerabilities
+      — such as hardcoded credential strings — or treat MCP server entries as opaque blobs
+      that require manual human review. No prior art system applies a comprehensive
+      multi-dimensional scoring model to MCP server validation that simultaneously
+    </p>
+    <p class="body-para">
+      <span class="ln">50</span>
+      accounts for the command executable identity, argument structure, environment
+      variable sensitivity, publisher reputation, naming similarity to known-good packages,
+      requested permission breadth, and configuration completeness. There therefore exists
+      an unmet need for an automated system and method that applies multi-dimensional
+      risk scoring to MCP server configuration entries and produces actionable,
+      human-readable recommendations that security teams and AI agent runtimes can
+      consume without requiring manual inspection of individual configuration fields.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — Summary, Brief Description of Drawings             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 2</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Summary of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">55</span>
+      The present invention provides a system and method for multi-dimensional risk scoring
+      and validation of Model Context Protocol server configuration entries. In a first
+      aspect, the invention provides a computer-implemented method comprising: receiving
+      a structured MCP server configuration entry (400) that includes at minimum a command
+      field (400a), an arguments array (400b), and an environment variable map (400c);
+      evaluating the configuration entry across six independent risk dimensions by
+    </p>
+    <p class="body-para">
+      <span class="ln">60</span>
+      applying, respectively, a command safety analyzer (402), an environment variable
+      analyzer (404), a trusted source checker (406), a naming reputation scorer (408),
+      a permission scope analyzer (410), and a metadata validator (412); computing a
+      weighted composite risk score R through a composite risk calculator (414) according
+      to the formula R = &Sigma;(w<sub>i</sub> &times; D<sub>i</sub>) for i = 1 to 6,
+      where each D<sub>i</sub> is the normalized score produced by dimension analyzer i
+    </p>
+    <p class="body-para">
+      <span class="ln">65</span>
+      and each w<sub>i</sub> is a configurable weight coefficient assigned to that
+      dimension; and generating, through a recommendation engine (416), an output
+      disposition (420) of BLOCK, WARN, or ALLOW based on the composite risk score R
+      relative to configurable low and high threshold values, together with a
+      human-readable explanation identifying which specific configuration fields
+      contributed most significantly to the score.
+    </p>
+    <p class="body-para">
+      <span class="ln">70</span>
+      In a second aspect, the invention provides a system comprising a plurality of
+      dimension-specific analyzer modules, a trusted source registry (418) organized
+      into a hierarchical tier structure, a composite risk calculator (414), and a
+      recommendation engine (416) that produces structured output dispositions.
+      In a third aspect, the invention provides a non-transitory computer-readable
+      medium storing instructions that, when executed by a processor, implement the
+      multi-dimensional risk scoring method.
+    </p>
+    <p class="body-para">
+      <span class="ln">75</span>
+      A key advantage of the present invention is that it operates entirely through
+      static analysis of the configuration entry's string fields, without launching
+      or communicating with the MCP server process, thereby avoiding the execution
+      of potentially malicious code during the validation process itself. Another
+      advantage is that the weighted scoring architecture permits security administrators
+      to tune the relative importance of each dimension to match organizational risk
+      tolerance, compliance requirements, or deployment context.
+    </p>
+
+    <h2 class="section-head">Brief Description of the Drawings</h2>
+
+    <p class="body-para">
+      <span class="ln">80</span>
+      The accompanying drawings, which are incorporated in and constitute a part of this
+      specification, illustrate preferred embodiments of the invention and, together with
+      the description, serve to explain the principles of the invention.
+    </p>
+    <p class="body-para">
+      <span class="ln">85</span>
+      <span class="drawings-ref">FIG. 1</span> is a block diagram illustrating the overall system architecture of the
+      multi-dimensional MCP server risk scoring system according to a preferred embodiment
+      of the present invention, showing the MCP server configuration entry (400) with
+      sub-fields command (400a), args (400b), and env (400c) flowing into six parallel
+      dimension analyzer modules — command safety analyzer (402), environment variable
+      analyzer (404), trusted source checker (406), naming reputation scorer (408),
+    </p>
+    <p class="body-para">
+      <span class="ln">90</span>
+      permission scope analyzer (410), and metadata validator (412) — each feeding
+      dimension scores D<sub>1</sub> through D<sub>6</sub> into the composite risk
+      calculator (414), which consults the trusted source registry (418) and produces
+      composite risk score R to the recommendation engine (416), which emits the
+      output disposition (420) of BLOCK, WARN, or ALLOW.
+    </p>
+    <p class="body-para">
+      <span class="ln">95</span>
+      <span class="drawings-ref">FIG. 2</span> is a flowchart illustrating the method steps performed by the system of
+      FIG. 1, beginning at START (422), proceeding to receive MCP config entry (424),
+      followed by six sequential dimension evaluation decision points: command safety
+      check D1 (426), environment variable check D2 (428), trusted source check D3 (430),
+      naming reputation check D4 (432), permission scope check D5 (434), and metadata
+      validation check D6 (436); proceeding to compute composite risk score R (438);
+    </p>
+    <p class="body-para">
+      <span class="ln">100</span>
+      then to threshold decision R &lt; LOW? (440) leading to OUTPUT ALLOW (442) on the
+      affirmative branch, or to threshold decision R &lt; HIGH? (444) on the negative
+      branch, leading to OUTPUT WARN (446) on the affirmative branch or OUTPUT BLOCK
+      (448) on the negative branch; and concluding at GENERATE EXPLANATION (450)
+      in all disposition paths.
+    </p>
+    <p class="body-para">
+      <span class="ln">105</span>
+      <span class="drawings-ref">FIG. 3</span> is a hierarchical tier diagram illustrating the trusted source registry
+      (418) structure, showing Tier 1 — Official Platform Publishers (454) — at the
+      apex, followed by Tier 2 — Verified Community Publishers (456), Tier 3 —
+      Individually Reviewed Packages (458), and Unregistered Source (460) at the base,
+      with a lateral typosquatting detection module (462) that raises a suspicious flag
+      (464) when a source name closely resembles but does not match a registered
+      Tier 1 or Tier 2 entry.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — Detailed Description Part 1: Architecture          -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 3</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Detailed Description of the Preferred Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">110</span>
+      Reference will now be made in detail to the presently preferred embodiments of the
+      invention, examples of which are illustrated in the accompanying drawings. Wherever
+      possible, the same reference numbers will be used throughout the drawings to refer
+      to the same or like parts. The term "MCP server configuration entry" as used herein
+      refers to a structured data object, typically expressed as a JSON object, that
+      declares all information necessary for an AI agent runtime to launch and communicate
+    </p>
+    <p class="body-para">
+      <span class="ln">115</span>
+      with a Model Context Protocol server subprocess. The term "risk score" as used herein
+      refers to a normalized numeric value in the range [0.0, 1.0] where 0.0 represents
+      minimal risk and 1.0 represents maximum assessed risk. The term "disposition" as
+      used herein refers to a categorical recommendation — BLOCK, WARN, or ALLOW — that
+      an AI agent runtime or security enforcement layer may act upon.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">I. System Architecture Overview (FIG. 1)</h2>
+
+    <p class="body-para">
+      <span class="ln">120</span>
+      Referring now to FIG. 1, the multi-dimensional MCP server risk scoring system
+      receives as its primary input an MCP server configuration entry (400). The
+      configuration entry (400) is a structured record comprising at least three
+      sub-fields: a command field (400a) specifying the executable path or command
+      name used to launch the MCP server process; an arguments array (400b) containing
+      zero or more string arguments passed to the command at launch time; and an
+    </p>
+    <p class="body-para">
+      <span class="ln">125</span>
+      environment variable map (400c) comprising zero or more key-value pairs that
+      are injected into the MCP server process environment at launch time. In typical
+      deployments, additional optional fields including a display name, a version
+      string, a description, a publisher identifier, and a list of declared tool
+      permissions may also be present in the configuration entry (400) and are
+      consumed by the relevant dimension analyzers as described below.
+    </p>
+    <p class="body-para">
+      <span class="ln">130</span>
+      The configuration entry (400) is routed in parallel to six dimension-specific
+      analyzer modules. Each analyzer module independently inspects one or more
+      fields of the configuration entry (400), applies domain-specific heuristics,
+      pattern matching, registry lookups, or structural analysis, and produces a
+      normalized dimension score D<sub>i</sub> in the range [0.0, 1.0] representing
+      the risk contribution of that dimension. The six dimension analyzers are:
+    </p>
+    <p class="body-para">
+      <span class="ln">135</span>
+      the command safety analyzer (402), the environment variable analyzer (404),
+      the trusted source checker (406), the naming reputation scorer (408), the
+      permission scope analyzer (410), and the metadata validator (412). Each of
+      these modules is described in detail in Section II below. The dimension scores
+      D<sub>1</sub> through D<sub>6</sub> produced by the analyzers are transmitted
+      to the composite risk calculator (414).
+    </p>
+    <p class="body-para">
+      <span class="ln">140</span>
+      The composite risk calculator (414) applies a configurable weighted summation
+      formula to produce a single composite risk score R. The formula is:
+    </p>
+    <p class="no-indent">
+      <span class="formula">R = &Sigma;(w<sub>i</sub> &times; D<sub>i</sub>) for i = 1..6</span>
+    </p>
+    <p class="body-para">
+      <span class="ln">145</span>
+      where w<sub>i</sub> are non-negative weight coefficients satisfying
+      &Sigma;w<sub>i</sub> = 1.0, and D<sub>i</sub> are the normalized dimension
+      scores. The weight coefficients are stored in a configurable policy object
+      that security administrators may adjust to reflect organizational priorities.
+      Default weight assignments in a preferred embodiment allocate the largest
+      weights to the command safety dimension (D<sub>1</sub>) and the trusted source
+    </p>
+    <p class="body-para">
+      <span class="ln">150</span>
+      dimension (D<sub>3</sub>), reflecting the empirical finding that unknown or
+      suspicious executables and unregistered sources represent the highest-probability
+      vectors for supply-chain compromise of AI agent environments. The composite
+      risk calculator (414) also consults the trusted source registry (418) during
+      score computation when evaluating the source trust component, as further
+      described in Section III below.
+    </p>
+    <p class="body-para">
+      <span class="ln">155</span>
+      The composite risk score R is passed to the recommendation engine (416), which
+      compares R to a configurable low threshold T<sub>low</sub> and a configurable
+      high threshold T<sub>high</sub>, where 0.0 &lt; T<sub>low</sub> &lt; T<sub>high</sub>
+      &lt; 1.0. If R &lt; T<sub>low</sub>, the recommendation engine (416) produces
+      an ALLOW disposition. If T<sub>low</sub> &le; R &lt; T<sub>high</sub>, the
+      recommendation engine (416) produces a WARN disposition. If R &ge; T<sub>high</sub>,
+    </p>
+    <p class="body-para">
+      <span class="ln">160</span>
+      the recommendation engine (416) produces a BLOCK disposition. In all cases,
+      the recommendation engine (416) also generates a human-readable explanation
+      that identifies the specific configuration fields that contributed most
+      significantly to the composite score, the dimension scores that exceeded
+      configurable per-dimension alert thresholds, and any specific heuristic
+      rules or registry lookups that were triggered during analysis. The
+      resulting output (420) comprises the disposition value and the explanation text.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — Detailed Description Part 2: Dimension Analyzers   -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 4</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">II. Dimension Analyzer Modules</h2>
+
+    <p class="body-para">
+      <span class="ln">165</span>
+      The command safety analyzer (402) operates on the command field (400a) of the
+      configuration entry (400). In a preferred embodiment, the command safety analyzer
+      (402) maintains an internal blocklist of known high-risk executable names and
+      path patterns, including but not limited to shell interpreter invocations
+      (e.g., bash, sh, zsh, cmd.exe, powershell), scripting language runtimes invoked
+      with inline execution flags (e.g., python -c, node -e, perl -e), and path
+    </p>
+    <p class="body-para">
+      <span class="ln">170</span>
+      patterns indicative of temporary or user-writable directories (e.g., /tmp/,
+      %TEMP%, ~/.cache/). The command safety analyzer (402) also evaluates whether
+      the command field (400a) contains an absolute path versus a bare executable
+      name, assigning elevated risk to bare names that rely on PATH resolution, which
+      is susceptible to PATH hijacking attacks. Commands that reference
+      package-manager-scoped executables — for example, commands of the form
+    </p>
+    <p class="body-para">
+      <span class="ln">175</span>
+      "npx &lt;package-name&gt;" or "uvx &lt;package-name&gt;" — are recognized by
+      the command safety analyzer (402) as delegating execution to a package registry
+      resolver, causing the extracted package name to be forwarded to the trusted
+      source checker (406) and naming reputation scorer (408) as an additional
+      evaluation target supplementing the command field (400a) itself. The
+      arguments array (400b) is also scanned for shell metacharacters, command
+    </p>
+    <p class="body-para">
+      <span class="ln">180</span>
+      substitution patterns, and suspicious flag combinations. The dimension score
+      D<sub>1</sub> produced by the command safety analyzer (402) is a function
+      of the number and severity of heuristic rule matches across both the command
+      field (400a) and the arguments array (400b), normalized to [0.0, 1.0].
+    </p>
+    <p class="body-para">
+      <span class="ln">185</span>
+      The environment variable analyzer (404) operates on the environment variable
+      map (400c). It applies a multi-stage inspection procedure. First, each key
+      in the map is evaluated against a pattern library of sensitive variable name
+      patterns, including patterns associated with cloud provider credentials
+      (e.g., AWS_ACCESS_KEY_ID, AZURE_CLIENT_SECRET, GOOGLE_APPLICATION_CREDENTIALS),
+      version control platform tokens (e.g., GITHUB_TOKEN, GITLAB_TOKEN),
+    </p>
+    <p class="body-para">
+      <span class="ln">190</span>
+      container registry credentials, database connection strings, and generic
+      secret indicators (e.g., variables whose names contain the substrings SECRET,
+      PASSWORD, TOKEN, KEY, or CREDENTIAL). Second, each value in the map is
+      evaluated to determine whether it contains a literal credential string —
+      identified by entropy analysis, known credential format patterns (e.g.,
+      Bearer tokens, API key formats), or the presence of known-secret prefixes —
+    </p>
+    <p class="body-para">
+      <span class="ln">195</span>
+      as opposed to a shell variable reference (e.g., ${MY_SECRET}) that defers
+      value resolution to the runtime environment. Configurations that pass sensitive
+      variable names with literal values are assigned higher risk than those that
+      use shell variable references, since the former embed secrets directly in
+      the configuration file. The dimension score D<sub>2</sub> is a weighted
+      function of the count of sensitive variable name matches and the count of
+      literal credential value detections.
+    </p>
+    <p class="body-para">
+      <span class="ln">200</span>
+      The trusted source checker (406) evaluates the provenance of the MCP server
+      by consulting the trusted source registry (418). In a preferred embodiment,
+      the trusted source checker (406) extracts a source identifier from the
+      configuration entry (400), which may be a package name derived from the
+      command field (400a) (e.g., the package name argument to npx or uvx), a
+      publisher name or organization identifier present in an optional metadata
+    </p>
+    <p class="body-para">
+      <span class="ln">205</span>
+      field of the configuration entry (400), or a repository URL present in the
+      arguments array (400b). The extracted source identifier is looked up in the
+      trusted source registry (418). If the source identifier matches a Tier 1
+      entry (454) in the registry, indicating an official platform publisher, the
+      dimension score D<sub>3</sub> is assigned a near-zero value reflecting
+      minimal source-provenance risk. If the source identifier matches a Tier 2
+    </p>
+    <p class="body-para">
+      <span class="ln">210</span>
+      entry (456), indicating a verified community publisher, D<sub>3</sub> is
+      assigned a low but non-zero value. If the source identifier matches a Tier 3
+      entry (458), indicating an individually reviewed package that has not achieved
+      full community verification, D<sub>3</sub> is assigned a moderate value.
+      If no match is found in any tier, the source is classified as unregistered
+      (460) and D<sub>3</sub> is assigned a high value. Additionally, the trusted
+    </p>
+    <p class="body-para">
+      <span class="ln">215</span>
+      source checker (406) invokes the typosquatting detection module (462) when
+      the source identifier does not match any registry entry, as further described
+      in Section III below.
+    </p>
+    <p class="body-para">
+      <span class="ln">220</span>
+      The naming reputation scorer (408) evaluates the textual characteristics of
+      the MCP server name and any package identifiers present in the configuration
+      entry (400) using pattern recognition heuristics informed by known naming
+      patterns of malicious packages documented in public supply-chain security
+      incident databases. The naming reputation scorer (408) applies the following
+      sub-analyses: (a) common-word impersonation detection, which identifies
+    </p>
+    <p class="body-para">
+      <span class="ln">225</span>
+      names that substitute common words for security-sensitive brand names (e.g.,
+      "mcp-server-cIaude" using a capital I in place of lowercase L); (b) version
+      manipulation detection, which identifies names appended with version-like
+      suffixes that differ from the canonical package's versioning scheme;
+      (c) category mismatch detection, which flags packages whose declared tool
+      capabilities do not match the semantic domain implied by their name; and
+    </p>
+    <p class="body-para">
+      <span class="ln">230</span>
+      (d) excessive scope signaling, which identifies names containing high-privilege
+      capability keywords (e.g., "admin", "root", "system", "full-access") that
+      are inconsistent with the declared functional purpose of the server. The
+      dimension score D<sub>4</sub> produced by the naming reputation scorer (408)
+      is a function of the number and severity of naming anomaly detections,
+      normalized to [0.0, 1.0].
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — Detailed Description Part 3: More Analyzers        -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 5</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">II. Dimension Analyzer Modules (continued)</h2>
+
+    <p class="body-para">
+      <span class="ln">235</span>
+      The permission scope analyzer (410) evaluates the breadth of capabilities
+      that the MCP server declares itself to require, or that can be inferred
+      from the tools and resources it exposes. In embodiments where the
+      configuration entry (400) includes an explicit permission manifest listing
+      tool categories or resource access types, the permission scope analyzer
+      (410) maps the declared permissions to a capability taxonomy and assigns
+    </p>
+    <p class="body-para">
+      <span class="ln">240</span>
+      risk weights to each category, with higher weights assigned to capabilities
+      that enable file system modification, code execution, network egress, and
+      credential access. In embodiments where no explicit permission manifest is
+      present, the permission scope analyzer (410) infers likely capabilities
+      from the executable name, known tool declarations for recognized packages
+      in the trusted source registry (418), and any descriptive metadata fields
+    </p>
+    <p class="body-para">
+      <span class="ln">245</span>
+      present in the configuration entry (400). The dimension score D<sub>5</sub>
+      is computed as a weighted sum of the risk weights of all detected or
+      inferred capability categories, normalized to [0.0, 1.0] using a saturation
+      function that prevents any single high-risk capability from driving the
+      dimension score to its maximum while suppressing all other signals.
+    </p>
+    <p class="body-para">
+      <span class="ln">250</span>
+      The metadata validator (412) evaluates the structural completeness and
+      internal consistency of the configuration entry (400). Indicators evaluated
+      by the metadata validator (412) include: (a) absence of a human-readable
+      description field, which may indicate a programmatically generated or
+      obfuscated entry; (b) absence of a version field or use of a wildcard
+      version specifier, which prevents reproducible builds and complicates
+    </p>
+    <p class="body-para">
+      <span class="ln">255</span>
+      security auditing; (c) mismatch between a declared display name and the
+      command or package name, which may indicate a deceptive configuration;
+      (d) presence of arguments or environment variables whose keys or values
+      contain non-printable characters or unusual Unicode codepoints, which may
+      indicate obfuscation of malicious payloads; and (e) structural anomalies
+      such as duplicate keys, excessively long string values, or deeply nested
+    </p>
+    <p class="body-para">
+      <span class="ln">260</span>
+      JSON structures that deviate from the expected flat schema of a valid MCP
+      server configuration entry. The dimension score D<sub>6</sub> is a function
+      of the count and severity of metadata anomalies detected, normalized to
+      [0.0, 1.0]. A configuration entry with no metadata anomalies receives
+      D<sub>6</sub> = 0.0. Each detected anomaly increases D<sub>6</sub> by
+      a proportional amount, with the most severe anomalies capable of driving
+      D<sub>6</sub> to its maximum value independently.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">III. Trusted Source Registry and Typosquatting Detection (FIG. 3)</h2>
+
+    <p class="body-para">
+      <span class="ln">265</span>
+      Referring now to FIG. 3, the trusted source registry (418) is a structured
+      data store that organizes known MCP server publishers and packages into a
+      four-level hierarchy. Tier 1 (454) — Official Platform Publishers —
+      comprises packages and publishers that are directly maintained or formally
+      endorsed by the organizations that develop the primary AI agent platforms,
+      such as official MCP server packages published under the verified namespaces
+    </p>
+    <p class="body-para">
+      <span class="ln">270</span>
+      of AI platform vendors. Tier 1 (454) entries receive the highest trust score
+      and the lowest source-dimension risk contribution D<sub>3</sub>. Tier 2 (456)
+      — Verified Community Publishers — comprises packages and publishers that
+      have undergone a formal verification process by the operator of the trusted
+      source registry (418), including review of source code, security disclosure
+      history, and organizational identity confirmation. Tier 2 (456) entries
+    </p>
+    <p class="body-para">
+      <span class="ln">275</span>
+      receive moderate trust and a low-to-moderate D<sub>3</sub> contribution.
+      Tier 3 (458) — Individually Reviewed Packages — comprises packages that
+      have been reviewed on a per-package basis without full publisher-level
+      verification, typically through community-submitted review processes or
+      automated static analysis with human confirmation. Tier 3 (458) entries
+      receive limited trust and a moderate D<sub>3</sub> contribution. Packages
+    </p>
+    <p class="body-para">
+      <span class="ln">280</span>
+      and publishers that do not appear in any tier of the trusted source registry
+      (418) are classified as unregistered sources (460) and receive the highest
+      D<sub>3</sub> contribution, reflecting the absence of any independent
+      verification of their provenance or safety.
+    </p>
+    <p class="body-para">
+      <span class="ln">285</span>
+      The typosquatting detection module (462) is invoked by the trusted source
+      checker (406) whenever a source identifier is classified as an unregistered
+      source (460). The typosquatting detection module (462) computes the edit
+      distance — using a combination of Levenshtein distance, Jaro-Winkler
+      similarity, and keyboard-adjacency-weighted distance metrics — between the
+      unregistered source identifier and each entry in the Tier 1 (454) and
+    </p>
+    <p class="body-para">
+      <span class="ln">290</span>
+      Tier 2 (456) portions of the trusted source registry (418). If any
+      comparison yields a similarity score above a configurable typosquatting
+      detection threshold, the typosquatting detection module (462) raises a
+      suspicious flag (464) and associates the unregistered source identifier
+      with the most similar registered entry as a potential impersonation target.
+      The suspicious flag (464) has two effects: it causes the source-dimension
+    </p>
+    <p class="body-para">
+      <span class="ln">295</span>
+      score D<sub>3</sub> to be assigned its maximum value regardless of other
+      registry lookup results, and it causes the recommendation engine (416) to
+      include a specific typosquatting warning in the human-readable explanation
+      generated in the output (420), naming both the suspicious unregistered
+      source identifier and the registered entry it most closely resembles.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — Detailed Description Part 4: Method + Numbered Paras -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 6</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">IV. Method of Operation (FIG. 2)</h2>
+
+    <p class="body-para">
+      <span class="ln">300</span>
+      Referring now to FIG. 2, the method of multi-dimensional MCP server risk
+      scoring begins at START (422). In step 424, the system receives an MCP server
+      configuration entry (400) from one of several possible sources: a configuration
+      file parser that has read and deserialized an MCP configuration file from a
+      project directory or user home directory; an API endpoint through which
+      a CI/CD pipeline or deployment management system submits a configuration
+    </p>
+    <p class="body-para">
+      <span class="ln">305</span>
+      entry for pre-deployment validation; or an interactive configuration editor
+      that submits entries for real-time risk feedback. The received configuration
+      entry (400) is deserialized into an internal representation that exposes
+      the command field (400a), arguments array (400b), and environment variable
+      map (400c) as typed fields accessible to all downstream analyzer modules.
+    </p>
+    <p class="body-para">
+      <span class="ln">310</span>
+      In step 426, the command safety analyzer (402) evaluates the configuration
+      entry (400) to produce dimension score D<sub>1</sub>, as described in
+      Section II above. In step 428, the environment variable analyzer (404)
+      evaluates the environment variable map (400c) to produce dimension score
+      D<sub>2</sub>. In step 430, the trusted source checker (406) consults the
+      trusted source registry (418) to produce dimension score D<sub>3</sub>,
+    </p>
+    <p class="body-para">
+      <span class="ln">315</span>
+      invoking the typosquatting detection module (462) as necessary. In step 432,
+      the naming reputation scorer (408) evaluates the package and server name
+      fields to produce dimension score D<sub>4</sub>. In step 434, the permission
+      scope analyzer (410) evaluates declared or inferred capabilities to produce
+      dimension score D<sub>5</sub>. In step 436, the metadata validator (412)
+      evaluates structural completeness and consistency to produce dimension
+      score D<sub>6</sub>.
+    </p>
+    <p class="body-para">
+      <span class="ln">320</span>
+      In step 438, the composite risk calculator (414) applies the weighted
+      summation formula R = &Sigma;(w<sub>i</sub> &times; D<sub>i</sub>) for
+      i = 1..6 to produce the composite risk score R. In step 440, the
+      recommendation engine (416) tests whether R is less than the low threshold
+      T<sub>low</sub>. If yes, the method proceeds to step 442 where an ALLOW
+      disposition is generated, then to step 450. If no, the method proceeds to
+    </p>
+    <p class="body-para">
+      <span class="ln">325</span>
+      step 444, where the recommendation engine (416) tests whether R is less than
+      the high threshold T<sub>high</sub>. If yes, the method proceeds to step 446
+      where a WARN disposition is generated, then to step 450. If no, the method
+      proceeds to step 448 where a BLOCK disposition is generated, then to step 450.
+      In step 450, the recommendation engine (416) generates a human-readable
+      explanation and the output (420) comprising the disposition and explanation
+      is emitted. The method then terminates.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">V. Numbered Paragraph Summary</h2>
+
+    <p class="body-para">
+      <span class="ln">330</span>
+      [0001] A computer-implemented method comprising: receiving a Model Context
+      Protocol server configuration entry (400) comprising a command field (400a),
+      an arguments array (400b), and an environment variable map (400c); evaluating
+      said configuration entry across a first dimension by applying a command safety
+      analyzer (402) to said command field (400a) and said arguments array (400b)
+      to produce a first dimension score D<sub>1</sub>; evaluating said configuration
+    </p>
+    <p class="body-para">
+      <span class="ln">335</span>
+      entry across a second dimension by applying an environment variable analyzer
+      (404) to said environment variable map (400c) to produce a second dimension
+      score D<sub>2</sub>; evaluating said configuration entry across a third
+      dimension by applying a trusted source checker (406) that consults a trusted
+      source registry (418) to produce a third dimension score D<sub>3</sub>;
+      evaluating said configuration entry across a fourth dimension by applying
+    </p>
+    <p class="body-para">
+      <span class="ln">340</span>
+      a naming reputation scorer (408) to produce a fourth dimension score
+      D<sub>4</sub>; evaluating said configuration entry across a fifth dimension
+      by applying a permission scope analyzer (410) to produce a fifth dimension
+      score D<sub>5</sub>; evaluating said configuration entry across a sixth
+      dimension by applying a metadata validator (412) to produce a sixth dimension
+      score D<sub>6</sub>; computing a composite risk score R through a composite
+    </p>
+    <p class="body-para">
+      <span class="ln">345</span>
+      risk calculator (414) according to the formula R = &Sigma;(w<sub>i</sub> &times;
+      D<sub>i</sub>) for i = 1 to 6; and generating, through a recommendation engine
+      (416), an output disposition (420) selected from BLOCK, WARN, and ALLOW based
+      on a comparison of said composite risk score R to configurable threshold values.
+    </p>
+    <p class="body-para">
+      <span class="ln">350</span>
+      [0002] The method of paragraph [0001], further comprising: invoking a
+      typosquatting detection module (462) when said trusted source checker (406)
+      determines that a source identifier extracted from said configuration entry
+      (400) is not present in said trusted source registry (418); computing, by
+      said typosquatting detection module (462), an edit-distance similarity score
+      between said source identifier and each of a plurality of registered entries
+    </p>
+    <p class="body-para">
+      <span class="ln">355</span>
+      in said trusted source registry (418); and, upon said similarity score
+      exceeding a configurable typosquatting detection threshold, raising a
+      suspicious flag (464) and assigning said third dimension score D<sub>3</sub>
+      its maximum value.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — Detailed Description Part 5: Additional Paragraphs -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 7</div>
+
+  <div class="lined-content">
+
+    <p class="body-para">
+      <span class="ln">360</span>
+      [0003] The method of paragraph [0001], wherein said trusted source registry
+      (418) comprises a hierarchical tier structure including a Tier 1 stratum (454)
+      comprising official platform publisher entries, a Tier 2 stratum (456)
+      comprising verified community publisher entries, and a Tier 3 stratum (458)
+      comprising individually reviewed package entries; and wherein said trusted
+      source checker (406) assigns to D<sub>3</sub> a value proportional to the
+    </p>
+    <p class="body-para">
+      <span class="ln">365</span>
+      inverse of the tier level of the matching registry entry, such that Tier 1
+      matches receive the lowest D<sub>3</sub> contribution and unregistered
+      sources receive the highest D<sub>3</sub> contribution.
+    </p>
+    <p class="body-para">
+      <span class="ln">370</span>
+      [0004] The method of paragraph [0001], wherein said environment variable
+      analyzer (404) evaluates each key in said environment variable map (400c)
+      against a pattern library of sensitive variable name patterns associated
+      with cloud provider credentials, version control platform tokens, container
+      registry credentials, and database connection strings; and evaluates each
+      value in said environment variable map (400c) to determine whether it
+    </p>
+    <p class="body-para">
+      <span class="ln">375</span>
+      contains a literal credential string or a shell variable reference; and
+      wherein said second dimension score D<sub>2</sub> is elevated when a
+      sensitive variable name pattern is matched in conjunction with a literal
+      credential value, compared to when said sensitive variable name is mapped
+      to a shell variable reference.
+    </p>
+    <p class="body-para">
+      <span class="ln">380</span>
+      [0005] The method of paragraph [0001], wherein said recommendation engine
+      (416) further generates a human-readable explanation identifying: the specific
+      configuration fields that contributed most significantly to said composite
+      risk score R; each dimension score D<sub>i</sub> that exceeded a configurable
+      per-dimension alert threshold; any suspicious flag (464) raised by said
+      typosquatting detection module (462) and the registered entry most closely
+    </p>
+    <p class="body-para">
+      <span class="ln">385</span>
+      resembling the unregistered source identifier; and specific heuristic rules
+      triggered during evaluation of said command field (400a), said arguments
+      array (400b), and said environment variable map (400c).
+    </p>
+    <p class="body-para">
+      <span class="ln">390</span>
+      [0006] The method of paragraph [0001], wherein said permission scope analyzer
+      (410) infers likely permission categories from a recognized executable name
+      or package identifier when no explicit permission manifest is present in said
+      configuration entry (400), using a permission inference table maintained by
+      the trusted source registry (418) for recognized packages; and wherein said
+      fifth dimension score D<sub>5</sub> is computed as a weighted sum of the
+    </p>
+    <p class="body-para">
+      <span class="ln">395</span>
+      risk weights of all detected or inferred permission categories, normalized
+      using a saturation function that prevents any single category from driving
+      D<sub>5</sub> to its maximum value while suppressing all other signals.
+    </p>
+    <p class="body-para">
+      <span class="ln">400</span>
+      [0007] The method of paragraph [0001], wherein said command safety analyzer
+      (402) identifies commands of the form "npx &lt;package-name&gt;" or
+      "uvx &lt;package-name&gt;" as package-manager-scoped executable invocations
+      and extracts the package name for forwarding to said trusted source checker
+      (406) and said naming reputation scorer (408) as an additional evaluation
+      target; and wherein said arguments array (400b) is scanned for shell
+    </p>
+    <p class="body-para">
+      <span class="ln">405</span>
+      metacharacters and command substitution patterns that are assigned elevated
+      risk regardless of the identity of the base executable named in said
+      command field (400a).
+    </p>
+    <p class="body-para">
+      <span class="ln">410</span>
+      [0008] The method of paragraph [0001], wherein said metadata validator (412)
+      detects structural anomalies in said configuration entry (400) comprising:
+      absence of a human-readable description field; absence of a version field
+      or presence of a wildcard version specifier; mismatch between a declared
+      display name and said command field (400a); presence of non-printable
+      characters or unusual Unicode codepoints in any string value; and structural
+    </p>
+    <p class="body-para">
+      <span class="ln">415</span>
+      anomalies including duplicate keys or excessively long string values that
+      deviate from the expected schema of a valid MCP server configuration entry;
+      and wherein said sixth dimension score D<sub>6</sub> is assigned a positive
+      value for each detected anomaly, with the most severe anomalies capable of
+      driving D<sub>6</sub> to its maximum value independently.
+    </p>
+    <p class="body-para">
+      <span class="ln">420</span>
+      [0009] The system and method of the present invention may be embodied as a
+      standalone command-line analysis tool, a library integrated into an AI agent
+      runtime, a CI/CD pipeline plugin, a pre-commit hook, a cloud-hosted API
+      service, or any combination thereof. In any of these embodiments, the
+      configuration entry (400) is evaluated entirely through static inspection
+      of its string fields, without executing the MCP server process, without
+    </p>
+    <p class="body-para">
+      <span class="ln">425</span>
+      communicating with remote registries at analysis time (relying instead on
+      a locally cached copy of the trusted source registry (418)), and without
+      requiring any runtime environment in which the AI agent or its tools are
+      active. This static-only evaluation property ensures that the validation
+      process itself does not expand the attack surface of the system being
+      analyzed.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8 — Claims                                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 8</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Claims</h2>
+
+    <p class="body-para">
+      <span class="ln">430</span>
+      What is claimed is:
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">435</span>
+      1. A computer-implemented method for validating Model Context Protocol server
+      configurations, comprising:
+    </p>
+    <p class="claim-sub">
+      receiving a Model Context Protocol server configuration entry comprising at least
+      a command field, an arguments array, and an environment variable map;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a first dimension by applying a command
+      safety analyzer to said command field and said arguments array to produce a first
+      normalized dimension score;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a second dimension by applying an
+      environment variable analyzer to said environment variable map to produce a second
+      normalized dimension score;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a third dimension by applying a trusted
+      source checker that consults a trusted source registry to produce a third normalized
+      dimension score;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a fourth dimension by applying a naming
+      reputation scorer to one or more name fields of said configuration entry to produce
+      a fourth normalized dimension score;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a fifth dimension by applying a permission
+      scope analyzer to declared or inferred capability categories to produce a fifth
+      normalized dimension score;
+    </p>
+    <p class="claim-sub">
+      evaluating said configuration entry across a sixth dimension by applying a metadata
+      validator to structural and consistency properties of said configuration entry to
+      produce a sixth normalized dimension score;
+    </p>
+    <p class="claim-sub">
+      computing a composite risk score by a composite risk calculator applying the formula
+      R = &Sigma;(w<sub>i</sub> &times; D<sub>i</sub>) for i = 1 to 6, wherein w<sub>i</sub>
+      are configurable non-negative weight coefficients summing to 1.0 and D<sub>i</sub>
+      are said normalized dimension scores; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">455</span>
+      generating, by a recommendation engine, an output disposition selected from BLOCK,
+      WARN, and ALLOW based on a comparison of said composite risk score to configurable
+      low and high threshold values, together with a human-readable explanation identifying
+      configuration fields that contributed to said composite risk score.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">460</span>
+      2. A system for multi-dimensional risk scoring of Model Context Protocol server
+      configurations, comprising:
+    </p>
+    <p class="claim-sub">
+      one or more processors; and
+    </p>
+    <p class="claim-sub">
+      a non-transitory computer-readable medium storing instructions that, when executed
+      by said processors, implement: a command safety analyzer configured to evaluate a
+      command field and an arguments array; an environment variable analyzer configured
+      to evaluate an environment variable map; a trusted source checker configured to
+      consult a trusted source registry; a naming reputation scorer; a permission scope
+      analyzer; a metadata validator; a composite risk calculator configured to compute
+      a weighted composite risk score from dimension scores produced by each of said
+      analyzers; and a recommendation engine configured to generate an output disposition
+      of BLOCK, WARN, or ALLOW based on said composite risk score.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">475</span>
+      3. A non-transitory computer-readable medium storing instructions that, when
+      executed by one or more processors, cause said processors to perform the method
+      of claim 1.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9 — Claims continued                                    -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 9</div>
+
+  <div class="lined-content">
+
+    <p class="claim-item main-claim">
+      <span class="ln">480</span>
+      4. The method of claim 1, further comprising:
+    </p>
+    <p class="claim-sub">
+      invoking a typosquatting detection module when said trusted source checker
+      determines that a source identifier extracted from said configuration entry
+      is absent from said trusted source registry;
+    </p>
+    <p class="claim-sub">
+      computing, by said typosquatting detection module, an edit-distance similarity
+      score between said source identifier and each registered entry in said trusted
+      source registry using at least one of Levenshtein distance, Jaro-Winkler
+      similarity, and keyboard-adjacency-weighted distance metrics; and
+    </p>
+    <p class="claim-sub">
+      upon said similarity score exceeding a configurable typosquatting detection
+      threshold, raising a suspicious flag and assigning said third normalized
+      dimension score its maximum value, and including in said human-readable
+      explanation the suspicious source identifier and the registered entry most
+      closely resembling it.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">495</span>
+      5. The method of claim 1, wherein said trusted source registry comprises a
+      hierarchical tier structure including:
+    </p>
+    <p class="claim-sub">
+      a first tier comprising official platform publisher entries associated with the
+      lowest source-dimension risk contribution;
+    </p>
+    <p class="claim-sub">
+      a second tier comprising verified community publisher entries associated with a
+      low-to-moderate source-dimension risk contribution;
+    </p>
+    <p class="claim-sub">
+      a third tier comprising individually reviewed package entries associated with a
+      moderate source-dimension risk contribution; and
+    </p>
+    <p class="claim-sub">
+      an unregistered classification associated with the highest source-dimension risk
+      contribution for source identifiers absent from all tiers.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">510</span>
+      6. The method of claim 1, wherein said environment variable analyzer evaluates
+      each key in said environment variable map against a pattern library of sensitive
+      variable name patterns associated with cloud provider credentials, version control
+      platform tokens, container registry credentials, and database connection strings;
+      and evaluates each value in said environment variable map to distinguish between
+      literal credential strings and shell variable references; and wherein said second
+      normalized dimension score is elevated when a sensitive variable name pattern
+      is matched in conjunction with a literal credential value as compared to when
+      said sensitive variable name is mapped to a shell variable reference.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">520</span>
+      7. The method of claim 1, wherein said command safety analyzer identifies commands
+      of the form of a package-manager invocation followed by a package name as
+      package-manager-scoped executable invocations and extracts said package name
+      for forwarding to said trusted source checker and said naming reputation scorer
+      as an additional evaluation target; and further scans said arguments array for
+      shell metacharacters and command substitution patterns that are assigned elevated
+      risk regardless of the identity of the base executable.
+    </p>
+
+    <p class="claim-item main-claim">
+      <span class="ln">530</span>
+      8. The method of claim 1, wherein said recommendation engine generates said
+      human-readable explanation comprising: each dimension score that exceeded a
+      configurable per-dimension alert threshold; specific heuristic rules triggered
+      during evaluation of said command field, said arguments array, and said
+      environment variable map; any suspicious flag raised by typosquatting detection
+      and the registered entry most closely resembling the flagged source identifier;
+      and a ranked list of configuration fields ordered by their contribution magnitude
+      to said composite risk score.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10 — Abstract                                           -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-004 &nbsp;&nbsp;|&nbsp;&nbsp; Page 10</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Abstract</h2>
+
+    <div class="abstract-box">
+      <p class="no-indent">
+        <span class="ln">540</span>
+        A system and method for multi-dimensional risk scoring of Model Context Protocol
+        (MCP) server configuration entries in AI agent environments. A configuration
+        entry comprising a command field, arguments array, and environment variable map
+        is evaluated across six independent dimensions by parallel analyzer modules: a
+        command safety analyzer, an environment variable analyzer, a trusted source
+        checker, a naming reputation scorer, a permission scope analyzer, and a metadata
+        validator. Each analyzer produces a normalized dimension score, and a composite
+        risk calculator aggregates the scores using a weighted summation formula
+        R = &Sigma;(w<sub>i</sub> &times; D<sub>i</sub>). A recommendation engine
+        compares the composite score to configurable thresholds and emits a BLOCK, WARN,
+        or ALLOW disposition together with a human-readable explanation. A hierarchical
+        trusted source registry and a typosquatting detection module provide provenance
+        verification. The system operates entirely through static analysis, without
+        executing the MCP server process.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

@@ -4,7 +4,6 @@
  */
 
 import type { Rule } from '../types.js';
-import { buildHarvestPattern, buildCredentialAssignPattern } from './patterns/common.js';
 
 export const credentialRules: Rule[] = [
   {
@@ -12,18 +11,15 @@ export const credentialRules: Rule[] = [
     name: 'Environment Variable Credential Access',
     category: 'credentials',
     severity: 'CRITICAL',
-    description: 'Detects access to environment variables that commonly contain credentials',
+    description: 'Detects printing/revealing credential environment variables (high risk of leaking secrets via logs or output)',
     patterns: [
-      /\$\{?[A-Z_]*(_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIAL)[}\s]/gi,
-      /process\.env\.(API|SECRET|TOKEN|KEY|PASSWORD|CREDENTIAL)/gi,
-      /\$\{?ANTHROPIC_API_KEY[}\s]/gi,
-      /\$\{?OPENAI_API_KEY[}\s]/gi,
-      /\$\{?AWS_SECRET_ACCESS_KEY[}\s]/gi,
-      /\$\{?GITHUB_TOKEN[}\s]/gi,
+      /\b(?:echo|printf)\b[^\n]*\$\{?[A-Z0-9_]*(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIAL)\}?/gi,
+      /\bprintenv\b\s+[A-Z0-9_]*(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIAL)\b/gi,
+      /\b(?:env|set)\b\s*\|\s*grep\b[^\n]*(?:_KEY|_TOKEN|_SECRET|_PASSWORD|_CREDENTIAL)\b/gi,
     ],
-    fileTypes: ['sh', 'bash', 'zsh', 'md', 'json'],
+    fileTypes: ['sh', 'bash', 'zsh', 'md'],
     components: ['hook', 'skill', 'agent', 'ai-config-md', 'settings', 'plugin'],
-    remediation: 'Never access or expose credential environment variables in configuration files.',
+    remediation: 'Never print or reveal credential environment variables. Remove the output statement and validate secrets without exposing their values.',
     references: [
       'https://owasp.org/www-community/vulnerabilities/Use_of_hard-coded_credentials',
     ],
@@ -103,13 +99,13 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects potentially hardcoded API keys or secrets',
     patterns: [
-      buildCredentialAssignPattern('api[_-]?key'),
-      buildCredentialAssignPattern('secret[_-]?key'),
+      /api[_-]?key\s*[:=]\s*["'][a-zA-Z0-9]{20,}/gi,
+      /secret[_-]?key\s*[:=]\s*["'][a-zA-Z0-9]{20,}/gi,
       /password\s*[:=]\s*["'][^"']{8,}/gi,
-      /sk-[a-zA-Z0-9]{20,}/gi,        // OpenAI API key pattern
-      /ghp_[a-zA-Z0-9]{36}/gi,        // GitHub personal access token
-      /gho_[a-zA-Z0-9]{36}/gi,        // GitHub OAuth token
-      /glpat-[a-zA-Z0-9\-_]{20,}/gi,  // GitLab personal access token
+      /sk-[a-zA-Z0-9]{20,}/gi, // OpenAI API key pattern
+      /ghp_[a-zA-Z0-9]{36}/gi, // GitHub personal access token
+      /gho_[a-zA-Z0-9]{36}/gi, // GitHub OAuth token
+      /glpat-[a-zA-Z0-9\-_]{20,}/gi, // GitLab personal access token
     ],
     fileTypes: ['sh', 'bash', 'zsh', 'md', 'json', 'yaml', 'yml'],
     components: ['hook', 'skill', 'agent', 'ai-config-md', 'settings', 'plugin', 'mcp'],
@@ -146,11 +142,15 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects markdown instructions to collect or expose credentials',
     patterns: [
-      buildHarvestPattern('collect'),
-      buildHarvestPattern('extract'),
-      buildHarvestPattern('find'),
-      buildHarvestPattern('show'),
-      buildHarvestPattern('output'),
+      /collect[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /extract[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /find[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /show[ \t]+(me[ \t]+)?(the[ \t]+)?[^\n]{0,50}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /output[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      // Natural-language action verbs for credential harvesting
+      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,100}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:dump|export|reveal|expose|list|retrieve|get|fetch)\b[ \t]+[^\n]{0,80}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,60}\b(?:all|every|each)\b[^\n]{0,40}(?:key|secret|password|credential|token)[s]?\b/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],
@@ -163,6 +163,9 @@ export const credentialRules: Rule[] = [
       /password\s+(toggle|field|input|visibility)/gi,
       /find\s+(leaked|exposed).*credential/gi, // Security scanning descriptions
       /token\s+(usage|count|limit)/gi, // Token metrics, not harvesting
+      /send\s+.*password\s+reset/gi, // Password reset flows
+      /email\s+.*password\s+reset/gi,
+      /send\s+.*verification\s+(token|code)/gi, // Verification flows
     ],
     excludeContext: [
       /\bUI\b|user\s+interface/gi,

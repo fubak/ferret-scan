@@ -42,14 +42,13 @@ export interface FileIgnoreState {
  */
 const COMMENT_PATTERNS: Record<string, RegExp[]> = {
   default: [
-    // Longer alternatives must come before shorter ones to avoid premature matching
     /\/\/\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
     /\/\*\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^*]+))?\s*\*\//gi,
     /#\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
   ],
   html: [
-    // Use [^\n]+ instead of [^-]+ so rule IDs containing hyphens (e.g. CRED-001) are captured
-    /<!--\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]*?))?\s*-->/gi,
+    // Non-greedy capture so rule ids like "INJ-001" (with hyphens) work correctly.
+    /<!--\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+(.+?))?\s*-->/gi,
   ],
   sql: [
     /--\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
@@ -100,7 +99,8 @@ export function parseIgnoreComments(
 
   // Determine which patterns to use
   let patterns = [...(COMMENT_PATTERNS['default'] ?? [])];
-  if (['html', 'htm', 'xml', 'svg'].includes(fileExtension)) {
+  // Markdown supports HTML comments, so include the HTML directive style for `.md` too.
+  if (['html', 'htm', 'xml', 'svg', 'md'].includes(fileExtension)) {
     patterns = [...patterns, ...(COMMENT_PATTERNS['html'] ?? [])];
   }
   if (['sql'].includes(fileExtension)) {

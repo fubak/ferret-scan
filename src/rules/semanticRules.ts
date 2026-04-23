@@ -25,6 +25,11 @@ export const semanticRules: Rule[] = [
     semanticPatterns: [
       {
         type: 'eval-chain',
+        pattern: 'eval',
+        confidence: 0.95
+      },
+      {
+        type: 'eval-chain',
         pattern: 'Function',
         confidence: 0.90
       },
@@ -96,8 +101,18 @@ export const semanticRules: Rule[] = [
       },
       {
         type: 'function-call',
+        pattern: 'readFileSync',
+        confidence: 0.70
+      },
+      {
+        type: 'function-call',
         pattern: 'writeFile',
         confidence: 0.70
+      },
+      {
+        type: 'function-call',
+        pattern: 'writeFileSync',
+        confidence: 0.75
       },
       {
         type: 'property-access',
@@ -154,12 +169,12 @@ export const semanticRules: Rule[] = [
     id: 'SEM-005',
     name: 'Environment Variable Access',
     category: 'credentials',
-    severity: 'HIGH',
-    description: 'Detects environment variable access patterns that could expose sensitive credentials',
+    severity: 'LOW',
+    description: 'Detects environment variable access patterns that may touch sensitive credentials (signal only)',
     patterns: [],
     fileTypes: ['md', 'ts', 'js', 'tsx', 'jsx'],
     components: ['skill', 'agent', 'hook', 'plugin', 'settings'],
-    remediation: 'Minimize environment variable access. Use secure credential storage and access patterns.',
+    remediation: 'Avoid printing, logging, or transmitting environment variable values. Prefer least-privilege access patterns and secret managers where possible.',
     references: [
       'https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html'
     ],

@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Specification — FS-2026-003: AST-Based Markdown Parsing for Security Analysis of AI CLI Configuration Files</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #d0d0d0;
+    font-family: Arial, sans-serif;
+    padding: 24px;
+  }
+
+  .page {
+    width: 760px;
+    min-height: 1000px;
+    background: #fff;
+    margin: 24px auto;
+    padding: 72px 80px 72px 100px;
+    border: 1px solid #888;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.65;
+    color: #000;
+  }
+
+  .page-top-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 24px;
+    letter-spacing: 0.03em;
+  }
+
+  /* Line numbers */
+  .lined-content {
+    position: relative;
+  }
+
+  .line-block {
+    display: block;
+    position: relative;
+    min-height: 1.65em;
+  }
+
+  .ln {
+    position: absolute;
+    left: -52px;
+    width: 36px;
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    top: 0.1em;
+  }
+
+  h1.doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 13pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+
+  h2.section-head {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  p.body-para {
+    text-indent: 2em;
+    margin-bottom: 10px;
+  }
+
+  p.no-indent {
+    margin-bottom: 10px;
+  }
+
+  .claim-item {
+    margin-bottom: 8px;
+    padding-left: 2em;
+    text-indent: -2em;
+  }
+
+  .claim-item.main-claim {
+    font-weight: normal;
+  }
+
+  .claim-sub {
+    padding-left: 4em;
+    text-indent: -2em;
+    margin-bottom: 6px;
+  }
+
+  .abstract-box {
+    border: 1px solid #000;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .drawings-ref {
+    font-style: italic;
+  }
+
+  sup { font-size: 8pt; }
+
+  .formula {
+    font-family: 'Courier New', monospace;
+    display: block;
+    margin: 10px 0 10px 3em;
+    font-size: 10pt;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10.5pt;
+  }
+
+  .para-num {
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: bold;
+    margin-right: 0.5em;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — Title, Cross-Reference, Technical Field, Background -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 1</div>
+
+  <h1 class="doc-title">System and Method for Abstract Syntax Tree-Based<br>Security Analysis of Markdown-Embedded Code<br>in AI Agent Configuration Files</h1>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Cross-Reference to Related Applications</h2>
+
+    <p class="body-para">
+      <span class="ln">5</span>
+      <span class="para-num">[0001]</span>
+      This application is related to co-pending U.S. Patent Application FS-2026-001, entitled
+      "AI Agent Capability Profile Generation from AI CLI Configuration Files"; co-pending
+      Application FS-2026-002, entitled "Cross-File Attack Chain Correlation in AI CLI
+      Configuration Environments"; co-pending Application FS-2026-004, entitled "MCP Tool
+    </p>
+    <p class="body-para">
+      <span class="ln">10</span>
+      Declaration Validation and Risk Scoring"; and co-pending Application FS-2026-005, entitled
+      "Ignore-File Expiration and Hygiene Enforcement for AI CLI Environments." All of the
+      foregoing applications are incorporated herein by reference in their entirety.
+    </p>
+
+    <h2 class="section-head">Technical Field</h2>
+
+    <p class="body-para">
+      <span class="ln">15</span>
+      <span class="para-num">[0002]</span>
+      The present invention relates generally to static program analysis and software security,
+      and more particularly to systems and methods for parsing and analyzing fenced code blocks
+      embedded within markdown-formatted configuration files used by artificial intelligence
+      coding assistant command-line interface (CLI) tools, by constructing and traversing
+      Abstract Syntax Trees (ASTs) derived from said code blocks so as to identify semantic
+      security patterns indicative of malicious, dangerous, or policy-violating behavior.
+      The invention further relates to compiler technology, language-theoretic security
+      analysis, and enterprise governance of AI-assisted software development environments.
+    </p>
+
+    <h2 class="section-head">Background of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">25</span>
+      <span class="para-num">[0003]</span>
+      AI coding assistants have become integral to modern software development workflows.
+      Platforms such as Claude Code (Anthropic), Cursor, Windsurf, Aider, Continue, and Cline
+      permit developers to delegate file manipulation, shell execution, network access, and
+      third-party tool invocation to AI agents operating within local or cloud-connected
+      development environments. These platforms are typically configured through one or more
+      markdown-formatted files stored at the project root or in the user home directory.
+    </p>
+    <p class="body-para">
+      <span class="ln">35</span>
+      <span class="para-num">[0004]</span>
+      Examples of such configuration files include CLAUDE.md (Claude Code, Anthropic),
+      .cursorrules (Cursor, Anysphere), AGENTS.md (OpenAI Codex CLI), and .windsurfrules
+      (Windsurf, Codeium). A distinctive and previously unanalyzed property of these
+      configuration files is that they are <em>mixed-type artifacts</em>: they interleave
+      natural-language prose directives with fenced code blocks delimited by triple backticks
+      (```) or tildes. These embedded code blocks may contain JavaScript, TypeScript, Python,
+      Shell, or other executable content that an AI agent may interpret and execute when
+      processing the configuration file.
+    </p>
+    <p class="body-para">
+      <span class="ln">45</span>
+      <span class="para-num">[0005]</span>
+      Adversaries or malicious insiders may therefore embed harmful executable instructions
+      within ostensibly benign markdown configuration files, with the expectation that the
+      AI agent will execute the embedded code, exfiltrate credentials, invoke unauthorized
+      external processes, or otherwise compromise the security of the development environment.
+      Because these configuration files are frequently committed to version control
+      repositories and shared across development teams, a single compromised configuration
+      file can silently propagate a harmful code payload to every developer who clones or
+      pulls the repository.
+    </p>
+    <p class="body-para">
+      <span class="ln">55</span>
+      <span class="para-num">[0006]</span>
+      Prior art static analysis tools (SAST) are designed to operate on source code files
+      with well-defined syntactic structure; none of the prior art treats markdown
+      configuration files as the mixed-type artifacts they are, requiring separate extraction
+      and independent analysis of each embedded code block. Prior art tools that do attempt
+      to scan configuration files do so through string matching or regular expression
+      techniques applied to the raw text of the file. Such approaches are fundamentally
+      obfuscation-susceptible: an adversary may introduce whitespace, comment nodes, aliased
+      variable references, or syntactic transformations that preserve the operational semantics
+      of a dangerous pattern while defeating any string or regex signature.
+    </p>
+    <p class="body-para">
+      <span class="ln">65</span>
+      <span class="para-num">[0007]</span>
+      There is therefore a need for a system and method that extracts each fenced code block
+      from a markdown configuration file, constructs a true Abstract Syntax Tree from the
+      extracted block content, and traverses that AST to match semantic security patterns
+      that are invariant to obfuscation-class transformations including whitespace variation,
+      comment insertion, string literal splitting, and identifier aliasing. No prior art
+      system has addressed this specific combination of mixed-type document parsing and
+      AST-based semantic security pattern matching applied to AI agent configuration files.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — Summary, Brief Description of Drawings             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 2</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Summary of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">75</span>
+      <span class="para-num">[0008]</span>
+      The present invention provides a computer-implemented system and method for analyzing
+      fenced code blocks embedded in markdown configuration files used by AI coding assistant
+      CLI platforms. A code block extractor (302) processes the markdown configuration file
+      (300) using a state-machine parser that identifies triple-backtick or tilde-delimited
+      fenced regions, capturing for each block its language identifier tag, raw content,
+      start line number, end line number, and contextual prose appearing immediately before
+      the block. Each extracted block is represented as a block object (316) and subjected
+      to language detection (304) to resolve ambiguous or untagged blocks via token-frequency
+      heuristics. An AST parser (306) then constructs a structural Abstract Syntax Tree from
+      the block content using an appropriate language compiler frontend.
+    </p>
+    <p class="body-para">
+      <span class="ln">87</span>
+      <span class="para-num">[0009]</span>
+      A semantic pattern matcher (308) traverses the AST using recursive descent to identify
+      nodes that match one or more security-relevant semantic patterns drawn from a pattern
+      catalog (310), including function-call patterns (322), property-access patterns (324),
+      dynamic-import patterns (326), indirect-execution patterns (328), and object-structure
+      patterns (329). Findings are emitted by a finding emitter (314) and subjected to
+      cross-block correlation (312) to detect composite attack chains that span multiple code
+      blocks within the same configuration file. Because the analysis operates on the AST
+      structural representation rather than on raw text, the detection is resistant to a
+      broad class of obfuscation techniques including whitespace variation, comment insertion,
+      variable aliasing, and syntactic reformatting.
+    </p>
+    <p class="body-para">
+      <span class="ln">99</span>
+      <span class="para-num">[0010]</span>
+      In a second aspect, the invention provides a method comprising: receiving a markdown
+      configuration file associated with an AI CLI platform; extracting from said file one
+      or more fenced code blocks together with source position metadata; applying language
+      detection heuristics to blocks lacking explicit language identifiers; constructing an
+      Abstract Syntax Tree from each extracted block; traversing said AST by recursive
+      descent to identify AST nodes matching semantic security patterns; recording each
+      matching node as a finding annotated with its source file position; applying cross-block
+      correlation rules to a set of findings accumulated from all blocks in the file; and
+      emitting a set of composite findings representing potential security violations or
+      attack chains present in the markdown configuration file.
+    </p>
+
+    <h2 class="section-head">Brief Description of the Drawings</h2>
+
+    <p class="body-para">
+      <span class="ln">112</span>
+      <span class="para-num">[0011]</span>
+      The accompanying drawings, which are incorporated in and constitute a part of this
+      specification, illustrate preferred embodiments of the invention and, together with
+      the description, serve to explain the principles of the invention.
+    </p>
+    <p class="body-para">
+      <span class="ln">117</span>
+      <span class="para-num">[0012]</span>
+      <span class="drawings-ref">FIG. 1</span> is a block diagram of the system architecture for security analysis of
+      code blocks embedded in markdown configuration files via Abstract Syntax Tree parsing,
+      showing the main processing pipeline from markdown config file input (300) through
+      code block extractor (302), language detector (304), AST parser (306), semantic
+      pattern matcher (308), and finding emitter (314), together with the pattern catalog
+      (310) input, the cross-block correlator (312) feedback loop, and the extracted block
+      object data structure (316).
+    </p>
+    <p class="body-para">
+      <span class="ln">127</span>
+      <span class="para-num">[0013]</span>
+      <span class="drawings-ref">FIG. 2</span> is a tree diagram of the semantic pattern catalog (320) showing the five
+      pattern type branches — function-call (322), property-access (324), dynamic-import
+      (326), indirect-exec (328), and object-struct (329) — and their respective AST node
+      matching criteria, together with the key novelty comparison between AST structural
+      matching (340) and string/regex matching (342), illustrating the resistance to
+      obfuscation (344) conferred by the structural approach.
+    </p>
+    <p class="body-para">
+      <span class="ln">136</span>
+      <span class="para-num">[0014]</span>
+      <span class="drawings-ref">FIG. 3</span> is a flowchart of the method for AST node traversal and finding generation
+      (350–374), illustrating the sequential steps of beginning execution at start state (350),
+      receiving a markdown configuration file (352), extracting fenced code blocks (354),
+      testing for a language tag (356), applying language heuristics when no tag is present
+      (358), constructing the AST (360), performing recursive-descent traversal (362),
+      matching security patterns at each node (364), recording findings (366), iterating
+      over additional blocks (368), applying cross-block correlation rules (370), emitting
+      composite findings (372), and terminating at end state (374).
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — Detailed Description: System Overview, Code Block  -->
+<!--           Extractor, Language Detector                      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 3</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Detailed Description of the Preferred Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">150</span>
+      <span class="para-num">[0015]</span>
+      The following detailed description is presented to enable any person skilled in the art
+      to make and use the invention. For purposes of explanation, specific details are set
+      forth to provide a thorough understanding of the present invention. However, it will
+      be apparent to one skilled in the art that these specific details are not required to
+      practice the invention. Descriptions of specific applications and embodiments are
+      provided only as examples. Various modifications to the preferred embodiments will be
+      readily apparent to those skilled in the art, and the general principles defined herein
+      may be applied to other embodiments and applications without departing from the spirit
+      and scope of the invention.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">I. System Architecture Overview (FIG. 1)</h2>
+
+    <p class="body-para">
+      <span class="ln">162</span>
+      <span class="para-num">[0016]</span>
+      Referring now to FIG. 1, the system for security analysis of embedded code blocks
+      comprises a pipeline originating at a markdown configuration file input (300). The
+      markdown configuration file (300) is a text file in Markdown format, as commonly
+      used by AI CLI platforms to convey behavioral instructions, tool allowances, and
+      contextual guidance to an AI coding assistant agent. Examples include CLAUDE.md
+      (Claude Code, Anthropic), .cursorrules (Cursor, Anysphere), and AGENTS.md (OpenAI
+      Codex CLI). These files may reside at the project root directory, the user home
+      directory, or any directory in the file system hierarchy that the AI agent traverses
+      during its initialization sequence.
+    </p>
+    <p class="body-para">
+      <span class="ln">174</span>
+      <span class="para-num">[0017]</span>
+      The pipeline components are, in order of execution: code block extractor (302),
+      language detector (304), AST parser (306), semantic pattern matcher (308), and finding
+      emitter (314). An auxiliary pattern catalog (310) provides semantic pattern definitions
+      to the semantic pattern matcher (308). A cross-block correlator (312) operates as a
+      post-processing stage that receives the accumulated finding set from the finding
+      emitter (314) and applies combination rules across findings from distinct code blocks
+      to produce composite findings representing multi-stage attack chains.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">II. Code Block Extractor (302)</h2>
+
+    <p class="body-para">
+      <span class="ln">184</span>
+      <span class="para-num">[0018]</span>
+      The code block extractor (302) receives the markdown configuration file (300) and
+      produces a sequence of extracted block objects (316). In a preferred embodiment, the
+      extractor (302) is implemented as a finite-state machine with the following states:
+      PROSE (initial state), FENCE_OPEN (a triple-backtick or tilde delimiter has been
+      encountered), BLOCK_CONTENT (currently accumulating code block content), and
+      FENCE_CLOSE (a closing delimiter has been matched). Upon transitioning from FENCE_CLOSE
+      back to PROSE, the extractor commits a completed extracted block object (316) to its
+      output sequence.
+    </p>
+    <p class="body-para">
+      <span class="ln">196</span>
+      <span class="para-num">[0019]</span>
+      Each extracted block object (316) comprises the following fields: (a) <em>language</em>,
+      the language identifier tag appearing after the opening backtick delimiter, if present;
+      (b) <em>content</em>, the raw string content of the fenced block, exclusive of the
+      delimiter lines; (c) <em>startLine</em>, the one-indexed line number of the opening
+      delimiter within the source markdown file; (d) <em>endLine</em>, the one-indexed line
+      number of the closing delimiter within the source markdown file; and (e) <em>context</em>,
+      a string comprising up to three lines of prose text immediately preceding the opening
+      delimiter, which serves as a semantic label describing the intended purpose of the code
+      block as expressed by the file's author. This context field enables downstream components
+      to correlate AST-derived findings with the author-supplied description of the code
+      block's purpose, which may itself be relevant to risk assessment.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — Language Detection, AST Construction               -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 4</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">III. Language Detector (304)</h2>
+
+    <p class="body-para">
+      <span class="ln">210</span>
+      <span class="para-num">[0020]</span>
+      The language detector (304) resolves the language of each extracted block object (316).
+      When the <em>language</em> field is populated with a recognized language identifier such
+      as "javascript", "typescript", "python", "bash", or "sh", the language detector (304)
+      passes the tag through directly to the AST parser (306). When the language field is
+      absent or contains an unrecognized token, the language detector (304) applies a set of
+      language heuristics to infer the most probable language of the block content.
+    </p>
+    <p class="body-para">
+      <span class="ln">220</span>
+      <span class="para-num">[0021]</span>
+      In a preferred embodiment, these heuristics comprise token-frequency analysis: the block
+      content is tokenized by whitespace and punctuation, and the resulting token set is
+      compared against language-specific signature token sets. For example, the presence of
+      <code>def </code> and <code>import </code> tokens at line beginnings is predictive of
+      Python; the presence of <code>const</code>, <code>let</code>, <code>var</code>,
+      <code>=&gt;</code>, and semicolon tokens is predictive of JavaScript or TypeScript;
+      the presence of shebang sequences (<code>#!/</code>) or shell builtins such as
+      <code>export</code>, <code>source</code>, and <code>chmod</code> is predictive of shell
+      script content. The heuristic assigns a confidence score to each candidate language and
+      selects the language with the highest confidence score. If no language achieves a
+      confidence score above a configurable threshold, the block is marked as language-unknown
+      and is skipped by the AST parser (306) in the current embodiment, though alternate
+      embodiments may apply generic or polyglot parsing strategies to unknown-language blocks.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">IV. AST Parser (306)</h2>
+
+    <p class="body-para">
+      <span class="ln">236</span>
+      <span class="para-num">[0022]</span>
+      The AST parser (306) receives each extracted block object (316) together with its
+      resolved language identifier and constructs a structured Abstract Syntax Tree
+      representation of the block content. In a preferred embodiment for JavaScript and
+      TypeScript blocks, the AST parser (306) invokes the TypeScript compiler API function
+      <code>ts.createSourceFile()</code>, passing the block content string as input and
+      configuring the compiler frontend to tolerate syntactic errors so that partial or
+      informally written code blocks — as commonly appear in configuration file examples —
+      are parsed to the greatest degree possible rather than rejected entirely.
+    </p>
+    <p class="body-para">
+      <span class="ln">247</span>
+      <span class="para-num">[0023]</span>
+      The resulting TypeScript compiler AST is a fully typed tree structure in which each
+      node carries a <em>kind</em> discriminant drawn from the <code>ts.SyntaxKind</code>
+      enumeration, as well as positional metadata (<em>pos</em> and <em>end</em> character
+      offsets within the source text) that the finding emitter (314) translates back to line
+      and column numbers for reporting purposes. For Python blocks, the AST parser (306)
+      invokes the Python <code>ast.parse()</code> standard library function, obtaining a
+      Python AST in which each node carries a <em>type</em> attribute and line/column
+      annotations. For shell script blocks, the AST parser (306) invokes a shell grammar
+      parser to obtain a structured command-word tree. Alternate embodiments may employ
+      any language-appropriate parser frontend that produces a structured, traversable AST
+      representation with positional annotations, including third-party parsers such as
+      Babel, Acorn, Esprima, Tree-sitter, or ANTLR-generated parsers for languages not
+      natively supported by the TypeScript compiler API.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — Semantic Pattern Catalog (FIG. 2), Pattern Types   -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 5</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">V. Semantic Pattern Catalog (310, 320, FIG. 2)</h2>
+
+    <p class="body-para">
+      <span class="ln">263</span>
+      <span class="para-num">[0024]</span>
+      Referring now to FIG. 2, the pattern catalog (310) organizes security-relevant semantic
+      patterns under the root node SEMANTIC PATTERN CATALOG (320). The catalog defines five
+      pattern type branches, each associated with a specific AST node class and a corresponding
+      matching algorithm. These five pattern types collectively represent the principal
+      mechanisms by which executable code embedded in markdown configuration files may perform
+      security-violating operations. Each pattern type is described in detail below.
+    </p>
+
+    <p class="body-para">
+      <span class="ln">272</span>
+      <span class="para-num">[0025]</span>
+      <em>A. Function-Call Pattern (322).</em> The function-call pattern (322) targets
+      CallExpression AST nodes in which the callee expression resolves to a function identifier
+      or member expression present in a configurable catalog of security-sensitive function
+      names. In a TypeScript/JavaScript AST, a CallExpression node has a callee child node
+      and an arguments child list. The pattern matcher (308) traverses the callee expression
+      recursively to resolve the fully qualified function name, accounting for member access
+      chains. The resolved name is then tested against a dangerous-function catalog maintained
+      in the pattern catalog (310). The catalog includes entries for process management
+      functions, file system access functions, network socket operations, cryptographic
+      operations with weak parameters, and other functions whose invocation in a
+      configuration-file code block indicates a potential policy violation. Because this
+      matching operates on the CallExpression node structure rather than on the raw text of
+      the source, aliased calls are detected at the AST level through data-flow-sensitive
+      variants of the matcher, and obfuscating whitespace or comment nodes within the call
+      expression have no effect on the structural match.
+    </p>
+    <p class="body-para">
+      <span class="ln">289</span>
+      <span class="para-num">[0026]</span>
+      <em>B. Property-Access Pattern (324).</em> The property-access pattern (324) targets
+      PropertyAccessExpression AST nodes representing member access chains on security-sensitive
+      objects. In JavaScript and TypeScript, chained property accesses such as
+      <code>process.env.SECRET_KEY</code> or <code>os.environ["HOME"]</code> produce a
+      left-recursive PropertyAccessExpression tree. The pattern matcher (308) traverses such
+      chains by iteratively unwrapping PropertyAccessExpression and ElementAccessExpression
+      nodes to reconstruct the full dotted access path. The reconstructed path is then tested
+      against a catalog of security-sensitive access paths, including environment variable
+      access paths, process namespace paths, file system descriptor paths, and network
+      interface paths. Detection of such paths in a configuration-file code block indicates
+      potential credential exfiltration, capability probing, or system information gathering.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — Pattern Types C, D, E; matchSemanticPattern()      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 6</div>
+
+  <div class="lined-content">
+
+    <p class="body-para">
+      <span class="ln">302</span>
+      <span class="para-num">[0027]</span>
+      <em>C. Dynamic-Import Pattern (326).</em> The dynamic-import pattern (326) targets
+      ImportExpression AST nodes in which the module specifier argument is not a string
+      literal. In ECMAScript 2020 and later, the <code>import()</code> expression enables
+      runtime module loading, and a dynamic (non-literal) specifier argument indicates that
+      the module path is computed at runtime — potentially from user-controlled data or from
+      the configuration file's own embedded variables. Such dynamic imports in a
+      configuration-file code block represent a potential mechanism for loading arbitrary
+      or attacker-controlled modules at AI agent initialization time. The pattern matcher
+      (308) identifies ImportExpression nodes whose specifier child is not a StringLiteral
+      or a TemplateLiteral with no substitutions, flagging all other specifier types as
+      matching the dynamic-import security pattern (326).
+    </p>
+    <p class="body-para">
+      <span class="ln">316</span>
+      <span class="para-num">[0028]</span>
+      <em>D. Indirect-Execution Pattern (328).</em> The indirect-execution pattern (328)
+      targets CallExpression and NewExpression AST nodes that perform string-to-code
+      conversion at runtime — that is, nodes representing calls that accept a string argument
+      and cause that string to be interpreted or executed as code by the JavaScript engine
+      or operating system. This pattern covers two sub-categories: (i) function constructor
+      instantiation, in which a NewExpression node with the callee resolving to the built-in
+      Function constructor is detected, and the constructor's string arguments represent
+      dynamically assembled function body code; and (ii) timer functions invoked with string
+      arguments, where a CallExpression targets a built-in timer API and passes a string as
+      the first argument rather than a function reference, causing the string to be parsed
+      and executed as code after the specified delay. In the context of AI configuration file
+      analysis, string-to-code conversion functions are of particular concern because they
+      allow an attacker to encode harmful instructions as string data that evades static
+      pattern matching while remaining executable at agent runtime. Both sub-categories are
+      structurally distinguishable in the AST independently of identifier aliasing, whitespace
+      variation, or comment insertion in the source text.
+    </p>
+    <p class="body-para">
+      <span class="ln">335</span>
+      <span class="para-num">[0029]</span>
+      <em>E. Object-Structure Pattern (329).</em> The object-structure pattern (329) targets
+      ObjectLiteralExpression AST nodes whose property key sets match a configurable signature
+      associated with a known data transfer or exfiltration payload schema. Certain categories
+      of attack embedded in AI configuration files take the form of structured data objects
+      whose shape (property key set) is characteristic of a particular malicious payload class,
+      such as credential bundles, webhook invocation payloads, or API request bodies carrying
+      sensitive fields. The pattern matcher (308) identifies ObjectLiteralExpression nodes,
+      enumerates their PropertyAssignment child nodes to extract the string representation of
+      each property key, and tests the resulting key set against a catalog of known payload
+      signatures. A match is reported when the key set of the observed object literal is a
+      superset of a minimum required key set defined in the pattern catalog (310), and all
+      required keys are present in the correct structural positions within the
+      ObjectLiteralExpression node.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VI. The matchSemanticPattern() Algorithm</h2>
+
+    <p class="body-para">
+      <span class="ln">350</span>
+      <span class="para-num">[0030]</span>
+      The core of the semantic pattern matcher (308) is the <code>matchSemanticPattern()</code>
+      algorithm, which implements a recursive descent traversal of the AST rooted at each
+      source file's root node. The algorithm maintains a visitor stack and a finding
+      accumulator. At each AST node, the algorithm performs the following steps: (1) the
+      node's <em>kind</em> discriminant is compared against the set of AST node types that
+      are targeted by at least one pattern in the pattern catalog (310); (2) if the node kind
+      matches a targeted type, each applicable pattern's matching predicate is evaluated
+      against the node and its immediate children; (3) if a pattern's predicate evaluates to
+      true, a finding object is created and appended to the finding accumulator, carrying the
+      pattern identifier, the severity level defined in the pattern catalog (310), the node's
+      positional metadata translated to source-file line and column numbers, and the context
+      prose string from the enclosing extracted block object (316); (4) regardless of whether
+      a match was found, the algorithm recurses into each child node of the current node,
+      unless the current node is of a leaf type. The recursion terminates naturally at leaf nodes.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — Obfuscation Resistance, Cross-Block Correlation,   -->
+<!--           analyzeFile() Integration Method                  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 7</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">VII. Obfuscation Resistance (340, 342, 344)</h2>
+
+    <p class="body-para">
+      <span class="ln">367</span>
+      <span class="para-num">[0031]</span>
+      A principal advantage of the AST structural matching approach (340) over string or
+      regular expression matching (342) is its resistance to obfuscation (344), as illustrated
+      in FIG. 2. When a static analysis tool relies on string matching or regular expressions
+      to detect dangerous patterns, an adversary may defeat detection through any of the
+      following transformations: (a) inserting whitespace characters between tokens, since
+      whitespace is typically significant in regex patterns but irrelevant to the AST;
+      (b) inserting code comments within expressions, since comments are stripped during
+      lexical analysis and do not appear as AST nodes; (c) splitting string literals into
+      concatenated segments, since the string value is represented as a BinaryExpression or
+      TemplateLiteral in the AST rather than as a single raw token; (d) aliasing function or
+      object names through intermediate variable assignments, since the AST preserves the
+      structure of the aliasing expression independently of the identifier names chosen.
+    </p>
+    <p class="body-para">
+      <span class="ln">382</span>
+      <span class="para-num">[0032]</span>
+      Against each of these obfuscation strategies, the AST structural matching approach (340)
+      employed by the present invention is robust: the structural match predicate operates on
+      the node kind and child structure of the AST, which is invariant under whitespace,
+      comment, and syntactic reformatting transformations. Identifier aliasing is addressed
+      through a lightweight data-flow-sensitive identifier resolution pass that, for each
+      Identifier node encountered during traversal, attempts to resolve the identifier to its
+      definition site and substitute the defined value's AST representation before applying
+      the match predicate.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VIII. Cross-Block Correlator (312)</h2>
+
+    <p class="body-para">
+      <span class="ln">393</span>
+      <span class="para-num">[0033]</span>
+      In many attack scenarios, no single fenced code block within a markdown configuration
+      file contains a complete attack chain. Instead, the attack is distributed across multiple
+      code blocks, with each block contributing one stage of the attack. For example, one
+      block may define a utility function for reading environment variables, a second block
+      may define a network transmission function, and a third block may invoke both functions
+      in sequence. The cross-block correlator (312) addresses this attack class by accumulating
+      all findings emitted by the finding emitter (314) across all code blocks in the markdown
+      configuration file, and then applying a set of cross-block combination rules to the
+      accumulated finding set.
+    </p>
+    <p class="body-para">
+      <span class="ln">405</span>
+      <span class="para-num">[0034]</span>
+      In a preferred embodiment, these combination rules are expressed as conjunctive predicates
+      over the finding types: a rule specifies that when a finding of type A and a finding of
+      type B are both present in the accumulated finding set for the same file, a composite
+      finding of type C is generated at a severity level that may be higher than either of the
+      constituent findings individually. This severity escalation mechanism ensures that
+      multi-stage attack chains that individually fall below a reporting threshold are surfaced
+      as high-severity composite findings when the combination meets a known attack chain
+      pattern. The composite finding carries references to the constituent findings, including
+      their respective source positions within the markdown configuration file, enabling
+      security analysts to trace the full attack chain across code blocks.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">IX. The analyzeFile() Integration Method</h2>
+
+    <p class="body-para">
+      <span class="ln">418</span>
+      <span class="para-num">[0035]</span>
+      The top-level entry point of the system is the <code>analyzeFile()</code> method, which
+      integrates all stages described above. The method accepts a file system path or content
+      string for a markdown configuration file (300) and returns a structured analysis result
+      comprising: (a) the list of extracted block objects (316) produced by the code block
+      extractor (302); (b) the per-block finding lists produced by the semantic pattern matcher
+      (308) and finding emitter (314); and (c) the composite finding list produced by the
+      cross-block correlator (312). The method coordinates the pipeline by invoking the code
+      block extractor (302) on the raw file content, iterating over the resulting block
+      sequence to invoke the language detector (304), AST parser (306), and semantic pattern
+      matcher (308) for each block, collecting all per-block findings, and finally passing
+      the collected findings to the cross-block correlator (312) before returning the complete
+      result.
+    </p>
+    <p class="body-para">
+      <span class="ln">433</span>
+      <span class="para-num">[0036]</span>
+      This modular architecture enables each component to be tested independently, replaced
+      with an alternate implementation, or extended with additional language parsers or pattern
+      catalog entries without modification to the other components. The pattern catalog (310)
+      is designed to be extensible: new semantic patterns may be added by appending entries
+      to the catalog array, and each entry specifies the target AST node type, the matching
+      predicate, the severity level, and a human-readable description for inclusion in emitted
+      findings. This extensibility ensures that the invention remains applicable to novel
+      attack patterns discovered after the system's initial deployment.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8 — Method Steps (FIG. 3)                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 8</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">X. Method Steps (FIG. 3, 350–374)</h2>
+
+    <p class="body-para">
+      <span class="ln">445</span>
+      <span class="para-num">[0037]</span>
+      Referring now to FIG. 3, the method of the present invention proceeds as follows.
+      At step (350), the method begins execution. At step (352), the method receives a
+      markdown configuration file associated with an AI CLI platform; the file may be
+      supplied as a file system path, an in-memory string, or a byte buffer. At step (354),
+      the code block extractor (302) applies its finite-state-machine parser to identify and
+      extract all fenced code blocks from the file, producing a sequence of extracted block
+      objects (316) as described above in Section II.
+    </p>
+    <p class="body-para">
+      <span class="ln">455</span>
+      <span class="para-num">[0038]</span>
+      At decision step (356), the method tests whether the current extracted block object
+      carries a language tag in its <em>language</em> field. If a language tag is present
+      (YES branch from decision (356)), the method proceeds directly to AST construction at
+      step (360). If no language tag is present (NO branch from decision (356)), the method
+      proceeds to step (358), where the language detector (304) applies the token-frequency
+      heuristic analysis described in Section III to infer the language of the block, after
+      which the method proceeds to step (360).
+    </p>
+    <p class="body-para">
+      <span class="ln">465</span>
+      <span class="para-num">[0039]</span>
+      At step (360), the AST parser (306) constructs an Abstract Syntax Tree from the block
+      content using the language-appropriate parser frontend described in Section IV. At step
+      (362), the semantic pattern matcher (308) initiates recursive-descent traversal of the
+      constructed AST. At decision step (364), the method tests whether the current AST node
+      during traversal matches a security pattern from the pattern catalog (310). If no match
+      is found (NO branch from decision (364)), the traversal continues to the next AST node,
+      looping back to step (362). If a match is found (YES branch from decision (364)), the
+      method proceeds to step (366), where the finding emitter (314) creates and records a
+      finding object annotated with the source position, pattern type, severity, and context
+      string. After recording the finding, the traversal resumes with the next AST node,
+      looping back to step (362) until all nodes have been visited.
+    </p>
+    <p class="body-para">
+      <span class="ln">479</span>
+      <span class="para-num">[0040]</span>
+      At decision step (368), the method tests whether additional unprocessed extracted block
+      objects remain in the sequence produced at step (354). If additional blocks remain (YES
+      branch from decision (368)), the method loops back to step (354) to process the next
+      block. If no additional blocks remain (NO branch from decision (368)), the method
+      proceeds to step (370), where the cross-block correlator (312) applies cross-block
+      combination rules to the full set of accumulated findings from all blocks. At step (372),
+      the finding emitter (314) emits the complete set of composite findings annotated with
+      references to their constituent per-block findings. At step (374), the method terminates
+      and returns the analysis result to the caller.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">XI. Alternative Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">492</span>
+      <span class="para-num">[0041]</span>
+      In an alternative embodiment, the system is integrated into a continuous integration
+      pipeline as a pre-commit or pre-merge hook, receiving each modified markdown
+      configuration file as input and blocking the commit or merge if any finding of CRITICAL
+      or HIGH severity is emitted. In this embodiment, the <code>analyzeFile()</code> method
+      is invoked for each staged markdown file, and the exit code of the analysis process
+      is set to a non-zero value when at least one blocking finding is present, causing the
+      CI pipeline to fail and report the finding details to the developer.
+    </p>
+    <p class="body-para">
+      <span class="ln">503</span>
+      <span class="para-num">[0042]</span>
+      In another alternative embodiment, the pattern catalog (310) is stored as a
+      human-readable configuration file rather than as compiled code, enabling security
+      teams to customize the catalog of security-sensitive function names, property access
+      paths, and object-structure signatures without recompiling the analysis system. In
+      this embodiment, the catalog file is loaded and parsed at system startup, and its
+      entries are compiled into an in-memory catalog structure that is passed to the semantic
+      pattern matcher (308). This approach facilitates rapid response to newly discovered
+      attack patterns by enabling catalog updates to be deployed as configuration changes
+      rather than as code changes.
+    </p>
+    <p class="body-para">
+      <span class="ln">515</span>
+      <span class="para-num">[0043]</span>
+      In yet another alternative embodiment, the findings emitted by the system are encoded
+      in Static Analysis Results Interchange Format (SARIF) version 2.1.0, enabling
+      integration with security tooling ecosystems that consume SARIF output including GitHub
+      Advanced Security, Azure DevOps Security, and IDE extensions for Visual Studio Code.
+      Each finding is encoded as a SARIF Result object with a severity level mapped from the
+      pattern's severity field and a location encoded as a SARIF PhysicalLocation referencing
+      the source markdown configuration file, the start line and column within the file, and
+      the end line and column derived from the AST node's positional metadata.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9 — Claims                                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 9</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Claims</h2>
+
+    <p class="no-indent" style="margin-bottom:12px; font-weight:bold;">What is claimed is:</p>
+
+    <!-- Claim 1 -->
+    <p class="claim-item main-claim">
+      <span class="ln">530</span>
+      <strong>1.</strong> A computer-implemented method for security analysis of code embedded in
+      markdown configuration files associated with artificial intelligence coding assistant
+      command-line interface platforms, the method comprising:
+    </p>
+    <p class="claim-sub">
+      receiving, by one or more processors, a markdown configuration file associated with an
+      artificial intelligence coding assistant command-line interface platform;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">535</span>
+      extracting, by a code block extractor executing on the one or more processors, from
+      the markdown configuration file one or more fenced code blocks, each extracted code
+      block comprising a content field containing the raw block text, a language field, a
+      start line number within the markdown configuration file, an end line number within
+      the markdown configuration file, and a context field containing prose text immediately
+      preceding the fenced code block in the markdown configuration file;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">542</span>
+      detecting, by a language detector executing on the one or more processors, for each
+      extracted code block, a programming language of the block content, wherein, when the
+      language field is absent or contains an unrecognized identifier, the language is
+      inferred by applying token-frequency heuristic analysis to the content field;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">548</span>
+      constructing, by an abstract syntax tree parser executing on the one or more processors,
+      a structured abstract syntax tree from the content field of each extracted code block
+      using a language-appropriate compiler frontend selected based on the detected
+      programming language;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">554</span>
+      traversing, by a semantic pattern matcher executing on the one or more processors,
+      nodes of the abstract syntax tree by recursive descent to identify nodes matching
+      one or more security patterns drawn from a pattern catalog, wherein the security
+      patterns comprise at least one of: a function-call pattern targeting CallExpression
+      nodes whose callee resolves to a security-sensitive function name; a property-access
+      pattern targeting PropertyAccessExpression chains resolving to security-sensitive
+      object paths; a dynamic-import pattern targeting ImportExpression nodes with
+      non-literal module specifiers; an indirect code execution pattern targeting
+      nodes that perform string-to-code conversion at runtime; or an object-structure
+      pattern targeting ObjectLiteralExpression nodes whose property key sets match a
+      known exfiltration payload signature;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">565</span>
+      generating, for each identified matching node, a finding object comprising the matched
+      pattern type, a severity level defined in the pattern catalog, a source position derived
+      from positional metadata of the matching node within the abstract syntax tree translated
+      to line and column numbers in the markdown configuration file, and the context field of
+      the enclosing extracted code block; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">572</span>
+      applying, by a cross-block correlator executing on the one or more processors,
+      cross-block combination rules to findings accumulated across all extracted code blocks
+      in the markdown configuration file to identify composite findings representing multi-stage
+      attack chains distributed across distinct code blocks, and emitting the composite findings
+      as part of the analysis result.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10 — Claims 2–8                                        -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 10</div>
+
+  <div class="lined-content">
+
+    <!-- Claim 2 -->
+    <p class="claim-item main-claim">
+      <span class="ln">580</span>
+      <strong>2.</strong> A system for security analysis of code embedded in markdown configuration files
+      associated with artificial intelligence coding assistant command-line interface platforms,
+      the system comprising:
+    </p>
+    <p class="claim-sub">
+      one or more processors; and
+    </p>
+    <p class="claim-sub">
+      one or more non-transitory computer-readable media storing instructions that, when
+      executed by the one or more processors, cause the system to perform operations
+      comprising:
+    </p>
+    <p class="claim-sub">
+      <span class="ln">586</span>
+      a code block extractor (302) configured to receive a markdown configuration file (300)
+      and to produce, via finite-state-machine parsing of triple-backtick and tilde-delimited
+      fenced regions, a sequence of extracted block objects (316) each comprising a language
+      field, a content field, a start line number, an end line number, and a context field
+      containing prose text immediately preceding the fenced region in the markdown file;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">593</span>
+      a language detector (304) configured to resolve, for each extracted block object having
+      an absent or unrecognized language field, a programming language by applying
+      token-frequency heuristic analysis to the content field;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">598</span>
+      an abstract syntax tree parser (306) configured to construct a structured abstract syntax
+      tree from the content field of each extracted block object using a language-appropriate
+      compiler frontend;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">603</span>
+      a semantic pattern matcher (308) configured to traverse the abstract syntax tree by
+      recursive descent and to apply, at each traversed node, matching predicates drawn from
+      a pattern catalog (310) comprising function-call pattern entries (322), property-access
+      pattern entries (324), dynamic-import pattern entries (326), indirect-execution pattern
+      entries (328), and object-structure pattern entries (329);
+    </p>
+    <p class="claim-sub">
+      <span class="ln">610</span>
+      a finding emitter (314) configured to generate, upon a positive pattern match, a finding
+      object annotated with matched pattern type, severity level, source position within the
+      markdown configuration file, and the context field of the enclosing extracted block
+      object; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">616</span>
+      a cross-block correlator (312) configured to apply cross-block combination rules to the
+      set of findings accumulated across all extracted code blocks in the markdown configuration
+      file and to emit composite findings representing multi-stage attack chains distributed
+      across distinct code blocks.
+    </p>
+
+    <!-- Claim 3 -->
+    <p class="claim-item" style="margin-top:14px;">
+      <span class="ln">624</span>
+      <strong>3.</strong> One or more non-transitory computer-readable media storing instructions that,
+      when executed by one or more processors, cause the processors to perform a method
+      comprising: extracting fenced code blocks from a markdown configuration file associated
+      with an AI coding assistant platform, each block comprising a content field and a
+      context field; constructing an abstract syntax tree from the content field of each
+      extracted block; traversing the abstract syntax tree by recursive descent to identify
+      nodes matching security patterns selected from function-call, property-access,
+      dynamic-import, indirect code execution, and object-structure patterns; generating
+      findings annotated with source positions and severity levels; and applying cross-block
+      combination rules to emit composite findings representing multi-stage attack chains.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 11 — Claims 4–8                                        -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 11</div>
+
+  <div class="lined-content">
+
+    <!-- Claim 4 -->
+    <p class="claim-item">
+      <span class="ln">635</span>
+      <strong>4.</strong> The method of claim 1, wherein the dynamic-import pattern (326) comprises
+      identifying ImportExpression abstract syntax tree nodes whose specifier child node is
+      neither a StringLiteral node nor a TemplateLiteral node containing no substitution
+      expressions, and wherein each such identified node is recorded as a finding at a
+      severity level of HIGH or CRITICAL, the finding indicating that the markdown
+      configuration file contains code that loads an externally resolved module whose path
+      is computed at runtime rather than specified as a compile-time string constant.
+    </p>
+
+    <!-- Claim 5 -->
+    <p class="claim-item">
+      <span class="ln">645</span>
+      <strong>5.</strong> The method of claim 1, wherein applying cross-block combination rules comprises
+      identifying, within the set of findings accumulated across all code blocks in the
+      markdown configuration file, combinations of finding types that match a predefined
+      conjunctive attack chain predicate specifying that a first finding of a first pattern
+      type and a second finding of a second pattern type must both be present in the
+      accumulated finding set, and, upon identification of such a combination, generating a
+      composite finding at a severity level that is at least one tier higher than the severity
+      level of the higher-severity constituent finding, wherein the composite finding
+      incorporates references to the source positions of both constituent findings.
+    </p>
+
+    <!-- Claim 6 -->
+    <p class="claim-item">
+      <span class="ln">657</span>
+      <strong>6.</strong> The method of claim 1, wherein detecting the programming language of a block
+      lacking an explicit language identifier comprises tokenizing the content field of the
+      extracted code block by whitespace and punctuation characters, computing a confidence
+      score for each of a plurality of candidate programming languages by comparing the
+      resulting token set against a language-specific signature token set associated with each
+      candidate language, selecting the candidate language having the highest confidence score
+      above a configurable minimum confidence threshold, and designating the block as
+      language-unknown and excluding the block from abstract syntax tree parsing when no
+      candidate language achieves the minimum confidence threshold.
+    </p>
+
+    <!-- Claim 7 -->
+    <p class="claim-item">
+      <span class="ln">669</span>
+      <strong>7.</strong> The method of claim 1, wherein the indirect code execution pattern (328)
+      comprises identifying, in the abstract syntax tree, NewExpression nodes whose callee
+      expression resolves to the built-in Function constructor, representing dynamic assembly
+      of function body code from string arguments; and identifying CallExpression nodes that
+      target a built-in timer scheduling function and whose first argument child node is a
+      StringLiteral or string concatenation expression rather than an ArrowFunctionExpression
+      or FunctionExpression node, representing deferred string-based code execution; wherein
+      said identification is performed on the abstract syntax tree structure independently
+      of identifier aliasing, whitespace variation, or comment nodes present in the source
+      text of the extracted code block.
+    </p>
+
+    <!-- Claim 8 -->
+    <p class="claim-item">
+      <span class="ln">682</span>
+      <strong>8.</strong> The method of claim 1, wherein said security patterns are matched against
+      abstract syntax tree node structure independently of whitespace variation, code comment
+      insertion, string literal concatenation, and identifier aliasing present in the source
+      text of the extracted code block, such that the method detects security patterns in
+      code blocks that have been subjected to obfuscation transformations that would defeat
+      detection by string matching or regular expression analysis applied to the raw text of
+      the code block, and wherein identifier aliasing is addressed by a data-flow-sensitive
+      identifier resolution pass that, for each Identifier node encountered during traversal,
+      resolves the identifier to its definition site and substitutes the defined value's
+      abstract syntax tree representation before applying the match predicate.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 12 — Abstract                                          -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-003 &nbsp;&nbsp;|&nbsp;&nbsp; Page 12</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Abstract</h2>
+
+    <div class="abstract-box">
+      <p class="no-indent">
+        <span class="ln">695</span>
+        A system and method analyze fenced code blocks embedded in markdown configuration
+        files used by artificial intelligence coding assistant CLI platforms such as CLAUDE.md,
+        .cursorrules, and AGENTS.md. A code block extractor (302) applies finite-state-machine
+        parsing to extract each fenced code block as a block object (316) comprising language
+        tag, content, start/end line numbers, and surrounding prose context. A language detector
+        (304) resolves unlabeled blocks via token-frequency heuristics. An abstract syntax tree
+        parser (306) constructs a structural AST from each block using a language-appropriate
+        compiler frontend. A semantic pattern matcher (308) traverses the AST by recursive
+        descent, applying match predicates for five security pattern types drawn from a pattern
+        catalog (310): function-call (322), property-access (324), dynamic-import (326),
+        indirect code execution (328), and object-structure (329). Findings are annotated with
+        source position and severity. A cross-block correlator (312) applies combination rules
+        across all blocks to surface composite attack chains. Because matching operates on AST
+        structure rather than raw text, the system is resistant to obfuscation through
+        whitespace variation, comment insertion, and identifier aliasing.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

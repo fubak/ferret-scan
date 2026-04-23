@@ -16,7 +16,13 @@ const config = {
         esModuleInterop: true,
       },
     }],
+    // chalk v5+ is ESM-only; Babel transform allows Jest to import it in CJS mode
+    '^.+\\.m?js$': ['babel-jest', { presets: [['@babel/preset-env', { targets: { node: 'current' } }]] }],
   },
+  // Allow transformation of ESM-only node_modules (chalk, ansi-styles, etc.)
+  transformIgnorePatterns: [
+    '/node_modules/(?!(chalk|#ansi-styles|ansi-styles|supports-color)/)',
+  ],
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.d.ts',

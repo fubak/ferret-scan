@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Drawings — FS-2026-004: MCP Server Validation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #ccc;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  .page-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    margin-bottom: 10px;
+    color: #000;
+  }
+  .drawing-sheet {
+    width: 720px;
+    background: #fff;
+    border: 2px solid #000;
+    margin: 30px auto;
+    padding: 30px 30px 20px 30px;
+    page-break-after: always;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 20px;
+  }
+  .sheet-footer {
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-top: 1px solid #000;
+    padding-top: 6px;
+    margin-top: 16px;
+  }
+  .fig-label {
+    display: block;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+  }
+  svg text {
+    fill: #000;
+    font-family: Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">Application No.: [To Be Assigned] &nbsp;&nbsp;&nbsp; Patent Drawings — FS-2026-004</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 1 — FIG. 1: MCP Server Validation System Architecture -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-004</span>
+    <span>Sheet 1 of 3</span>
+  </div>
+
+  <svg width="660" height="560" viewBox="0 0 660 560" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr1" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#000"/>
+      </marker>
+    </defs>
+
+    <!-- ===== MCP SERVER CONFIG ENTRY (400) — center top ===== -->
+    <rect x="200" y="20" width="260" height="90" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="40" text-anchor="middle" font-size="9">MCP SERVER CONFIG ENTRY</text>
+    <text fill="#000" x="330" y="56" text-anchor="middle" font-size="11" font-weight="bold">400</text>
+    <!-- Sub-fields -->
+    <rect x="215" y="62" width="68" height="20" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="249" y="76" text-anchor="middle" font-size="9">command</text>
+    <text fill="#000" x="249" y="87" text-anchor="middle" font-size="9" font-weight="bold">400a</text>
+    <rect x="296" y="62" width="68" height="20" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="330" y="76" text-anchor="middle" font-size="9">args</text>
+    <text fill="#000" x="330" y="87" text-anchor="middle" font-size="9" font-weight="bold">400b</text>
+    <rect x="377" y="62" width="68" height="20" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="411" y="76" text-anchor="middle" font-size="9">env</text>
+    <text fill="#000" x="411" y="87" text-anchor="middle" font-size="9" font-weight="bold">400c</text>
+
+    <!-- ===== ROW 1 ANALYZER BOXES ===== -->
+    <!-- COMMAND SAFETY ANALYZER (402) -->
+    <rect x="20" y="180" width="145" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="92" y="198" text-anchor="middle" font-size="9">COMMAND SAFETY</text>
+    <text fill="#000" x="92" y="210" text-anchor="middle" font-size="9">ANALYZER</text>
+    <text fill="#000" x="92" y="222" text-anchor="middle" font-size="11" font-weight="bold">402</text>
+
+    <!-- ENV VARIABLE ANALYZER (404) -->
+    <rect x="250" y="180" width="160" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="198" text-anchor="middle" font-size="9">ENV VARIABLE</text>
+    <text fill="#000" x="330" y="210" text-anchor="middle" font-size="9">ANALYZER</text>
+    <text fill="#000" x="330" y="222" text-anchor="middle" font-size="11" font-weight="bold">404</text>
+
+    <!-- TRUSTED SOURCE CHECKER (406) -->
+    <rect x="495" y="180" width="155" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="572" y="198" text-anchor="middle" font-size="9">TRUSTED SOURCE</text>
+    <text fill="#000" x="572" y="210" text-anchor="middle" font-size="9">CHECKER</text>
+    <text fill="#000" x="572" y="222" text-anchor="middle" font-size="11" font-weight="bold">406</text>
+
+    <!-- ===== ROW 2 ANALYZER BOXES ===== -->
+    <!-- NAMING REPUTATION SCORER (408) -->
+    <rect x="20" y="290" width="145" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="92" y="308" text-anchor="middle" font-size="9">NAMING REPUTATION</text>
+    <text fill="#000" x="92" y="320" text-anchor="middle" font-size="9">SCORER</text>
+    <text fill="#000" x="92" y="332" text-anchor="middle" font-size="11" font-weight="bold">408</text>
+
+    <!-- PERMISSION SCOPE ANALYZER (410) -->
+    <rect x="250" y="290" width="160" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="308" text-anchor="middle" font-size="9">PERMISSION SCOPE</text>
+    <text fill="#000" x="330" y="320" text-anchor="middle" font-size="9">ANALYZER</text>
+    <text fill="#000" x="330" y="332" text-anchor="middle" font-size="11" font-weight="bold">410</text>
+
+    <!-- METADATA VALIDATOR (412) -->
+    <rect x="495" y="290" width="155" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="572" y="308" text-anchor="middle" font-size="9">METADATA</text>
+    <text fill="#000" x="572" y="320" text-anchor="middle" font-size="9">VALIDATOR</text>
+    <text fill="#000" x="572" y="332" text-anchor="middle" font-size="11" font-weight="bold">412</text>
+
+    <!-- ===== COMPOSITE RISK CALCULATOR (414) ===== -->
+    <rect x="210" y="410" width="240" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="430" text-anchor="middle" font-size="9">COMPOSITE RISK</text>
+    <text fill="#000" x="330" y="444" text-anchor="middle" font-size="9">CALCULATOR</text>
+    <!-- ref numeral below box -->
+    <text fill="#000" x="330" y="468" text-anchor="middle" font-size="11" font-weight="bold">414</text>
+
+    <!-- ===== RECOMMENDATION ENGINE (416) ===== -->
+    <rect x="235" y="490" width="190" height="36" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="510" text-anchor="middle" font-size="9">RECOMMENDATION ENGINE</text>
+    <text fill="#000" x="330" y="522" text-anchor="middle" font-size="11" font-weight="bold">416</text>
+
+    <!-- ===== OUTPUT: BLOCK / WARN / ALLOW (420) ===== -->
+    <!-- three small boxes in a row below -->
+    <rect x="170" y="538" width="58" height="18" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="199" y="551" text-anchor="middle" font-size="9" font-weight="bold">BLOCK</text>
+    <rect x="300" y="538" width="58" height="18" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="329" y="551" text-anchor="middle" font-size="9" font-weight="bold">WARN</text>
+    <rect x="430" y="538" width="58" height="18" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="459" y="551" text-anchor="middle" font-size="9" font-weight="bold">ALLOW</text>
+    <!-- Numeral 420 with leader -->
+    <line x1="496" y1="547" x2="530" y2="547" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="533" y="551" font-size="11" font-weight="bold">420</text>
+
+    <!-- ===== TRUSTED SOURCE REGISTRY (418) ===== -->
+    <!-- Side box -->
+    <!-- already positioned right; draw as a double-bordered box -->
+    <!-- no ref needed in FIG.1 separate — embed near 406 -->
+
+    <!-- ===== ARROWS from 400 to each analyzer ===== -->
+    <!-- to 402 (row1 left) -->
+    <line x1="260" y1="110" x2="92" y2="180" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- to 404 (row1 center) -->
+    <line x1="310" y1="110" x2="330" y2="180" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- to 406 (row1 right) -->
+    <line x1="400" y1="110" x2="572" y2="180" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- to 408 (row2 left) -->
+    <line x1="250" y1="110" x2="92" y2="290" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- to 410 (row2 center) -->
+    <line x1="330" y1="110" x2="330" y2="290" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- to 412 (row2 right) -->
+    <line x1="410" y1="110" x2="572" y2="290" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+
+    <!-- ===== Arrows from each analyzer DOWN to 414 ===== -->
+    <!-- from 402 -->
+    <line x1="92" y1="336" x2="92" y2="380" stroke="#000" stroke-width="1"/>
+    <line x1="92" y1="380" x2="210" y2="420" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- from 404 -->
+    <line x1="330" y1="336" x2="330" y2="410" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- from 406 -->
+    <line x1="572" y1="336" x2="572" y2="380" stroke="#000" stroke-width="1"/>
+    <line x1="572" y1="380" x2="450" y2="420" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <!-- from 408 -->
+    <line x1="92" y1="336" x2="92" y2="380" stroke="#000" stroke-width="0"/>
+    <!-- already covered above — use distinct path -->
+    <line x1="92" y1="336" x2="92" y2="378" stroke="#000" stroke-width="1"/>
+    <!-- from 410 -->
+    <line x1="330" y1="336" x2="330" y2="410" stroke="#000" stroke-width="0"/><!-- dup -->
+    <!-- from 412 -->
+    <line x1="572" y1="336" x2="572" y2="378" stroke="#000" stroke-width="0"/><!-- dup -->
+
+    <!-- Arrow 414 → 416 -->
+    <line x1="330" y1="456" x2="330" y2="490" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+
+    <!-- Arrow 416 → 420 outputs -->
+    <line x1="280" y1="526" x2="230" y2="538" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <line x1="330" y1="526" x2="330" y2="538" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+    <line x1="380" y1="526" x2="430" y2="538" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+
+    <!-- TRUSTED SOURCE REGISTRY (418) — right side panel -->
+    <rect x="570" y="110" width="80" height="50" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="610" y="127" text-anchor="middle" font-size="9">TRUSTED SOURCE</text>
+    <text fill="#000" x="610" y="139" text-anchor="middle" font-size="9">REGISTRY</text>
+    <text fill="#000" x="610" y="153" text-anchor="middle" font-size="11" font-weight="bold">418</text>
+    <!-- Arrow 418 → 406 -->
+    <line x1="610" y1="160" x2="610" y2="180" stroke="#000" stroke-width="1" marker-end="url(#arr1)"/>
+
+    <!-- Leader lines for row1 numeral labels already embedded in boxes -->
+    <!-- Leader line for 402 label -->
+    <line x1="140" y1="205" x2="162" y2="205" stroke="#000" stroke-width="0.75"/>
+    <!-- Leader line for 408 label -->
+    <line x1="140" y1="315" x2="162" y2="315" stroke="#000" stroke-width="0.75"/>
+
+  </svg>
+
+  <span class="fig-label">FIG. 1</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 2 — FIG. 2: Composite Risk Scoring Flowchart          -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-004</span>
+    <span>Sheet 2 of 3</span>
+  </div>
+
+  <svg width="660" height="700" viewBox="0 0 660 700" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#000"/>
+      </marker>
+    </defs>
+
+    <!-- Center X for main flow -->
+    <!-- START (422) — oval -->
+    <ellipse cx="330" cy="26" rx="54" ry="20" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="23" text-anchor="middle" font-size="9">START</text>
+    <text fill="#000" x="330" y="36" text-anchor="middle" font-size="11" font-weight="bold">422</text>
+
+    <!-- RECEIVE MCP SERVER CONFIG ENTRY (424) -->
+    <rect x="185" y="62" width="290" height="36" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="78" text-anchor="middle" font-size="9">RECEIVE MCP SERVER</text>
+    <text fill="#000" x="330" y="90" text-anchor="middle" font-size="9">CONFIG ENTRY</text>
+    <line x1="390" y1="80" x2="420" y2="80" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="423" y="84" font-size="11" font-weight="bold">424</text>
+
+    <!-- EVALUATE COMMAND SAFETY (426) -->
+    <rect x="185" y="118" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="137" text-anchor="middle" font-size="9">EVALUATE COMMAND SAFETY DIMENSION</text>
+    <line x1="390" y1="132" x2="418" y2="132" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="136" font-size="11" font-weight="bold">426</text>
+    <!-- D1 SCORE output bubble -->
+    <rect x="488" y="122" width="66" height="22" fill="none" stroke="#000" stroke-width="1" rx="3"/>
+    <text fill="#000" x="521" y="136" text-anchor="middle" font-size="9" font-style="italic">D1 SCORE</text>
+    <line x1="475" y1="133" x2="488" y2="133" stroke="#000" stroke-width="0.75" marker-end="url(#arr2)"/>
+
+    <!-- EVALUATE ENV VARIABLE (428) -->
+    <rect x="185" y="164" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="183" text-anchor="middle" font-size="9">EVALUATE ENV VARIABLE DIMENSION</text>
+    <line x1="390" y1="178" x2="418" y2="178" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="182" font-size="11" font-weight="bold">428</text>
+    <!-- D2 SCORE -->
+    <rect x="488" y="168" width="66" height="22" fill="none" stroke="#000" stroke-width="1" rx="3"/>
+    <text fill="#000" x="521" y="182" text-anchor="middle" font-size="9" font-style="italic">D2 SCORE</text>
+    <line x1="475" y1="179" x2="488" y2="179" stroke="#000" stroke-width="0.75" marker-end="url(#arr2)"/>
+
+    <!-- EVALUATE TRUSTED SOURCE (430) + registry reference -->
+    <rect x="185" y="210" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="229" text-anchor="middle" font-size="9">EVALUATE TRUSTED SOURCE DIMENSION</text>
+    <line x1="390" y1="224" x2="418" y2="224" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="228" font-size="11" font-weight="bold">430</text>
+    <!-- dashed ref to TRUSTED SOURCE REGISTRY -->
+    <rect x="10" y="208" width="100" height="34" fill="none" stroke="#000" stroke-width="1" stroke-dasharray="4,2"/>
+    <text fill="#000" x="60" y="221" text-anchor="middle" font-size="9">TRUSTED SOURCE</text>
+    <text fill="#000" x="60" y="231" text-anchor="middle" font-size="9">REGISTRY</text>
+    <text fill="#000" x="60" y="241" text-anchor="middle" font-size="9" font-weight="bold">418</text>
+    <line x1="110" y1="225" x2="185" y2="225" stroke="#000" stroke-width="0.75" stroke-dasharray="3,2" marker-end="url(#arr2)"/>
+
+    <!-- EVALUATE NAMING REPUTATION (432) -->
+    <rect x="185" y="256" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="275" text-anchor="middle" font-size="9">EVALUATE NAMING REPUTATION DIMENSION</text>
+    <line x1="390" y1="270" x2="418" y2="270" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="274" font-size="11" font-weight="bold">432</text>
+
+    <!-- EVALUATE PERMISSION SCOPE (434) -->
+    <rect x="185" y="302" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="321" text-anchor="middle" font-size="9">EVALUATE PERMISSION SCOPE DIMENSION</text>
+    <line x1="390" y1="316" x2="418" y2="316" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="320" font-size="11" font-weight="bold">434</text>
+
+    <!-- EVALUATE METADATA (436) -->
+    <rect x="185" y="348" width="290" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="367" text-anchor="middle" font-size="9">EVALUATE METADATA DIMENSION</text>
+    <line x1="390" y1="362" x2="418" y2="362" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="421" y="366" font-size="11" font-weight="bold">436</text>
+
+    <!-- COMPUTE WEIGHTED COMPOSITE SCORE (438) -->
+    <rect x="155" y="398" width="350" height="46" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="330" y="416" text-anchor="middle" font-size="9" font-weight="bold">COMPUTE WEIGHTED COMPOSITE SCORE R</text>
+    <!-- formula -->
+    <text fill="#000" x="330" y="434" text-anchor="middle" font-size="9" font-style="italic">R = &#x3A3;(w&#x1D62; &#xD7; D&#x1D62;) for i=1..6</text>
+    <line x1="422" y1="420" x2="450" y2="420" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="453" y="424" font-size="11" font-weight="bold">438</text>
+
+    <!-- Decision: R < LOW THRESHOLD? (440) -->
+    <!-- Diamond -->
+    <polygon points="330,462 410,490 330,518 250,490" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="487" text-anchor="middle" font-size="9">R &lt; LOW</text>
+    <text fill="#000" x="330" y="499" text-anchor="middle" font-size="9">THRESHOLD?</text>
+    <line x1="408" y1="490" x2="440" y2="490" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="443" y="494" font-size="11" font-weight="bold">440</text>
+    <!-- YES branch → OUTPUT: ALLOW (442) -->
+    <line x1="250" y1="490" x2="140" y2="490" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <text fill="#000" x="192" y="484" text-anchor="middle" font-size="9" font-style="italic">YES</text>
+    <rect x="60" y="476" width="80" height="28" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="100" y="491" text-anchor="middle" font-size="9">OUTPUT:</text>
+    <text fill="#000" x="100" y="503" text-anchor="middle" font-size="9" font-weight="bold">ALLOW</text>
+    <line x1="140" y1="494" x2="108" y2="494" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="111" y="498" font-size="11" font-weight="bold">442</text>
+
+    <!-- NO → down -->
+    <line x1="330" y1="518" x2="330" y2="538" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <text fill="#000" x="338" y="532" font-size="9" font-style="italic">NO</text>
+
+    <!-- Decision: R < HIGH THRESHOLD? (444) -->
+    <polygon points="330,542 410,570 330,598 250,570" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="567" text-anchor="middle" font-size="9">R &lt; HIGH</text>
+    <text fill="#000" x="330" y="579" text-anchor="middle" font-size="9">THRESHOLD?</text>
+    <line x1="408" y1="570" x2="440" y2="570" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="443" y="574" font-size="11" font-weight="bold">444</text>
+
+    <!-- YES → OUTPUT: WARN (446) -->
+    <line x1="250" y1="570" x2="140" y2="570" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <text fill="#000" x="192" y="564" text-anchor="middle" font-size="9" font-style="italic">YES</text>
+    <rect x="60" y="556" width="80" height="28" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="100" y="571" text-anchor="middle" font-size="9">OUTPUT:</text>
+    <text fill="#000" x="100" y="583" text-anchor="middle" font-size="9" font-weight="bold">WARN</text>
+    <line x1="140" y1="574" x2="108" y2="574" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="111" y="578" font-size="11" font-weight="bold">446</text>
+
+    <!-- NO → OUTPUT: BLOCK (448) -->
+    <line x1="330" y1="598" x2="330" y2="616" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <text fill="#000" x="338" y="612" font-size="9" font-style="italic">NO</text>
+    <rect x="275" y="618" width="110" height="28" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="633" text-anchor="middle" font-size="9">OUTPUT:</text>
+    <text fill="#000" x="330" y="645" text-anchor="middle" font-size="9" font-weight="bold">BLOCK</text>
+    <line x1="385" y1="636" x2="413" y2="636" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="416" y="640" font-size="11" font-weight="bold">448</text>
+
+    <!-- GENERATE HUMAN-READABLE EXPLANATION (450) -->
+    <!-- Merge ALLOW/WARN/BLOCK into single path before 450 -->
+    <!-- Allow -->
+    <line x1="100" y1="504" x2="100" y2="660" stroke="#000" stroke-width="1"/>
+    <line x1="100" y1="660" x2="225" y2="660" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <!-- Warn -->
+    <line x1="100" y1="584" x2="100" y2="660" stroke="#000" stroke-width="1"/>
+    <!-- Block already goes down -->
+    <line x1="330" y1="646" x2="330" y2="660" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+
+    <rect x="155" y="660" width="350" height="30" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="678" text-anchor="middle" font-size="9">GENERATE HUMAN-READABLE EXPLANATION</text>
+    <line x1="422" y1="674" x2="450" y2="674" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="453" y="678" font-size="11" font-weight="bold">450</text>
+
+    <!-- END (452) -->
+    <line x1="330" y1="690" x2="330" y2="700" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+
+    <!-- Connecting arrows between steps -->
+    <line x1="330" y1="46" x2="330" y2="62" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="98" x2="330" y2="118" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="148" x2="330" y2="164" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="194" x2="330" y2="210" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="240" x2="330" y2="256" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="286" x2="330" y2="302" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="332" x2="330" y2="348" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="378" x2="330" y2="398" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+    <line x1="330" y1="444" x2="330" y2="462" stroke="#000" stroke-width="1" marker-end="url(#arr2)"/>
+
+  </svg>
+
+  <span class="fig-label">FIG. 2</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 3 — FIG. 3: Trusted Source Registry Tier Structure    -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-004</span>
+    <span>Sheet 3 of 3</span>
+  </div>
+
+  <svg width="660" height="520" viewBox="0 0 660 520" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 z" fill="#000"/>
+      </marker>
+    </defs>
+
+    <!-- ===== PYRAMID — three trapezoids stacked ===== -->
+
+    <!-- TIER 1 (454) — top / smallest — trapezoid -->
+    <polygon points="270,20 390,20 420,80 240,80" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="42" text-anchor="middle" font-size="9" font-weight="bold">TIER 1</text>
+    <text fill="#000" x="330" y="56" text-anchor="middle" font-size="9">OFFICIAL PLATFORM PUBLISHERS</text>
+    <text fill="#000" x="330" y="68" text-anchor="middle" font-size="9" font-style="italic">@modelcontextprotocol/*, official GitHub orgs</text>
+    <!-- numeral + leader -->
+    <line x1="390" y1="50" x2="430" y2="50" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="433" y="54" font-size="11" font-weight="bold">454</text>
+    <!-- risk modifier -->
+    <line x1="420" y1="60" x2="460" y2="60" stroke="#000" stroke-width="0.75"/>
+    <rect x="462" y="50" width="140" height="22" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="532" y="65" text-anchor="middle" font-size="9" font-style="italic">Risk modifier: SIGNIFICANT REDUCTION</text>
+
+    <!-- TIER 2 (456) — middle -->
+    <polygon points="240,82 420,82 460,152 200,152" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="104" text-anchor="middle" font-size="9" font-weight="bold">TIER 2</text>
+    <text fill="#000" x="330" y="118" text-anchor="middle" font-size="9">VERIFIED COMMUNITY PUBLISHERS</text>
+    <text fill="#000" x="330" y="130" text-anchor="middle" font-size="9" font-style="italic">Curated list of reviewed publishers</text>
+    <text fill="#000" x="330" y="142" text-anchor="middle" font-size="9" font-style="italic">known ecosystem contributors</text>
+    <!-- numeral + leader -->
+    <line x1="420" y1="116" x2="450" y2="116" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="453" y="120" font-size="11" font-weight="bold">456</text>
+    <!-- risk modifier -->
+    <line x1="460" y1="130" x2="488" y2="130" stroke="#000" stroke-width="0.75"/>
+    <rect x="490" y="120" width="130" height="22" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="555" y="135" text-anchor="middle" font-size="9" font-style="italic">Risk modifier: MODERATE REDUCTION</text>
+
+    <!-- TIER 3 (458) — bottom / largest -->
+    <polygon points="200,154 460,154 510,234 150,234" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="176" text-anchor="middle" font-size="9" font-weight="bold">TIER 3</text>
+    <text fill="#000" x="330" y="190" text-anchor="middle" font-size="9">INDIVIDUALLY REVIEWED PACKAGES</text>
+    <text fill="#000" x="330" y="202" text-anchor="middle" font-size="9" font-style="italic">Approved individual packages — case-by-case review</text>
+    <text fill="#000" x="330" y="214" text-anchor="middle" font-size="9" font-style="italic">not tied to a verified publisher organization</text>
+    <!-- numeral + leader -->
+    <line x1="460" y1="190" x2="490" y2="190" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="493" y="194" font-size="11" font-weight="bold">458</text>
+    <!-- risk modifier -->
+    <line x1="510" y1="205" x2="538" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="540" y="196" width="110" height="22" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="595" y="210" text-anchor="middle" font-size="9" font-style="italic">Risk modifier: SMALL REDUCTION</text>
+
+    <!-- UNREGISTERED SOURCE (460) — below pyramid -->
+    <rect x="155" y="260" width="350" height="46" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="330" y="280" text-anchor="middle" font-size="9" font-weight="bold">UNREGISTERED SOURCE</text>
+    <text fill="#000" x="330" y="296" text-anchor="middle" font-size="9">Command / package origin not found in any tier</text>
+    <!-- numeral -->
+    <line x1="420" y1="278" x2="448" y2="278" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="451" y="282" font-size="11" font-weight="bold">460</text>
+    <!-- risk modifier -->
+    <line x1="420" y1="292" x2="448" y2="292" stroke="#000" stroke-width="0.75"/>
+    <rect x="450" y="282" width="130" height="22" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="515" y="297" text-anchor="middle" font-size="9" font-style="italic">Risk modifier: RISK PREMIUM APPLIED</text>
+
+    <!-- Downward flow arrow: pyramid → UNREGISTERED -->
+    <line x1="330" y1="236" x2="330" y2="260" stroke="#000" stroke-width="1" stroke-dasharray="5,3" marker-end="url(#arr3)"/>
+    <text fill="#000" x="340" y="252" font-size="9" font-style="italic">not registered</text>
+
+    <!-- ===== TYPOSQUATTING DETECTION (462) — right-side box ===== -->
+    <rect x="20" y="330" width="620" height="90" fill="none" stroke="#000" stroke-width="1.5" stroke-dasharray="6,3"/>
+    <text fill="#000" x="330" y="352" text-anchor="middle" font-size="9" font-weight="bold">TYPOSQUATTING DETECTION</text>
+    <!-- numeral -->
+    <line x1="420" y1="352" x2="448" y2="352" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="451" y="356" font-size="11" font-weight="bold">462</text>
+
+    <text fill="#000" x="330" y="370" text-anchor="middle" font-size="9">Edit-distance analysis: compute Levenshtein distance between candidate</text>
+    <text fill="#000" x="330" y="384" text-anchor="middle" font-size="9">server name / command and all Tier 1 and Tier 2 registry entries.</text>
+    <text fill="#000" x="330" y="398" text-anchor="middle" font-size="9">If distance &#x2264; N (configurable threshold), flag as potential typosquatting.</text>
+
+    <!-- SUSPICIOUS FLAG (464) output -->
+    <rect x="200" y="440" width="260" height="36" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="330" y="455" text-anchor="middle" font-size="9" font-weight="bold">SUSPICIOUS FLAG</text>
+    <text fill="#000" x="330" y="468" text-anchor="middle" font-size="9">Elevates composite score; triggers WARN or BLOCK</text>
+    <!-- numeral -->
+    <line x1="392" y1="455" x2="420" y2="455" stroke="#000" stroke-width="0.75"/>
+    <text fill="#000" x="423" y="459" font-size="11" font-weight="bold">464</text>
+    <!-- Arrow from 462 box to 464 -->
+    <line x1="330" y1="420" x2="330" y2="440" stroke="#000" stroke-width="1" marker-end="url(#arr3)"/>
+
+    <!-- Leader from 460 box down to 462 -->
+    <line x1="330" y1="306" x2="330" y2="330" stroke="#000" stroke-width="1" stroke-dasharray="4,2" marker-end="url(#arr3)"/>
+
+  </svg>
+
+  <span class="fig-label">FIG. 3</span>
+</div>
+
+</body>
+</html>

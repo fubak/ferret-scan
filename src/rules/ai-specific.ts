@@ -218,6 +218,50 @@ export const aiSpecificRules: Rule[] = [
       'https://owasp.org/www-project-top-10-for-large-language-model-applications/',
     ],
     enabled: true,
+    // Mirror INJ-003 semantic context suppression: a skill that discusses,
+    // documents, detects, or provides examples of these techniques is not
+    // itself a jailbreak attempt.
+    excludePatterns: [
+      // Line discusses detection/blocking rather than deployment
+      /\b(detect|catch|flag|block|prevent|scan\s+for|identify|reject|report)\b[^\n]{0,80}(jailbreak|DAN|bypass)/gi,
+      /\b(jailbreak|DAN|bypass)\b[^\n]{0,80}\b(detect|catch|flag|block|prevent|found|identified)/gi,
+      // Term appears inside a quoted string
+      /["'][^"'\n]{0,120}\b(jailbreak|DAN)\b[^"'\n]{0,120}["']/gi,
+      // Scanner rule-ID reference on the same line
+      /\[(?:INJ|AI|SEC|CRED)-\d+\]/gi,
+      // Markdown example label
+      /^\s*\*\*(?:Input|Output|Example|Finding|Result)\*\*\s*:/i,
+    ],
+    excludeContext: [
+      /\b(security\s+(rule|finding|scan|check|gate|scanner|score)|ferret.?scan|scan\s+result)/gi,
+      /\b(example\s+of|this\s+detects|used\s+to\s+(bypass|attack)|common\s+(attack|technique)|known\s+(jailbreak|attack))/gi,
+      /\b(security\s+scanner|vulnerability\s+scanner|threat\s+detect|scan\s+for\s+(injection|jailbreak))/gi,
+      /^\s*##\s+Example/im,
+      /publication\s+blocked/gi,
+    ],
+  },
+  {
+    id: 'AI-011',
+    name: 'Modify AI Agent Configuration',
+    category: 'ai-specific',
+    severity: 'HIGH',
+    description: 'Detects instructions that attempt to modify AI agent configuration files (persistence/backdoor setup)',
+    patterns: [
+      /\b(edit|modify|update|append|add|insert)\b[^\n]{0,120}(\.mcp\.json|mcp\.json|CLAUDE\.md|\.cursorrules|\.windsurfrules|\.clinerules|settings\.json|settings\.local\.json|\.claude\/settings\.json)\b/gi,
+      /\b(\.mcp\.json|mcp\.json|CLAUDE\.md|\.cursorrules|\.windsurfrules|\.clinerules|settings\.json|settings\.local\.json)\b[^\n]{0,120}\b(add|append|insert|edit|modify|update)\b/gi,
+      /\b(add|append|insert)\b[^\n]{0,120}\b(mcpServers|allowedTools|tools|permissions|hooks?)\b[^\n]{0,200}(\.mcp\.json|settings\.json|CLAUDE\.md)\b/gi,
+    ],
+    fileTypes: ['md', 'json'],
+    components: ['skill', 'agent', 'ai-config-md', 'settings', 'plugin', 'mcp'],
+    remediation: 'Treat configuration changes as security-sensitive. Verify intent and require review for agent/tool permission changes.',
+    references: [
+      'https://atlas.mitre.org/techniques/AML.T0081',
+    ],
+    enabled: true,
+    excludeContext: [
+      /security\s+scanner/gi,
+      /documentation|readme|docs/gi,
+    ],
   },
 ];
 

@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Drawings — FS-2026-003: AST-Based Markdown Parsing for AI CLI Security Analysis</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #ccc;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  .page-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    margin-bottom: 10px;
+    color: #000;
+  }
+  .drawing-sheet {
+    width: 720px;
+    background: #fff;
+    border: 2px solid #000;
+    margin: 30px auto;
+    padding: 30px 30px 20px 30px;
+    page-break-after: always;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 20px;
+  }
+  .sheet-footer {
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-top: 1px solid #000;
+    padding-top: 6px;
+    margin-top: 16px;
+  }
+  .fig-label {
+    display: block;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+  }
+  svg text {
+    fill: #000;
+    font-family: Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">Application No.: [To Be Assigned] &nbsp;&nbsp;&nbsp; Patent Drawings — FS-2026-003</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 1 — FIG. 1: System Architecture Block Diagram         -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-003</span>
+    <span>Sheet 1 of 3</span>
+  </div>
+
+  <svg width="660" height="480" viewBox="0 0 660 480" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- ===== MAIN PIPELINE BOXES (y=50) ===== -->
+
+    <!-- 300 Markdown Config File -->
+    <rect x="4" y="44" width="84" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="46" y="62" text-anchor="middle" font-size="9">Markdown</text>
+    <text fill="#000" x="46" y="73" text-anchor="middle" font-size="9">Config File</text>
+    <text fill="#000" x="46" y="86" text-anchor="middle" font-size="11" font-weight="bold">300</text>
+
+    <!-- Arrow 300→302 -->
+    <line x1="88" y1="68" x2="108" y2="68" stroke="#000" stroke-width="1.5"/>
+    <polygon points="108,64 116,68 108,72" fill="#000"/>
+
+    <!-- 302 Code Block Extractor -->
+    <rect x="116" y="44" width="84" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="158" y="62" text-anchor="middle" font-size="9">Code Block</text>
+    <text fill="#000" x="158" y="73" text-anchor="middle" font-size="9">Extractor</text>
+    <text fill="#000" x="158" y="86" text-anchor="middle" font-size="11" font-weight="bold">302</text>
+
+    <!-- Arrow 302→304 -->
+    <line x1="200" y1="68" x2="220" y2="68" stroke="#000" stroke-width="1.5"/>
+    <polygon points="220,64 228,68 220,72" fill="#000"/>
+
+    <!-- 304 Language Detector -->
+    <rect x="228" y="44" width="84" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="270" y="62" text-anchor="middle" font-size="9">Language</text>
+    <text fill="#000" x="270" y="73" text-anchor="middle" font-size="9">Detector</text>
+    <text fill="#000" x="270" y="86" text-anchor="middle" font-size="11" font-weight="bold">304</text>
+
+    <!-- Arrow 304→306 -->
+    <line x1="312" y1="68" x2="332" y2="68" stroke="#000" stroke-width="1.5"/>
+    <polygon points="332,64 340,68 332,72" fill="#000"/>
+
+    <!-- 306 AST Parser -->
+    <rect x="340" y="44" width="84" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="382" y="62" text-anchor="middle" font-size="9">AST</text>
+    <text fill="#000" x="382" y="73" text-anchor="middle" font-size="9">Parser</text>
+    <text fill="#000" x="382" y="86" text-anchor="middle" font-size="11" font-weight="bold">306</text>
+
+    <!-- Arrow 306→308 -->
+    <line x1="424" y1="68" x2="444" y2="68" stroke="#000" stroke-width="1.5"/>
+    <polygon points="444,64 452,68 444,72" fill="#000"/>
+
+    <!-- 308 Semantic Pattern Matcher -->
+    <rect x="452" y="44" width="88" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="496" y="57" text-anchor="middle" font-size="9">Semantic</text>
+    <text fill="#000" x="496" y="68" text-anchor="middle" font-size="9">Pattern</text>
+    <text fill="#000" x="496" y="79" text-anchor="middle" font-size="9">Matcher</text>
+    <text fill="#000" x="496" y="90" text-anchor="middle" font-size="11" font-weight="bold">308</text>
+
+    <!-- Arrow 308→314 -->
+    <line x1="540" y1="68" x2="556" y2="68" stroke="#000" stroke-width="1.5"/>
+    <polygon points="556,64 564,68 556,72" fill="#000"/>
+
+    <!-- 314 Finding Emitter -->
+    <rect x="564" y="44" width="88" height="48" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="608" y="62" text-anchor="middle" font-size="9">Finding</text>
+    <text fill="#000" x="608" y="73" text-anchor="middle" font-size="9">Emitter</text>
+    <text fill="#000" x="608" y="86" text-anchor="middle" font-size="11" font-weight="bold">314</text>
+
+    <!-- ===== EXTRACTED BLOCK OBJECT below 302 ===== -->
+    <!-- leader dot at bottom of 302 -->
+    <line x1="158" y1="92" x2="158" y2="178" stroke="#000" stroke-width="0.75"/>
+    <circle cx="158" cy="178" r="2.5" fill="#000"/>
+
+    <rect x="78" y="182" width="162" height="78" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="159" y="196" text-anchor="middle" font-size="9" font-weight="bold">Extracted Block Object</text>
+    <text fill="#000" x="159" y="209" text-anchor="middle" font-size="11" font-weight="bold">316</text>
+    <!-- leader line from numeral 316 -->
+    <line x1="124" y1="209" x2="118" y2="209" stroke="#000" stroke-width="0.75"/>
+    <circle cx="118" cy="209" r="2" fill="#000"/>
+
+    <text fill="#000" x="88" y="225" font-size="7">language</text>
+    <text fill="#000" x="88" y="237" font-size="7">content</text>
+    <text fill="#000" x="88" y="249" font-size="7">startLine / endLine</text>
+    <text fill="#000" x="88" y="261" font-size="7">context (prose above)</text>
+
+    <!-- ===== PATTERN CATALOG below 308 ===== -->
+    <line x1="496" y1="92" x2="496" y2="178" stroke="#000" stroke-width="0.75"/>
+    <circle cx="496" cy="178" r="2.5" fill="#000"/>
+
+    <rect x="448" y="182" width="96" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="496" y="197" text-anchor="middle" font-size="9">Pattern Catalog</text>
+    <text fill="#000" x="496" y="210" text-anchor="middle" font-size="11" font-weight="bold">310</text>
+
+    <!-- ===== CROSS-BLOCK CORRELATOR (312) — feedback loop ===== -->
+    <!-- Combiner node: small circle before Finding Emitter, drawn above pipeline -->
+    <!-- Combiner junction at x=608, y=20 above pipeline -->
+    <!-- Arrow from Finding Emitter bottom, looping back to left, then up to combiner -->
+
+    <!-- Feedback arc: from bottom of 314 down, left, up to above pipeline, label Correlator -->
+    <!-- Down from 314 -->
+    <line x1="608" y1="92" x2="608" y2="330" stroke="#000" stroke-width="0.75"/>
+    <!-- Left along bottom -->
+    <line x1="608" y1="330" x2="320" y2="330" stroke="#000" stroke-width="0.75"/>
+    <!-- Up from bottom-left to combiner node level -->
+    <line x1="320" y1="330" x2="320" y2="275" stroke="#000" stroke-width="0.75"/>
+
+    <!-- 312 Cross-Block Correlator box -->
+    <rect x="250" y="275" width="140" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="320" y="291" text-anchor="middle" font-size="9">Cross-Block</text>
+    <text fill="#000" x="320" y="302" text-anchor="middle" font-size="9">Correlator</text>
+    <text fill="#000" x="320" y="313" text-anchor="middle" font-size="11" font-weight="bold">312</text>
+
+    <!-- Leader line for 312 numeral -->
+    <line x1="390" y1="295" x2="400" y2="295" stroke="#000" stroke-width="0.75"/>
+    <circle cx="400" cy="295" r="2" fill="#000"/>
+
+    <!-- From Correlator back up to combiner point before Finding Emitter -->
+    <!-- Up from Correlator left side, then across to combiner junction at (552, 68) -->
+    <line x1="250" y1="295" x2="200" y2="295" stroke="#000" stroke-width="0.75"/>
+    <line x1="200" y1="295" x2="200" y2="25" stroke="#000" stroke-width="0.75"/>
+    <line x1="200" y1="25" x2="552" y2="25" stroke="#000" stroke-width="0.75"/>
+    <!-- Arrow down into combiner junction between 308 and 314 -->
+    <line x1="552" y1="25" x2="552" y2="64" stroke="#000" stroke-width="0.75"/>
+    <polygon points="548,60 552,68 556,60" fill="#000"/>
+
+    <!-- Small combiner circle at (552, 68) — junction on pipeline arrow -->
+    <circle cx="552" cy="68" r="4" fill="none" stroke="#000" stroke-width="1"/>
+
+    <!-- Label "FEEDBACK" along feedback loop -->
+    <text fill="#000" x="205" y="180" font-size="7" font-style="italic">feedback</text>
+
+    <!-- ===== LEADER LINE DOTS for main pipeline boxes ===== -->
+    <!-- 300 -->
+    <line x1="4" y1="86" x2="-2" y2="86" stroke="#000" stroke-width="0.75"/>
+
+    <!-- Right-margin numeral annotations with leaders (outside boxes) -->
+    <!-- Already labeled inside boxes; no additional needed -->
+
+  </svg>
+
+  <span class="fig-label">FIG. 1</span>
+  <div class="sheet-footer">Sheet 1 of 3</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 2 — FIG. 2: Semantic Pattern Taxonomy Tree            -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-003</span>
+    <span>Sheet 2 of 3</span>
+  </div>
+
+  <svg width="660" height="520" viewBox="0 0 660 520" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- Root node: SEMANTIC PATTERN CATALOG (320) -->
+    <rect x="210" y="20" width="240" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="36" text-anchor="middle" font-size="9" font-weight="bold">SEMANTIC PATTERN CATALOG</text>
+    <text fill="#000" x="330" y="52" text-anchor="middle" font-size="11" font-weight="bold">320</text>
+    <!-- leader -->
+    <line x1="450" y1="40" x2="462" y2="40" stroke="#000" stroke-width="0.75"/>
+    <circle cx="462" cy="40" r="2" fill="#000"/>
+
+    <!-- Branch trunk downward from root -->
+    <line x1="330" y1="60" x2="330" y2="90" stroke="#000" stroke-width="1.5"/>
+
+    <!-- Horizontal trunk spanning all 5 branches -->
+    <!-- positions: x = 60, 175, 290, 405, 520  (gap=115, first=60) -->
+    <line x1="60" y1="90" x2="600" y2="90" stroke="#000" stroke-width="1.5"/>
+
+    <!-- Branch lines down to pattern type nodes (y=90 to y=140) -->
+    <line x1="60"  y1="90" x2="60"  y2="140" stroke="#000" stroke-width="1.5"/>
+    <line x1="183" y1="90" x2="183" y2="140" stroke="#000" stroke-width="1.5"/>
+    <line x1="306" y1="90" x2="306" y2="140" stroke="#000" stroke-width="1.5"/>
+    <line x1="440" y1="90" x2="440" y2="140" stroke="#000" stroke-width="1.5"/>
+    <line x1="563" y1="90" x2="563" y2="140" stroke="#000" stroke-width="1.5"/>
+
+    <!-- Pattern type node boxes (y=140..180) -->
+
+    <!-- FUNCTION-CALL (322) -->
+    <rect x="12" y="140" width="96" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="60" y="156" text-anchor="middle" font-size="9">FUNCTION-</text>
+    <text fill="#000" x="60" y="167" text-anchor="middle" font-size="9">CALL</text>
+    <text fill="#000" x="60" y="178" text-anchor="middle" font-size="11" font-weight="bold">322</text>
+
+    <!-- PROPERTY-ACCESS (324) -->
+    <rect x="136" y="140" width="96" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="184" y="156" text-anchor="middle" font-size="9">PROPERTY-</text>
+    <text fill="#000" x="184" y="167" text-anchor="middle" font-size="9">ACCESS</text>
+    <text fill="#000" x="184" y="178" text-anchor="middle" font-size="11" font-weight="bold">324</text>
+
+    <!-- DYNAMIC-IMPORT (326) -->
+    <rect x="260" y="140" width="96" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="308" y="156" text-anchor="middle" font-size="9">DYNAMIC-</text>
+    <text fill="#000" x="308" y="167" text-anchor="middle" font-size="9">IMPORT</text>
+    <text fill="#000" x="308" y="178" text-anchor="middle" font-size="11" font-weight="bold">326</text>
+
+    <!-- INDIRECT-EXEC (328) -->
+    <rect x="396" y="140" width="96" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="444" y="156" text-anchor="middle" font-size="9">INDIRECT-</text>
+    <text fill="#000" x="444" y="167" text-anchor="middle" font-size="9">EXEC</text>
+    <text fill="#000" x="444" y="178" text-anchor="middle" font-size="11" font-weight="bold">328</text>
+
+    <!-- OBJECT-STRUCT (329) -->
+    <rect x="519" y="140" width="96" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="567" y="156" text-anchor="middle" font-size="9">OBJECT-</text>
+    <text fill="#000" x="567" y="167" text-anchor="middle" font-size="9">STRUCT</text>
+    <text fill="#000" x="567" y="178" text-anchor="middle" font-size="11" font-weight="bold">329</text>
+
+    <!-- Branch lines from type nodes down to leaf nodes (y=180 to y=230) -->
+    <line x1="60"  y1="180" x2="60"  y2="230" stroke="#000" stroke-width="1"/>
+    <line x1="184" y1="180" x2="184" y2="230" stroke="#000" stroke-width="1"/>
+    <line x1="308" y1="180" x2="308" y2="230" stroke="#000" stroke-width="1"/>
+    <line x1="444" y1="180" x2="444" y2="230" stroke="#000" stroke-width="1"/>
+    <line x1="567" y1="180" x2="567" y2="230" stroke="#000" stroke-width="1"/>
+
+    <!-- Leaf node boxes (y=230..280) -->
+
+    <!-- 330 -->
+    <rect x="4" y="230" width="112" height="50" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="60" y="247" text-anchor="middle" font-size="7">CallExpression</text>
+    <text fill="#000" x="60" y="258" text-anchor="middle" font-size="7">node matching</text>
+    <text fill="#000" x="60" y="275" text-anchor="middle" font-size="11" font-weight="bold">330</text>
+
+    <!-- 332 -->
+    <rect x="130" y="230" width="112" height="50" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="186" y="247" text-anchor="middle" font-size="7">PropertyAccess</text>
+    <text fill="#000" x="186" y="258" text-anchor="middle" font-size="7">Expression chain</text>
+    <text fill="#000" x="186" y="275" text-anchor="middle" font-size="11" font-weight="bold">332</text>
+
+    <!-- 334 -->
+    <rect x="254" y="230" width="112" height="50" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="310" y="247" text-anchor="middle" font-size="7">ImportExpression</text>
+    <text fill="#000" x="310" y="258" text-anchor="middle" font-size="7">w/ non-literal specifier</text>
+    <text fill="#000" x="310" y="275" text-anchor="middle" font-size="11" font-weight="bold">334</text>
+
+    <!-- 336 -->
+    <rect x="390" y="230" width="112" height="50" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="446" y="247" text-anchor="middle" font-size="7">String-to-code</text>
+    <text fill="#000" x="446" y="258" text-anchor="middle" font-size="7">conversion call</text>
+    <text fill="#000" x="446" y="275" text-anchor="middle" font-size="11" font-weight="bold">336</text>
+
+    <!-- 338 -->
+    <rect x="519" y="230" width="108" height="50" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="573" y="247" text-anchor="middle" font-size="7">ObjectLiteralExpr</text>
+    <text fill="#000" x="573" y="258" text-anchor="middle" font-size="7">key-set match</text>
+    <text fill="#000" x="573" y="275" text-anchor="middle" font-size="11" font-weight="bold">338</text>
+
+    <!-- ===== KEY NOVELTY BOX AT BOTTOM ===== -->
+    <!-- Two boxes side by side with double-headed arrow -->
+
+    <!-- 340 AST STRUCTURAL MATCHING -->
+    <rect x="60" y="360" width="200" height="50" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="160" y="379" text-anchor="middle" font-size="9" font-weight="bold">AST STRUCTURAL</text>
+    <text fill="#000" x="160" y="392" text-anchor="middle" font-size="9" font-weight="bold">MATCHING</text>
+    <text fill="#000" x="160" y="406" text-anchor="middle" font-size="11" font-weight="bold">340</text>
+
+    <!-- Double-headed arrow -->
+    <line x1="262" y1="385" x2="388" y2="385" stroke="#000" stroke-width="1.5"/>
+    <polygon points="262,381 254,385 262,389" fill="#000"/>
+    <polygon points="388,381 396,385 388,389" fill="#000"/>
+    <!-- Label above arrow -->
+    <text fill="#000" x="325" y="378" text-anchor="middle" font-size="7" font-style="italic">RESISTANCE TO</text>
+    <text fill="#000" x="325" y="389" text-anchor="middle" font-size="7" font-style="italic">OBFUSCATION</text>
+    <text fill="#000" x="325" y="408" text-anchor="middle" font-size="11" font-weight="bold">344</text>
+
+    <!-- 342 STRING/REGEX MATCHING -->
+    <rect x="398" y="360" width="200" height="50" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="498" y="379" text-anchor="middle" font-size="9" font-weight="bold">STRING/REGEX</text>
+    <text fill="#000" x="498" y="392" text-anchor="middle" font-size="9" font-weight="bold">MATCHING</text>
+    <text fill="#000" x="498" y="406" text-anchor="middle" font-size="11" font-weight="bold">342</text>
+
+    <!-- Leader from 344 label -->
+    <line x1="340" y1="408" x2="340" y2="416" stroke="#000" stroke-width="0.75"/>
+    <circle cx="340" cy="416" r="2" fill="#000"/>
+
+    <!-- Connector lines from leaf nodes down to novelty box area -->
+    <!-- Vertical drop line from center of leaf row down -->
+    <line x1="60"  y1="280" x2="60"  y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="184" y1="280" x2="184" y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="308" y1="280" x2="308" y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="444" y1="280" x2="444" y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="567" y1="280" x2="567" y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="60" y1="340" x2="567" y2="340" stroke="#000" stroke-width="0.5" stroke-dasharray="4,3"/>
+    <line x1="313" y1="340" x2="313" y2="360" stroke="#000" stroke-width="0.75"/>
+    <polygon points="309,356 313,364 317,356" fill="#000"/>
+
+    <!-- Note label -->
+    <text fill="#000" x="330" y="432" text-anchor="middle" font-size="9" font-style="italic">All five pattern types employ structural matching (340),</text>
+    <text fill="#000" x="330" y="444" text-anchor="middle" font-size="9" font-style="italic">conferring resistance to obfuscation (344) vs. string/regex approaches (342).</text>
+
+  </svg>
+
+  <span class="fig-label">FIG. 2</span>
+  <div class="sheet-footer">Sheet 2 of 3</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 3 — FIG. 3: AST Node Traversal Flowchart              -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">
+    <span>FS-2026-003</span>
+    <span>Sheet 3 of 3</span>
+  </div>
+
+  <svg width="660" height="860" viewBox="0 0 660 860" xmlns="http://www.w3.org/2000/svg">
+    <!-- Center x = 330 -->
+
+    <!-- 350 START oval -->
+    <ellipse cx="330" cy="38" rx="60" ry="22" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="34" text-anchor="middle" font-size="9">START</text>
+    <text fill="#000" x="330" y="50" text-anchor="middle" font-size="11" font-weight="bold">350</text>
+    <!-- leader -->
+    <line x1="392" y1="38" x2="404" y2="38" stroke="#000" stroke-width="0.75"/>
+    <circle cx="404" cy="38" r="2" fill="#000"/>
+
+    <line x1="330" y1="60" x2="330" y2="78" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,78 330,86 334,78" fill="#000"/>
+
+    <!-- 352 RECEIVE MARKDOWN CONFIG FILE -->
+    <rect x="196" y="86" width="268" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="103" text-anchor="middle" font-size="9">RECEIVE MARKDOWN CONFIG FILE</text>
+    <text fill="#000" x="330" y="118" text-anchor="middle" font-size="11" font-weight="bold">352</text>
+    <!-- leader -->
+    <line x1="464" y1="106" x2="476" y2="106" stroke="#000" stroke-width="0.75"/>
+    <circle cx="476" cy="106" r="2" fill="#000"/>
+
+    <line x1="330" y1="126" x2="330" y2="144" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,144 330,152 334,144" fill="#000"/>
+
+    <!-- 354 EXTRACT FENCED CODE BLOCKS -->
+    <rect x="196" y="152" width="268" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="169" text-anchor="middle" font-size="9">EXTRACT FENCED CODE BLOCKS</text>
+    <text fill="#000" x="330" y="184" text-anchor="middle" font-size="11" font-weight="bold">354</text>
+    <!-- leader -->
+    <line x1="464" y1="172" x2="476" y2="172" stroke="#000" stroke-width="0.75"/>
+    <circle cx="476" cy="172" r="2" fill="#000"/>
+
+    <line x1="330" y1="192" x2="330" y2="210" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,210 330,218 334,210" fill="#000"/>
+
+    <!-- 356 Decision: LANGUAGE TAG PRESENT? (diamond) -->
+    <!-- diamond top(330,218) right(430,264) bottom(330,310) left(230,264) -->
+    <polygon points="330,218 430,264 330,310 230,264" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="259" text-anchor="middle" font-size="9">LANGUAGE TAG</text>
+    <text fill="#000" x="330" y="271" text-anchor="middle" font-size="9">PRESENT?</text>
+    <text fill="#000" x="440" y="268" text-anchor="start" font-size="11" font-weight="bold">356</text>
+    <!-- leader -->
+    <line x1="430" y1="264" x2="438" y2="264" stroke="#000" stroke-width="0.75"/>
+    <circle cx="438" cy="264" r="2" fill="#000"/>
+
+    <!-- YES label: down -->
+    <text fill="#000" x="335" y="326" text-anchor="start" font-size="9" font-style="italic">YES</text>
+    <!-- NO label: left branch -->
+    <text fill="#000" x="174" y="260" text-anchor="start" font-size="9" font-style="italic">NO</text>
+
+    <!-- YES arrow: down from diamond -->
+    <line x1="330" y1="310" x2="330" y2="350" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,350 330,358 334,350" fill="#000"/>
+
+    <!-- NO branch: left from diamond, down to 358, then right back to main flow -->
+    <!-- Left from diamond -->
+    <line x1="230" y1="264" x2="130" y2="264" stroke="#000" stroke-width="1.5"/>
+    <!-- Down to 358 level -->
+    <line x1="130" y1="264" x2="130" y2="375" stroke="#000" stroke-width="1.5"/>
+    <polygon points="126,371 130,379 134,371" fill="#000"/>
+
+    <!-- 358 APPLY LANGUAGE HEURISTICS -->
+    <rect x="60" y="379" width="140" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="130" y="396" text-anchor="middle" font-size="9">APPLY LANGUAGE</text>
+    <text fill="#000" x="130" y="409" text-anchor="middle" font-size="9">HEURISTICS</text>
+    <text fill="#000" x="196" y="399" text-anchor="start" font-size="11" font-weight="bold">358</text>
+    <!-- leader -->
+    <line x1="200" y1="399" x2="210" y2="399" stroke="#000" stroke-width="0.75"/>
+    <circle cx="210" cy="399" r="2" fill="#000"/>
+
+    <!-- 358 → merge back to main flow at (330, 399) level -->
+    <line x1="200" y1="399" x2="330" y2="399" stroke="#000" stroke-width="1.5"/>
+    <!-- Arrow down from merge point -->
+    <line x1="330" y1="358" x2="330" y2="399" stroke="#000" stroke-width="1.5"/>
+    <line x1="330" y1="399" x2="330" y2="418" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,418 330,426 334,418" fill="#000"/>
+
+    <!-- 360 CONSTRUCT ABSTRACT SYNTAX TREE -->
+    <rect x="196" y="426" width="268" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="443" text-anchor="middle" font-size="9">CONSTRUCT ABSTRACT SYNTAX TREE</text>
+    <text fill="#000" x="330" y="458" text-anchor="middle" font-size="11" font-weight="bold">360</text>
+    <!-- leader -->
+    <line x1="464" y1="446" x2="476" y2="446" stroke="#000" stroke-width="0.75"/>
+    <circle cx="476" cy="446" r="2" fill="#000"/>
+
+    <line x1="330" y1="466" x2="330" y2="484" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,484 330,492 334,484" fill="#000"/>
+
+    <!-- 362 TRAVERSE AST NODES (RECURSIVE DESCENT) -->
+    <rect x="196" y="492" width="268" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="509" text-anchor="middle" font-size="9">TRAVERSE AST NODES</text>
+    <text fill="#000" x="330" y="521" text-anchor="middle" font-size="9">(RECURSIVE DESCENT)</text>
+    <text fill="#000" x="464" y="509" text-anchor="start" font-size="11" font-weight="bold">362</text>
+    <!-- leader -->
+    <line x1="464" y1="512" x2="474" y2="512" stroke="#000" stroke-width="0.75"/>
+    <circle cx="474" cy="512" r="2" fill="#000"/>
+
+    <line x1="330" y1="532" x2="330" y2="550" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,550 330,558 334,550" fill="#000"/>
+
+    <!-- 364 Decision: NODE MATCHES SECURITY PATTERN? (diamond) -->
+    <!-- diamond top(330,558) right(430,604) bottom(330,650) left(230,604) -->
+    <polygon points="330,558 430,604 330,650 230,604" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="597" text-anchor="middle" font-size="9">NODE MATCHES</text>
+    <text fill="#000" x="330" y="609" text-anchor="middle" font-size="9">SECURITY PATTERN?</text>
+    <text fill="#000" x="440" y="608" text-anchor="start" font-size="11" font-weight="bold">364</text>
+    <!-- leader -->
+    <line x1="430" y1="604" x2="438" y2="604" stroke="#000" stroke-width="0.75"/>
+    <circle cx="438" cy="604" r="2" fill="#000"/>
+
+    <!-- YES label: down -->
+    <text fill="#000" x="335" y="666" text-anchor="start" font-size="9" font-style="italic">YES</text>
+    <!-- NO label: loop back right -->
+    <text fill="#000" x="432" y="598" text-anchor="start" font-size="9" font-style="italic">NO</text>
+
+    <!-- YES: down from diamond -->
+    <line x1="330" y1="650" x2="330" y2="688" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,688 330,696 334,688" fill="#000"/>
+
+    <!-- NO: loop right and back up to 362 -->
+    <line x1="430" y1="604" x2="530" y2="604" stroke="#000" stroke-width="1.5"/>
+    <line x1="530" y1="604" x2="530" y2="512" stroke="#000" stroke-width="1.5"/>
+    <line x1="530" y1="512" x2="464" y2="512" stroke="#000" stroke-width="1.5"/>
+    <polygon points="464,508 456,512 464,516" fill="#000"/>
+
+    <!-- 366 RECORD FINDING WITH SOURCE POSITION -->
+    <rect x="196" y="696" width="268" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="713" text-anchor="middle" font-size="9">RECORD FINDING WITH</text>
+    <text fill="#000" x="330" y="725" text-anchor="middle" font-size="9">SOURCE POSITION</text>
+    <text fill="#000" x="464" y="713" text-anchor="start" font-size="11" font-weight="bold">366</text>
+    <!-- leader -->
+    <line x1="464" y1="716" x2="474" y2="716" stroke="#000" stroke-width="0.75"/>
+    <circle cx="474" cy="716" r="2" fill="#000"/>
+
+    <line x1="330" y1="736" x2="330" y2="754" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,754 330,762 334,754" fill="#000"/>
+
+    <!-- 368 Decision: MORE BLOCKS? (diamond) -->
+    <!-- diamond top(330,762) right(410,796) bottom(330,830) left(250,796) -->
+    <polygon points="330,762 410,796 330,830 250,796" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="791" text-anchor="middle" font-size="9">MORE</text>
+    <text fill="#000" x="330" y="803" text-anchor="middle" font-size="9">BLOCKS?</text>
+    <text fill="#000" x="418" y="800" text-anchor="start" font-size="11" font-weight="bold">368</text>
+    <!-- leader -->
+    <line x1="410" y1="796" x2="418" y2="796" stroke="#000" stroke-width="0.75"/>
+    <circle cx="418" cy="796" r="2" fill="#000"/>
+
+    <!-- YES label: back to 354 -->
+    <text fill="#000" x="215" y="790" text-anchor="end" font-size="9" font-style="italic">YES</text>
+    <!-- NO label: down -->
+    <text fill="#000" x="335" y="845" text-anchor="start" font-size="9" font-style="italic">NO</text>
+
+    <!-- YES: left from diamond, back up to 354 -->
+    <line x1="250" y1="796" x2="152" y2="796" stroke="#000" stroke-width="1.5"/>
+    <line x1="152" y1="796" x2="152" y2="172" stroke="#000" stroke-width="1.5"/>
+    <line x1="152" y1="172" x2="196" y2="172" stroke="#000" stroke-width="1.5"/>
+    <polygon points="196,168 204,172 196,176" fill="#000"/>
+
+    <!-- NO: down (continues below — but we'll end at 374 below the figure) -->
+    <!-- Arrow continues down but diagram height ends; note continuation shown at 370/372/374 -->
+
+    <!-- Continuation note -->
+    <text fill="#000" x="330" y="848" text-anchor="middle" font-size="9" font-style="italic">(continues — see 370, 372, 374 below)</text>
+
+  </svg>
+
+  <!-- Sub-continuation at bottom of sheet 3 — small continuation SVG -->
+  <svg width="660" height="160" viewBox="0 0 660 160" xmlns="http://www.w3.org/2000/svg">
+    <!-- Entry arrow from above -->
+    <line x1="330" y1="0" x2="330" y2="14" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,14 330,22 334,14" fill="#000"/>
+
+    <!-- 370 APPLY CROSS-BLOCK CORRELATION RULES -->
+    <rect x="182" y="22" width="296" height="36" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="38" text-anchor="middle" font-size="9">APPLY CROSS-BLOCK CORRELATION RULES</text>
+    <text fill="#000" x="330" y="51" text-anchor="middle" font-size="11" font-weight="bold">370</text>
+    <!-- leader -->
+    <line x1="478" y1="40" x2="490" y2="40" stroke="#000" stroke-width="0.75"/>
+    <circle cx="490" cy="40" r="2" fill="#000"/>
+
+    <line x1="330" y1="58" x2="330" y2="72" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,72 330,80 334,72" fill="#000"/>
+
+    <!-- 372 EMIT COMPOSITE FINDINGS -->
+    <rect x="196" y="80" width="268" height="36" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="98" text-anchor="middle" font-size="9">EMIT COMPOSITE FINDINGS</text>
+    <text fill="#000" x="330" y="110" text-anchor="middle" font-size="11" font-weight="bold">372</text>
+    <!-- leader -->
+    <line x1="464" y1="98" x2="476" y2="98" stroke="#000" stroke-width="0.75"/>
+    <circle cx="476" cy="98" r="2" fill="#000"/>
+
+    <line x1="330" y1="116" x2="330" y2="130" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,130 330,138 334,130" fill="#000"/>
+
+    <!-- 374 END oval -->
+    <ellipse cx="330" cy="150" rx="60" ry="18" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="147" text-anchor="middle" font-size="9">END</text>
+    <text fill="#000" x="330" y="161" text-anchor="middle" font-size="11" font-weight="bold">374</text>
+    <!-- leader -->
+    <line x1="392" y1="150" x2="404" y2="150" stroke="#000" stroke-width="0.75"/>
+    <circle cx="404" cy="150" r="2" fill="#000"/>
+  </svg>
+
+  <span class="fig-label">FIG. 3</span>
+  <div class="sheet-footer">Sheet 3 of 3</div>
+</div>
+
+</body>
+</html>

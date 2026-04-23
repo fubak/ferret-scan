@@ -466,6 +466,36 @@ export function analyzeCapabilities(filePath: string): AgentCapabilityProfile | 
 }
 
 /**
+ * Analyze capabilities from already-loaded file content (avoids extra disk IO).
+ */
+export function analyzeCapabilitiesContent(
+  filePath: string,
+  content: string
+): AgentCapabilityProfile | null {
+  const agentType = detectAgentType(filePath);
+  if (!agentType) {
+    return null;
+  }
+
+  try {
+    const capabilities = parseCapabilitiesFromConfig(content, agentType);
+    const overallRisk = calculateOverallRisk(capabilities);
+    const recommendations = generateRecommendations(capabilities);
+
+    return {
+      agentType: AI_CLI_CONFIGS[agentType]?.name ?? agentType,
+      configFile: filePath,
+      capabilities,
+      overallRisk,
+      recommendations,
+    };
+  } catch (error) {
+    logger.debug(`Failed to analyze capabilities from content: ${error}`);
+    return null;
+  }
+}
+
+/**
  * Convert capability profile to findings
  */
 export function capabilityProfileToFindings(profile: AgentCapabilityProfile): Finding[] {
@@ -482,8 +512,10 @@ export function capabilityProfileToFindings(profile: AgentCapabilityProfile): Fi
       continue;
     }
 
-    const severity: Severity = cap.riskLevel === 'critical' ? 'CRITICAL' :
-                               cap.riskLevel === 'high' ? 'HIGH' : 'MEDIUM';
+    // Capabilities are *risk indicators*, not direct exploits.
+    // Keep them visible, but avoid failing CI by default unless combined with other findings.
+    const severity: Severity = cap.riskLevel === 'critical' ? 'HIGH' :
+                               cap.riskLevel === 'high' ? 'MEDIUM' : 'LOW';
 
     findings.push({
       ruleId: `CAP-${cap.type.toUpperCase().replace(/_/g, '')}`,
@@ -511,8 +543,8 @@ export function capabilityProfileToFindings(profile: AgentCapabilityProfile): Fi
         overallRisk: profile.overallRisk,
       },
       timestamp: new Date(),
-      riskScore: severity === 'CRITICAL' ? 90 :
-                 severity === 'HIGH' ? 75 : 55,
+      riskScore: severity === 'HIGH' ? 75 :
+                 severity === 'MEDIUM' ? 55 : 35,
     });
   }
 
@@ -599,6 +631,7 @@ export function generateCapabilityReport(profiles: AgentCapabilityProfile[]): st
 
 export default {
   analyzeCapabilities,
+  analyzeCapabilitiesContent,
   capabilityProfileToFindings,
   findAndAnalyzeCapabilities,
   generateCapabilityReport,

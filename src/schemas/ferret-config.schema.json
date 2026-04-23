@@ -7,20 +7,31 @@
         "severity": {
           "type": "array",
           "items": {
-            "type": "string",
-            "enum": [
-              "CRITICAL",
-              "HIGH",
-              "MEDIUM",
-              "LOW",
-              "INFO"
+            "allOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 20
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "CRITICAL",
+                  "HIGH",
+                  "MEDIUM",
+                  "LOW",
+                  "INFO"
+                ]
+              }
             ]
           }
         },
         "categories": {
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
           }
         },
         "ignore": {
@@ -31,19 +42,232 @@
           },
           "maxItems": 100
         },
-        "customRules": {
-          "type": "string",
-          "maxLength": 4096
+        "configOnly": {
+          "type": "boolean"
         },
-        "failOn": {
+        "marketplaceMode": {
           "type": "string",
           "enum": [
-            "CRITICAL",
-            "HIGH",
-            "MEDIUM",
-            "LOW",
-            "INFO"
+            "off",
+            "configs",
+            "all"
           ]
+        },
+        "docDampening": {
+          "type": "boolean"
+        },
+        "redact": {
+          "type": "boolean"
+        },
+        "customRules": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4096
+              },
+              "minItems": 1,
+              "maxItems": 50
+            }
+          ]
+        },
+        "failOn": {
+          "allOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 20
+            },
+            {
+              "type": "string",
+              "enum": [
+                "CRITICAL",
+                "HIGH",
+                "MEDIUM",
+                "LOW",
+                "INFO"
+              ]
+            }
+          ]
+        },
+        "features": {
+          "type": "object",
+          "properties": {
+            "entropyAnalysis": {
+              "type": "boolean"
+            },
+            "mcpValidation": {
+              "type": "boolean"
+            },
+            "dependencyAnalysis": {
+              "type": "boolean"
+            },
+            "dependencyAudit": {
+              "type": "boolean"
+            },
+            "capabilityMapping": {
+              "type": "boolean"
+            },
+            "ignoreComments": {
+              "type": "boolean"
+            },
+            "mitreAtlas": {
+              "type": "boolean"
+            },
+            "llmAnalysis": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        },
+        "llm": {
+          "type": "object",
+          "properties": {
+            "provider": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "baseUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "apiKeyEnv": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 120000
+            },
+            "jsonMode": {
+              "type": "boolean"
+            },
+            "maxInputChars": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 200000
+            },
+            "maxOutputTokens": {
+              "type": "integer",
+              "minimum": 64,
+              "maximum": 8192
+            },
+            "temperature": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "systemPromptAddendum": {
+              "type": "string",
+              "maxLength": 20000
+            },
+            "includeMitreAtlasTechniques": {
+              "type": "boolean"
+            },
+            "maxMitreAtlasTechniques": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2000
+            },
+            "cacheDir": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "cacheTtlHours": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8760
+            },
+            "maxRetries": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 10
+            },
+            "retryBackoffMs": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60000
+            },
+            "retryMaxBackoffMs": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 600000
+            },
+            "minRequestIntervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 60000
+            },
+            "onlyIfFindings": {
+              "type": "boolean"
+            },
+            "maxFindingsPerFile": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "maxFiles": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "minConfidence": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            }
+          },
+          "additionalProperties": false
+        },
+        "mitreAtlasCatalog": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "autoUpdate": {
+              "type": "boolean"
+            },
+            "sourceUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "cachePath": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 4096
+            },
+            "cacheTtlHours": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 8760
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 1000,
+              "maximum": 120000
+            },
+            "forceRefresh": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
         },
         "aiDetection": {
           "type": "object",

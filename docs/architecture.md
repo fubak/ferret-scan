@@ -11,6 +11,9 @@ Ferret is a CLI security scanner for AI assistant configuration files. The scann
 - **Semantic Analysis** (`src/analyzers/AstAnalyzer.ts`): AST-based checks for JS/TS and code blocks in markdown.
 - **Correlation Analysis** (`src/analyzers/CorrelationAnalyzer.ts`): cross-file pattern correlation.
 - **Threat Intelligence** (`src/intelligence/*`): indicator matching against a local threat database (no external feeds by default).
+- **LLM Analysis** (`src/features/llmAnalysis.ts`): optional LLM-assisted scanning with redaction and caching (disabled by default).
+- **Custom Rules** (`src/features/customRules.ts`): load user-defined rules from `.ferret/rules.*` or `--custom-rules`.
+- **MITRE ATLAS Catalog** (`src/mitre/atlasCatalog.ts`): optional cached download of the official STIX bundle for up-to-date technique metadata.
 - **Remediation** (`src/remediation/*`): safe auto-fix and quarantine helpers.
 - **Reporters** (`src/reporters/*`): console, JSON, SARIF, HTML, and CSV outputs.
 

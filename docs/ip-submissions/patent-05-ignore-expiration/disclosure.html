@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Disclosure FS-2026-005 — Inline Security Suppression Directives with Expiration Dates</title>
+<style>
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 1in;
+    color: #000;
+    background: #fff;
+  }
+  h1 { font-family: Arial, sans-serif; font-size: 18pt; text-align: center; margin-bottom: 0.2in; }
+  h2 { font-family: Arial, sans-serif; font-size: 14pt; margin-top: 0.3in; border-bottom: 1px solid #000; }
+  h3 { font-family: Arial, sans-serif; font-size: 12pt; margin-top: 0.2in; }
+  .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 0.3in; }
+  .meta-table td { border: 1px solid #999; padding: 6px 10px; }
+  .meta-table td:first-child { font-weight: bold; width: 30%; background: #f5f5f5; }
+  .claim { margin: 0.15in 0; padding-left: 0.3in; }
+  .claim-num { font-weight: bold; }
+  .figure-caption { text-align: center; font-style: italic; font-size: 10pt; margin-top: 4px; }
+  .prior-art-table { width: 100%; border-collapse: collapse; margin: 0.2in 0; }
+  .prior-art-table th { background: #2c3e50; color: #fff; padding: 8px; font-family: Arial, sans-serif; font-size: 10pt; }
+  .prior-art-table td { border: 1px solid #ccc; padding: 7px 10px; font-size: 10pt; }
+  .prior-art-table tr:nth-child(even) td { background: #f8f8f8; }
+  .alert-box { border: 2px solid #c0392b; background: #fdf0f0; padding: 0.15in; margin: 0.2in 0; border-radius: 4px; }
+  .alert-box strong { color: #c0392b; }
+  .info-box { border: 2px solid #2980b9; background: #eaf4fb; padding: 0.15in; margin: 0.2in 0; border-radius: 4px; }
+  .info-box strong { color: #2980b9; }
+  code { font-family: "Courier New", monospace; font-size: 10pt; background: #f4f4f4; padding: 1px 4px; border-radius: 2px; }
+  svg text { font-family: Arial, sans-serif; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>PATENT DISCLOSURE DOCUMENT</h1>
+<h1 style="font-size:14pt;">FS-2026-005: Inline Security Suppression Directives with Mandatory Expiration Dates for AI Configuration File Scanners</h1>
+
+<table class="meta-table">
+  <tr><td>Disclosure ID</td><td>FS-2026-005</td></tr>
+  <tr><td>Filing Priority</td><td><strong>MEDIUM</strong> — Provisional within 60 days; narrow claims</td></tr>
+  <tr><td>Technology Domain</td><td>Developer Tooling, Static Analysis, Security Engineering</td></tr>
+  <tr><td>Primary Inventor(s)</td><td>[To Be Completed]</td></tr>
+  <tr><td>Assignee (Proposed)</td><td>[Organization Name]</td></tr>
+  <tr><td>First Public Disclosure</td><td>2026-01-31 (npm publication)</td></tr>
+  <tr><td>Grace Period Expires</td><td>2027-01-31</td></tr>
+  <tr><td>Target Provisional Filing</td><td>2026-05-22 (60-day target)</td></tr>
+  <tr><td>Primary Source File</td><td>src/features/ignoreComments.ts</td></tr>
+  <tr><td>Related Cases</td><td>FS-2026-001 through FS-2026-004</td></tr>
+</table>
+
+<div class="alert-box">
+  <strong>&#9888; Filing Urgency:</strong> Public disclosure occurred 2026-01-31. Grace period expires 2027-01-31. This is a narrower invention with more analogous prior art (linter suppression comments) &mdash; you may consider combining with a broader parent claim rather than standalone filing. Carefully evaluate before investing in a separate provisional.
+</div>
+
+<div class="info-box">
+  <strong>&#128161; Filing Assessment:</strong> This invention is <em>possible but narrow</em>. The core novelty &mdash; mandatory expiration dates on suppression directives &mdash; is a non-obvious improvement over conventional linter ignore comments. However, the specific combination applied to AI configuration file scanning is the primary distinguishing factor. Evaluate whether to file standalone or as a dependent claim within FS-2026-001.
+</div>
+
+<h2>I. BACKGROUND AND PROBLEM STATEMENT</h2>
+
+<p>Static security analysis tools routinely provide a mechanism for developers to suppress individual findings. In traditional linters and SASTs, these suppression mechanisms take the form of inline comments (e.g., <code>// eslint-disable-next-line</code>, <code># noqa</code>, <code>// nosec</code>) or configuration file entries. These mechanisms share a critical weakness: once created, suppression directives are permanent by default. A suppression comment added to address a false positive or temporary exception accumulates indefinitely in the codebase, silently suppressing all future flagging of the associated pattern at that location &mdash; even after the circumstances that justified the suppression have changed.</p>
+
+<p>This problem is particularly acute for AI configuration file security scanners because: (1) AI CLI configurations are frequently updated by multiple developers and AI agents; (2) suppressions added for temporary integration needs (e.g., a test MCP server) may persist after the test environment is decommissioned; (3) the attack surface of AI configuration files changes rapidly as new threat patterns emerge. A permanent suppression may silently mask newly critical findings that would otherwise trigger on existing configuration entries.</p>
+
+<h2>II. SUMMARY OF THE INVENTION</h2>
+
+<p>The present invention provides a method and system for parsing, validating, and enforcing expiration dates on inline security suppression directives embedded within AI configuration files. The invention requires that each suppression directive include either an explicit ISO-8601 expiration date or a justification code from an approved list. At scan time, the invention compares the current date against each suppression's expiration date and automatically reactivates expired suppressions, reporting them as active findings with an "expired suppression" indicator. This enforces a temporal accountability discipline: suppressions must be actively maintained and renewed rather than silently accumulating.</p>
+
+<h2>III. DETAILED DESCRIPTION OF THE INVENTION</h2>
+
+<h3>A. Suppression Directive Syntax</h3>
+
+<p>The invention defines a structured inline comment syntax for suppression directives in AI configuration files. The syntax supports two primary forms:</p>
+
+<p><strong>Form 1 &mdash; Expiration Date:</strong><br>
+<code>ferret-scan-ignore: RULE-ID expires: YYYY-MM-DD</code><br>
+Example: <code>ferret-scan-ignore: AI-003 expires: 2026-06-30</code></p>
+
+<p><strong>Form 2 &mdash; Justification Code:</strong><br>
+<code>ferret-scan-ignore: RULE-ID reason: JUSTIFICATION-CODE</code><br>
+Example: <code>ferret-scan-ignore: AI-007 reason: internal-only</code></p>
+
+<p>The invention's <code>parseIgnoreComments()</code> function processes these directives using a regular expression engine that extracts the rule ID, expiration date (if present), and justification code (if present). The parser is applied to all comment-eligible lines in the configuration file being scanned, including JSON comment fields and markdown comment blocks.</p>
+
+<h3>B. Expiration Enforcement Algorithm</h3>
+
+<!-- Figure 1: Expiration Decision Tree -->
+<svg width="680" height="380" viewBox="0 0 680 380" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <defs>
+    <marker id="arr5" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="680" height="380" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="340" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 1 &#8212; Suppression Expiration Decision Flow</text>
+
+  <!-- Start -->
+  <rect x="255" y="38" width="170" height="44" fill="#2c3e50" rx="6"/>
+  <text x="340" y="56" text-anchor="middle" font-size="11" fill="white">Finding matches</text>
+  <text x="340" y="72" text-anchor="middle" font-size="11" fill="white">suppression directive</text>
+
+  <line x1="340" y1="82" x2="340" y2="110" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+  <!-- Has directive? -->
+  <polygon points="340,110 200,148 340,186 480,148" fill="#f39c12"/>
+  <text x="340" y="142" text-anchor="middle" font-size="10" fill="white">Directive has</text>
+  <text x="340" y="158" text-anchor="middle" font-size="10" fill="white">expiration date?</text>
+
+  <!-- No: check reason code -->
+  <line x1="200" y1="148" x2="80" y2="148" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="140" y="140" text-anchor="middle" font-size="9" fill="#555">No</text>
+  <rect x="20" y="125" width="60" height="46" fill="white" rx="4" stroke="#e67e22"/>
+  <text x="50" y="144" text-anchor="middle" font-size="9" fill="#e67e22">Check</text>
+  <text x="50" y="158" text-anchor="middle" font-size="9" fill="#e67e22">reason</text>
+
+  <!-- Valid reason? -->
+  <polygon points="50,210 10,240 50,270 90,240" fill="#e67e22"/>
+  <text x="50" y="235" text-anchor="middle" font-size="8.5" fill="white">Valid</text>
+  <text x="50" y="248" text-anchor="middle" font-size="8.5" fill="white">reason?</text>
+  <line x1="50" y1="171" x2="50" y2="210" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+
+  <!-- Yes reason -->
+  <rect x="10" y="295" width="80" height="44" fill="#27ae60" rx="5"/>
+  <text x="50" y="315" text-anchor="middle" font-size="10" fill="white">SUPPRESS</text>
+  <text x="50" y="329" text-anchor="middle" font-size="9" fill="#a9dfbf">Finding hidden</text>
+  <line x1="50" y1="270" x2="50" y2="295" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="28" y="286" text-anchor="middle" font-size="9" fill="#555">Yes</text>
+
+  <!-- No reason: warn -->
+  <rect x="100" y="240" width="120" height="44" fill="#e74c3c" rx="5"/>
+  <text x="160" y="260" text-anchor="middle" font-size="10" fill="white">INVALID SUPPRESS</text>
+  <text x="160" y="274" text-anchor="middle" font-size="9" fill="#f5b7b1">Report as finding</text>
+  <line x1="90" y1="240" x2="100" y2="260" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="100" y="238" text-anchor="middle" font-size="9" fill="#555">No</text>
+
+  <!-- Yes has date -->
+  <line x1="340" y1="186" x2="340" y2="210" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="350" y="202" text-anchor="middle" font-size="9" fill="#555">Yes</text>
+
+  <!-- Compare dates -->
+  <polygon points="340,210 240,245 340,280 440,245" fill="#8e44ad"/>
+  <text x="340" y="239" text-anchor="middle" font-size="10" fill="white">expiry &gt;</text>
+  <text x="340" y="254" text-anchor="middle" font-size="10" fill="white">today?</text>
+
+  <!-- Active suppression -->
+  <rect x="450" y="222" width="130" height="44" fill="#27ae60" rx="5"/>
+  <text x="515" y="242" text-anchor="middle" font-size="10" fill="white">SUPPRESS</text>
+  <text x="515" y="256" text-anchor="middle" font-size="9" fill="#a9dfbf">Finding hidden</text>
+  <line x1="440" y1="245" x2="450" y2="245" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="450" y="237" text-anchor="middle" font-size="9" fill="#555">Yes</text>
+
+  <!-- Expired: WARN + reactivate -->
+  <rect x="270" y="305" width="140" height="55" fill="#e74c3c" rx="5"/>
+  <text x="340" y="325" text-anchor="middle" font-size="10" fill="white">EXPIRED SUPPRESS</text>
+  <text x="340" y="340" text-anchor="middle" font-size="9" fill="#f5b7b1">Reactivate finding</text>
+  <text x="340" y="353" text-anchor="middle" font-size="9" fill="#f5b7b1">Report expiry date</text>
+  <line x1="340" y1="280" x2="340" y2="305" stroke="#555" stroke-width="1.5" marker-end="url(#arr5)"/>
+  <text x="350" y="298" text-anchor="middle" font-size="9" fill="#555">No</text>
+</svg>
+<p class="figure-caption">Figure 1. Decision tree for evaluating a security suppression directive. Directives with a valid future expiration date suppress the finding. Directives with past expiration dates reactivate the finding with an "expired suppression" indicator. Directives with no date require a valid reason code.</p>
+
+<h3>C. The <code>shouldIgnoreFinding()</code> Function</h3>
+
+<p>At scan time, each finding is checked against the parsed suppression list using the <code>shouldIgnoreFinding()</code> function. This function:</p>
+
+<ol>
+  <li>Matches the finding's rule ID against suppression directives at the same file location (line-scoped) or at the file level (file-scoped directives).</li>
+  <li>For matching directives with an expiration date: compares the current date (ISO-8601 string, retrieved at scan initialization time) against the parsed expiration date.</li>
+  <li>If the current date is before the expiration: returns <code>true</code> (suppress finding).</li>
+  <li>If the current date is on or after the expiration: returns <code>false</code> (reactivate finding) and annotates the finding with <code>suppressionExpired: true</code> and the original expiration date.</li>
+  <li>For directives with a reason code: validates the code against the approved list and returns <code>true</code> (suppress) for valid codes, <code>false</code> for invalid codes.</li>
+  <li>For directives with neither date nor reason: returns <code>false</code> and generates an "invalid suppression" finding.</li>
+</ol>
+
+<h3>D. Stale Suppression Detection</h3>
+
+<p>The invention additionally provides a <em>suppression audit mode</em> that reports all active suppressions sorted by expiration date, enabling developers to review and renew or remove near-expiry suppressions before they lapse. This proactive reporting mode surfaces suppressions expiring within a configurable lookahead window (e.g., 30 days) as informational findings, allowing teams to plan suppression maintenance.</p>
+
+<!-- Figure 2: Suppression Lifecycle -->
+<svg width="680" height="200" viewBox="0 0 680 200" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <defs>
+    <marker id="arr6" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="680" height="200" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="340" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 2 &#8212; Suppression Directive Temporal Lifecycle</text>
+
+  <!-- Timeline bar -->
+  <line x1="40" y1="100" x2="640" y2="100" stroke="#bbb" stroke-width="2"/>
+
+  <!-- Created -->
+  <circle cx="80" cy="100" r="8" fill="#2980b9"/>
+  <text x="80" y="130" text-anchor="middle" font-size="9" fill="#2980b9">Created</text>
+  <text x="80" y="143" text-anchor="middle" font-size="8" fill="#666">Directive added</text>
+
+  <!-- Active zone -->
+  <rect x="88" y="80" width="360" height="40" fill="#27ae60" opacity="0.15" rx="3"/>
+  <text x="268" y="95" text-anchor="middle" font-size="9" fill="#27ae60" font-weight="bold">ACTIVE &#8212; Finding suppressed</text>
+
+  <!-- 30-day warning -->
+  <circle cx="418" cy="100" r="8" fill="#e67e22"/>
+  <text x="418" y="130" text-anchor="middle" font-size="9" fill="#e67e22">&#8722;30 days</text>
+  <text x="418" y="143" text-anchor="middle" font-size="8" fill="#666">Audit warning</text>
+  <line x1="418" y1="80" x2="418" y2="60" stroke="#e67e22" stroke-width="1.5"/>
+  <text x="418" y="54" text-anchor="middle" font-size="8" fill="#e67e22">Lookahead alert</text>
+
+  <!-- Warning zone -->
+  <rect x="418" y="80" width="90" height="40" fill="#e67e22" opacity="0.15" rx="3"/>
+  <text x="463" y="95" text-anchor="middle" font-size="8.5" fill="#e67e22">WARN zone</text>
+
+  <!-- Expiration -->
+  <circle cx="508" cy="100" r="10" fill="#e74c3c"/>
+  <text x="508" y="130" text-anchor="middle" font-size="9" fill="#e74c3c" font-weight="bold">EXPIRY</text>
+  <text x="508" y="143" text-anchor="middle" font-size="8" fill="#666">Suppression ends</text>
+  <line x1="508" y1="80" x2="508" y2="50" stroke="#e74c3c" stroke-width="2"/>
+  <text x="508" y="44" text-anchor="middle" font-size="9" fill="#e74c3c" font-weight="bold">Finding reactivated</text>
+
+  <!-- Expired zone -->
+  <rect x="508" y="80" width="130" height="40" fill="#e74c3c" opacity="0.12" rx="3"/>
+  <text x="573" y="95" text-anchor="middle" font-size="8.5" fill="#e74c3c">EXPIRED &#8212; Finding active</text>
+
+  <!-- Today marker -->
+  <line x1="380" y1="72" x2="380" y2="128" stroke="#555" stroke-width="2" stroke-dasharray="5"/>
+  <text x="380" y="155" text-anchor="middle" font-size="9" fill="#555" font-weight="bold">TODAY</text>
+</svg>
+<p class="figure-caption">Figure 2. Temporal lifecycle of a suppression directive. The ACTIVE zone begins at creation and ends at expiration. The 30-day lookahead generates audit warnings. Past expiration, the finding is automatically reactivated.</p>
+
+<h2>IV. INDEPENDENT CLAIMS</h2>
+
+<div class="claim">
+<span class="claim-num">Claim 1 (Method &mdash; Independent):</span> A computer-implemented method for managing security finding suppressions in AI configuration file scanners, comprising: parsing an AI configuration file to identify inline suppression directives, each directive specifying a security rule identifier and at least one of: an expiration date in a standardized date format, or a justification code from an approved code list; for each suppression directive having an expiration date, comparing the expiration date to the current date; when the expiration date is on or after the current date, suppressing any security findings matching the specified rule identifier at the specified file location; when the expiration date is before the current date, reactivating any security findings that would otherwise be suppressed by the directive, and annotating each reactivated finding with an expired-suppression indicator and the original expiration date; and for suppression directives having neither a valid expiration date nor a valid justification code, generating an invalid-suppression finding.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 2 (Dependent on Claim 1):</span> The method of claim 1, further comprising a suppression audit mode comprising: identifying active suppression directives whose expiration dates fall within a configurable lookahead window before the current date; and generating informational findings for such near-expiry directives to enable proactive review and renewal.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 3 (Dependent on Claim 1):</span> The method of claim 1, wherein parsing inline suppression directives further comprises identifying directives embedded in JSON comment fields and markdown comment blocks within AI coding assistant configuration files, the AI coding assistant configuration files comprising at least one of CLAUDE.md, .cursorrules, AGENTS.md, and MCP server definition files.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 4 (Dependent on Claim 1):</span> The method of claim 1, wherein the standardized date format is an ISO-8601 date string and the comparison to the current date is performed at scan initialization time such that all findings within a single scan invocation use a consistent reference date.
+</div>
+
+<h2 class="page-break">V. PRIOR ART ANALYSIS</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Reference</th>
+    <th>Type</th>
+    <th>Subject</th>
+    <th>Gap vs. Invention</th>
+    <th>Anticipates?</th>
+  </tr>
+  <tr>
+    <td>ESLint eslint-disable comments</td>
+    <td>Open Source Tool</td>
+    <td>Inline linting suppression</td>
+    <td>No expiration date support; suppressions are permanent by default; no invalid-suppression detection; not security-focused</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Bandit (# nosec) Python SAST</td>
+    <td>Open Source Tool</td>
+    <td>Security linting suppression</td>
+    <td>No expiration date mechanism; suppressions are permanent; no audit mode for stale suppressions</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>SonarQube NOSONAR comments</td>
+    <td>Commercial Tool</td>
+    <td>Code quality suppression</td>
+    <td>No expiration support; SonarQube has a separate "won't fix" workflow but not inline expiration dates</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>GitHub Code Scanning suppression</td>
+    <td>Tool</td>
+    <td>Security alert dismissal</td>
+    <td>Dismissals are managed via GitHub UI, not inline; no per-occurrence expiration dates in configuration files; different architecture</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Semgrep nosem comments</td>
+    <td>Open Source Tool</td>
+    <td>SAST suppression</td>
+    <td>No expiration date syntax; suppressions are permanent; no temporal enforcement mechanism</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>TODO/FIXME date conventions</td>
+    <td>Informal Practice</td>
+    <td>Code comment dating</td>
+    <td>Informal convention; not parsed by tooling; no automated enforcement or reactivation</td>
+    <td>No</td>
+  </tr>
+</table>
+
+<p><strong>Non-obviousness argument:</strong> While inline suppression comments are well-established in linting tools, no prior tool enforces expiration dates on suppressions with automatic reactivation of findings. The insight that security suppressions in AI configuration files must be temporal &mdash; because AI CLI threat landscapes evolve rapidly &mdash; is non-obvious and not motivated by any single prior reference. The combination of: (a) expiration-date parsing, (b) date comparison at scan time, (c) finding reactivation with expired-suppression annotation, and (d) lookahead audit mode represents a novel system not taught by the prior art.</p>
+
+<h2>VI. RECOMMENDED FILING STRATEGY</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Option</th>
+    <th>Description</th>
+    <th>Pros</th>
+    <th>Cons</th>
+  </tr>
+  <tr>
+    <td>Standalone Provisional</td>
+    <td>File FS-2026-005 as independent provisional</td>
+    <td>Preserves full independent claim scope; broadest coverage</td>
+    <td>Higher cost; narrower invention increases examination risk</td>
+  </tr>
+  <tr>
+    <td>Dependent Claim in FS-2026-001</td>
+    <td>Add as dependent claim to the capability profiling patent</td>
+    <td>Lower cost; leverages parent's broader claims; single prosecution</td>
+    <td>May limit claim scope; tied to parent's fate</td>
+  </tr>
+  <tr>
+    <td>Continuation-in-Part</td>
+    <td>File as CIP from FS-2026-001 after non-provisional</td>
+    <td>Flexible timing; can expand based on market traction</td>
+    <td>Delays filing; requires parent to be in prosecution</td>
+  </tr>
+</table>
+
+<p><strong>Filing recommendation:</strong> Given the narrower scope of this invention relative to FS-2026-001 through FS-2026-004, the most cost-effective approach is likely to include the expiration-date suppression mechanism as dependent claims within the FS-2026-001 non-provisional application, after confirming that the primary claims are allowable. File a standalone provisional only if you identify a clear path to broad independent claims.</p>
+
+<hr>
+<p style="font-size:9pt;color:#666;text-align:center;">
+  Ferret-Scan Patent Disclosure FS-2026-005 | Pro Se Filing Document | Prepared 2026-03-22<br>
+  Inventor's working reference for pro se provisional patent application under 35 U.S.C. § 111(b).
+</p>
+
+</body>
+</html>

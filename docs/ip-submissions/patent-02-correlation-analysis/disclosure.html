@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patent Disclosure — Cross-File Attack Chain Correlation</title>
+  <style>
+    :root {
+      --ink: #0f1117;
+      --muted: #4a5568;
+      --border: #cbd5e0;
+      --accent: #44337a;
+      --highlight: #faf5ff;
+      --critical: #c53030;
+      --warning: #d97706;
+      --safe: #276749;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Times New Roman', Times, serif; font-size: 12pt; line-height: 1.7; color: var(--ink); background: #fff; }
+    .page { max-width: 8.5in; margin: 0 auto; padding: 1in 1.1in; }
+    .doc-header { border-top: 4px solid var(--accent); border-bottom: 2px solid var(--border); padding: 24px 0 20px; margin-bottom: 36px; }
+    .doc-header .classification { font-family: Arial, sans-serif; font-size: 9pt; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .doc-header h1 { font-size: 20pt; font-weight: 700; color: var(--accent); line-height: 1.3; margin-bottom: 6px; }
+    .doc-header .subtitle { font-size: 11pt; color: var(--muted); font-style: italic; }
+    .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 32px; margin-top: 18px; font-family: Arial, sans-serif; font-size: 9.5pt; }
+    .meta-item { display: flex; gap: 8px; }
+    .meta-label { color: var(--muted); min-width: 130px; font-weight: 600; }
+    .verdict-badge { display: inline-block; margin-top: 14px; padding: 4px 14px; border-radius: 3px; font-family: Arial, sans-serif; font-size: 9pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; background: #276749; color: #fff; }
+    h2 { font-family: Arial, sans-serif; font-size: 13pt; font-weight: 700; color: var(--accent); border-bottom: 1.5px solid var(--border); padding-bottom: 6px; margin: 32px 0 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    h3 { font-family: Arial, sans-serif; font-size: 11pt; font-weight: 700; color: var(--ink); margin: 22px 0 8px; }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 24px; margin-bottom: 14px; }
+    li { margin-bottom: 5px; }
+    code { font-family: 'Courier New', monospace; font-size: 9.5pt; background: #f7f8fa; border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; }
+    .callout { border-left: 4px solid var(--accent); background: var(--highlight); padding: 12px 16px; margin: 16px 0; border-radius: 0 4px 4px 0; }
+    .callout.warning { border-color: var(--critical); background: #fff5f5; }
+    .callout strong { font-family: Arial, sans-serif; font-size: 9.5pt; }
+    .claim-block { border: 1.5px solid var(--accent); border-radius: 4px; padding: 20px 24px; margin: 16px 0; background: #faf5ff; }
+    .claim-block .claim-number { font-family: Arial, sans-serif; font-size: 9pt; font-weight: 700; color: var(--accent); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+    .claim-block p { font-style: italic; margin-bottom: 6px; }
+    .diagram-wrap { margin: 24px 0; text-align: center; }
+    .diagram-caption { font-family: Arial, sans-serif; font-size: 9pt; color: var(--muted); margin-top: 8px; font-style: italic; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 10.5pt; }
+    th { background: var(--accent); color: #fff; font-family: Arial, sans-serif; font-size: 9.5pt; font-weight: 600; padding: 8px 12px; text-align: left; }
+    td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    tr:nth-child(even) td { background: #faf5ff; }
+    .pa-none { color: var(--safe); font-weight: 700; }
+    .pa-partial { color: var(--warning); font-weight: 700; }
+    .doc-footer { margin-top: 48px; border-top: 1px solid var(--border); padding-top: 16px; font-family: Arial, sans-serif; font-size: 8.5pt; color: var(--muted); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="doc-header">
+    <div class="classification">Invention Disclosure — Pro Se Filing Document</div>
+    <h1>Cross-File Attack Chain Correlation<br>in AI CLI Configuration Environments</h1>
+    <div class="subtitle">Patent Submission No. FS-2026-002 &nbsp;|&nbsp; Ferret Security Project</div>
+    <div class="meta-grid">
+      <div class="meta-item"><span class="meta-label">Inventor(s):</span><span class="meta-value">Ferret Security Team</span></div>
+      <div class="meta-item"><span class="meta-label">Filing Jurisdiction:</span><span class="meta-value">United States (USPTO) + PCT</span></div>
+      <div class="meta-item"><span class="meta-label">First Public Disclosure:</span><span class="meta-value">2026-01-31 (npm: ferret-scan)</span></div>
+      <div class="meta-item"><span class="meta-label">Grace Period Expires:</span><span class="meta-value">2027-01-31</span></div>
+      <div class="meta-item"><span class="meta-label">Priority Filing Target:</span><span class="meta-value">Within 30 days of this disclosure</span></div>
+      <div class="meta-item"><span class="meta-label">Source File:</span><span class="meta-value">src/analyzers/CorrelationAnalyzer.ts</span></div>
+    </div>
+    <div class="verdict-badge">Patentability: Strong</div>
+  </div>
+
+  <h2>Abstract</h2>
+  <p>
+    A method and system detect coordinated, multi-file security attack patterns in AI CLI configuration
+    deployments by constructing a file relationship graph using directory proximity and semantic naming
+    relationships between AI CLI components, then searching for content pattern signatures that must span
+    at least two related files. A quantitative correlation strength score combines pattern coverage, file
+    participation, and proximity metrics. Detections produce structured findings identifying the attack
+    pattern, involved files, attack vectors, and correlation confidence.
+  </p>
+
+  <h2>Technical Field</h2>
+  <p>
+    This invention relates to multi-file static analysis and security threat detection, specifically the
+    detection of coordinated attack chains distributed across heterogeneous AI CLI configuration files
+    through file relationship graph construction and cross-file pattern correlation.
+  </p>
+
+  <h2>Background</h2>
+  <p>
+    Sophisticated attackers distributing malicious content across multiple AI CLI configuration files
+    (e.g., placing credential-stealing logic in a hook file while establishing network access in a skill
+    file) evade single-file security scanners. Traditional cross-file taint analysis (used in conventional
+    SAST) relies on program flow and data flow graphs between source code functions — techniques that do
+    not apply to the configuration-file structure of AI CLI deployments.
+  </p>
+  <p>
+    The AI CLI environment introduces a novel relationship structure: files are related not by function
+    call graphs but by (1) directory co-location and (2) semantic naming patterns specific to the AI CLI
+    domain (hooks, skills, agents, settings, etc.). No prior system exploited these relationships for
+    attack chain detection.
+  </p>
+
+  <h2>Detailed Description</h2>
+
+  <h3>1. File Relationship Graph Construction</h3>
+  <p>
+    The system builds a relationship graph over the set of discovered AI CLI configuration files using
+    two independent edge-creation mechanisms:
+  </p>
+  <ul>
+    <li><strong>Directory Distance Edges:</strong> A directory distance metric is computed as the number
+    of path components in the relative path between two file directories. Files with distance ≤ 2 receive
+    a relationship edge.</li>
+    <li><strong>Semantic Naming Edges:</strong> File paths are tested against a library of AI CLI-specific
+    naming relationship patterns. Any pair matching a pattern receives an edge regardless of directory
+    distance. Example patterns: hooks↔skills, hooks↔agents, CLAUDE.md↔.mcp.json, settings.json↔config.*,
+    agent↔skill, security/auth↔permission/access.</li>
+  </ul>
+
+  <!-- Graph Construction Diagram -->
+  <div class="diagram-wrap">
+    <svg width="680" height="340" viewBox="0 0 680 340" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+      <rect width="680" height="340" fill="#faf5ff" rx="8" stroke="#cbd5e0"/>
+
+      <!-- Files as nodes -->
+      <!-- CLAUDE.md -->
+      <ellipse cx="120" cy="80" rx="70" ry="22" fill="#44337a" />
+      <text x="120" y="85" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">CLAUDE.md</text>
+
+      <!-- .mcp.json -->
+      <ellipse cx="340" cy="80" rx="65" ry="22" fill="#44337a"/>
+      <text x="340" y="85" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">.mcp.json</text>
+
+      <!-- settings.json -->
+      <ellipse cx="560" cy="80" rx="75" ry="22" fill="#44337a"/>
+      <text x="560" y="85" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">settings.json</text>
+
+      <!-- hooks/post.sh -->
+      <ellipse cx="120" cy="200" rx="80" ry="22" fill="#6b46c1"/>
+      <text x="120" y="205" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">hooks/post.sh</text>
+
+      <!-- skills/exfil.md -->
+      <ellipse cx="340" cy="200" rx="80" ry="22" fill="#6b46c1"/>
+      <text x="340" y="205" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">skills/exfil.md</text>
+
+      <!-- agents/helper.md -->
+      <ellipse cx="560" cy="200" rx="85" ry="22" fill="#6b46c1"/>
+      <text x="560" y="205" text-anchor="middle" fill="#fff" font-size="9.5" font-weight="bold">agents/helper.md</text>
+
+      <!-- Edges -->
+      <!-- CLAUDE.md ↔ .mcp.json (semantic: claude.md ↔ mcp.json) -->
+      <line x1="190" y1="80" x2="275" y2="80" stroke="#e9d8fd" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="232" y="72" text-anchor="middle" fill="#44337a" font-size="8">semantic</text>
+
+      <!-- .mcp.json ↔ settings.json (dir proximity) -->
+      <line x1="405" y1="80" x2="485" y2="80" stroke="#e9d8fd" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="445" y="72" text-anchor="middle" fill="#44337a" font-size="8">dir proximity</text>
+
+      <!-- hooks/post.sh ↔ skills/exfil.md (semantic: hooks ↔ skills) -->
+      <line x1="200" y1="200" x2="260" y2="200" stroke="#d6bcfa" stroke-width="2.5"/>
+      <text x="230" y="218" text-anchor="middle" fill="#44337a" font-size="8" font-weight="bold">semantic + dir</text>
+
+      <!-- skills/exfil.md ↔ agents/helper.md (semantic: agents ↔ skills) -->
+      <line x1="420" y1="200" x2="475" y2="200" stroke="#d6bcfa" stroke-width="2.5"/>
+      <text x="447" y="218" text-anchor="middle" fill="#44337a" font-size="8" font-weight="bold">semantic</text>
+
+      <!-- hooks/post.sh ↔ CLAUDE.md (dir proximity) -->
+      <line x1="120" y1="102" x2="120" y2="178" stroke="#e9d8fd" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="95" y="142" text-anchor="middle" fill="#44337a" font-size="8" transform="rotate(-90 95 142)">dir</text>
+
+      <!-- settings.json ↔ agents/helper.md -->
+      <line x1="560" y1="102" x2="560" y2="178" stroke="#e9d8fd" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="583" y="142" text-anchor="middle" fill="#44337a" font-size="8" transform="rotate(90 583 142)">dir</text>
+
+      <!-- Attack chain highlight -->
+      <path d="M120,222 Q230,270 340,222" fill="none" stroke="#c53030" stroke-width="2.5" stroke-dasharray="4,2" marker-end="url(#redarr)"/>
+      <text x="230" y="268" text-anchor="middle" fill="#c53030" font-size="9" font-weight="bold">ATTACK CHAIN</text>
+      <text x="230" y="280" text-anchor="middle" fill="#c53030" font-size="8">(hook establishes access → skill exfiltrates)</text>
+
+      <!-- Legend -->
+      <rect x="440" y="248" width="220" height="75" rx="4" fill="#fff" stroke="#cbd5e0"/>
+      <text x="450" y="263" fill="#44337a" font-size="9" font-weight="bold">Legend</text>
+      <line x1="450" y1="275" x2="490" y2="275" stroke="#e9d8fd" stroke-width="2" stroke-dasharray="5,3"/>
+      <text x="498" y="279" fill="#44337a" font-size="8">Directory proximity / semantic edge</text>
+      <line x1="450" y1="292" x2="490" y2="292" stroke="#d6bcfa" stroke-width="2.5"/>
+      <text x="498" y="296" fill="#44337a" font-size="8">Strong dual-type edge</text>
+      <line x1="450" y1="309" x2="490" y2="309" stroke="#c53030" stroke-width="2.5" stroke-dasharray="4,2"/>
+      <text x="498" y="313" fill="#c53030" font-size="8">Detected attack chain</text>
+
+      <defs>
+        <marker id="redarr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#c53030"/>
+        </marker>
+      </defs>
+
+      <text x="340" y="325" text-anchor="middle" fill="#4a5568" font-size="9" font-style="italic">Fig. 1 — File Relationship Graph with Attack Chain Detection</text>
+    </svg>
+    <div class="diagram-caption">Figure 1. File relationship graph edges (directory proximity and semantic naming) with detected cross-file attack chain</div>
+  </div>
+
+  <h3>2. Correlation Rule Structure</h3>
+  <p>
+    Correlation rules specify the conditions under which a cross-file pattern constitutes an attack chain.
+    Each rule contains:
+  </p>
+  <ul>
+    <li><strong>filePatterns:</strong> Substrings identifying which file paths are candidates for this rule</li>
+    <li><strong>contentPatterns:</strong> Ordered list of regex patterns, each of which must match in at least one of the candidate files</li>
+    <li><strong>description:</strong> Attack pattern description used to infer risk vectors</li>
+  </ul>
+  <p>
+    A rule fires when all content patterns are found across the set of files in a relationship cluster,
+    with no requirement that any single file match more than one pattern.
+  </p>
+
+  <h3>3. Correlation Strength Formula</h3>
+  <p>The correlation strength score <em>S</em> is computed as:</p>
+  <div class="diagram-wrap">
+    <svg width="500" height="90" viewBox="0 0 500 90" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+      <rect width="500" height="90" fill="#faf5ff" rx="6" stroke="#cbd5e0"/>
+      <text x="250" y="30" text-anchor="middle" fill="#44337a" font-size="14" font-style="italic">S = (M / P) + min(F / Fp, 1) × 0.2 + 0.1</text>
+      <text x="250" y="55" text-anchor="middle" fill="#4a5568" font-size="10">Where: M = matched content patterns, P = total patterns in rule,</text>
+      <text x="250" y="70" text-anchor="middle" fill="#4a5568" font-size="10">F = unique files with ≥1 match, Fp = filePatterns count in rule</text>
+      <text x="250" y="85" text-anchor="middle" fill="#44337a" font-size="9" font-style="italic">S capped at 1.0; threshold for finding emission is configurable</text>
+    </svg>
+    <div class="diagram-caption">Figure 2. Correlation strength formula (Eq. 1)</div>
+  </div>
+
+  <h3>4. Risk Vector Inference</h3>
+  <p>
+    When a correlation finding is emitted, the system infers attack risk vectors from the rule description
+    text using keyword matching. Detected vectors include: Credential Exposure, Data Exfiltration, Privilege
+    Escalation, Persistence Mechanism, Steganography/Hiding, Hook-Skill Chain, and Configuration Tampering.
+    The final <code>CorrelationFinding</code> includes all inferred vectors in a <code>riskVectors[]</code>
+    array alongside the numeric <code>correlationStrength</code> and <code>relatedFiles[]</code> list.
+  </p>
+
+  <!-- Full pipeline diagram -->
+  <div class="diagram-wrap">
+    <svg width="680" height="230" viewBox="0 0 680 230" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif" font-size="9.5">
+      <rect width="680" height="230" fill="#faf5ff" rx="8" stroke="#cbd5e0"/>
+
+      <!-- Boxes -->
+      <rect x="20" y="40" width="120" height="60" rx="5" fill="#44337a"/>
+      <text x="80" y="67" text-anchor="middle" fill="#fff" font-weight="bold">File</text>
+      <text x="80" y="81" text-anchor="middle" fill="#fff" font-weight="bold">Discovery</text>
+      <text x="80" y="95" text-anchor="middle" fill="#e9d8fd" font-size="8">N config files</text>
+
+      <line x1="140" y1="70" x2="170" y2="70" stroke="#44337a" stroke-width="2" marker-end="url(#pa)"/>
+
+      <rect x="170" y="40" width="130" height="60" rx="5" fill="#44337a"/>
+      <text x="235" y="62" text-anchor="middle" fill="#fff" font-weight="bold">Build File</text>
+      <text x="235" y="76" text-anchor="middle" fill="#fff" font-weight="bold">Relationship</text>
+      <text x="235" y="90" text-anchor="middle" fill="#fff" font-weight="bold">Graph</text>
+      <text x="235" y="104" text-anchor="middle" fill="#e9d8fd" font-size="8">dir + semantic</text>
+
+      <line x1="300" y1="70" x2="330" y2="70" stroke="#44337a" stroke-width="2" marker-end="url(#pa)"/>
+
+      <rect x="330" y="40" width="130" height="60" rx="5" fill="#44337a"/>
+      <text x="395" y="62" text-anchor="middle" fill="#fff" font-weight="bold">Find Cross-File</text>
+      <text x="395" y="76" text-anchor="middle" fill="#fff" font-weight="bold">Content</text>
+      <text x="395" y="90" text-anchor="middle" fill="#fff" font-weight="bold">Patterns</text>
+      <text x="395" y="104" text-anchor="middle" fill="#e9d8fd" font-size="8">≥2 files per rule</text>
+
+      <line x1="460" y1="70" x2="490" y2="70" stroke="#44337a" stroke-width="2" marker-end="url(#pa)"/>
+
+      <rect x="490" y="40" width="170" height="60" rx="5" fill="#44337a"/>
+      <text x="575" y="62" text-anchor="middle" fill="#fff" font-weight="bold">Compute Strength</text>
+      <text x="575" y="76" text-anchor="middle" fill="#fff" font-weight="bold">&amp; Emit</text>
+      <text x="575" y="90" text-anchor="middle" fill="#fff" font-weight="bold">CorrelationFinding</text>
+      <text x="575" y="104" text-anchor="middle" fill="#e9d8fd" font-size="8">riskVectors, strength, relatedFiles</text>
+
+      <!-- Correlation rules input -->
+      <rect x="300" y="140" width="150" height="40" rx="5" fill="#6b46c1"/>
+      <text x="375" y="158" text-anchor="middle" fill="#fff" font-weight="bold">Correlation Rules</text>
+      <text x="375" y="172" text-anchor="middle" fill="#e9d8fd" font-size="8">(filePatterns + contentPatterns)</text>
+      <line x1="375" y1="140" x2="395" y2="102" stroke="#6b46c1" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#pb)"/>
+
+      <defs>
+        <marker id="pa" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#44337a"/>
+        </marker>
+        <marker id="pb" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#6b46c1"/>
+        </marker>
+      </defs>
+
+      <text x="340" y="215" text-anchor="middle" fill="#4a5568" font-size="9" font-style="italic">Fig. 3 — Cross-File Correlation Analysis Pipeline</text>
+    </svg>
+    <div class="diagram-caption">Figure 3. Full correlation analysis pipeline from file discovery to structured finding emission</div>
+  </div>
+
+  <h2>Independent Claims</h2>
+
+  <div class="claim-block">
+    <div class="claim-number">Claim 1 — Method</div>
+    <p>
+      A computer-implemented method for detecting multi-file security attack patterns in artificial
+      intelligence command-line interface (AI CLI) configurations, the method comprising: discovering a
+      plurality of configuration files associated with an AI CLI deployment; constructing a file
+      relationship graph by: calculating a directory distance between each pair of configuration files;
+      adding a relationship edge between pairs whose directory distance is within a threshold; adding
+      relationship edges between pairs whose file names match predefined AI CLI semantic naming patterns
+      indicating functional relationships between AI CLI components; for each edge-connected file cluster
+      in the graph, searching for a set of content patterns defined by a correlation rule, wherein the
+      content patterns must be present across at least two different files within the cluster; computing a
+      correlation strength score based on a ratio of matched patterns to total patterns in the correlation
+      rule, adjusted by the number of unique files matching at least one pattern; and generating a
+      correlation finding when the correlation strength score exceeds a threshold, the finding identifying
+      the matched files and the attack pattern represented by the correlation rule.
+    </p>
+  </div>
+
+  <div class="claim-block">
+    <div class="claim-number">Claim 2 — System</div>
+    <p>
+      A system for detecting coordinated attack chains in AI CLI configuration environments, comprising:
+      one or more processors configured to execute: a relationship builder that constructs a graph of
+      file relationships using both directory co-location proximity and semantic naming relationships
+      specific to AI CLI component types including hooks, skills, agents, and configuration files; a
+      pattern searcher that, for each correlation rule, reads file content across related files and
+      locates regex pattern matches; a strength calculator that computes a numeric correlation strength
+      from pattern coverage ratio, file participation ratio, and a proximity adjustment factor; a vector
+      inferrer that derives attack risk vectors from rule description text by keyword analysis; and a
+      finding emitter that produces structured correlation findings comprising related file paths, attack
+      pattern description, inferred risk vectors, and correlation strength.
+    </p>
+  </div>
+
+  <h2>Prior Art Analysis</h2>
+
+  <table>
+    <tr>
+      <th>Reference</th>
+      <th>Description</th>
+      <th>Key Difference</th>
+      <th>Anticipates?</th>
+    </tr>
+    <tr>
+      <td>US9,043,924<br><small>Veracode, 2015</small></td>
+      <td>Cross-file taint analysis in compiled languages via program data flow graphs</td>
+      <td>Data flow graph requires compiled source; no directory-proximity graph; no semantic naming; no AI CLI domain</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>Semgrep cross-file analysis<br><small>2021+</small></td>
+      <td>Cross-file pattern matching using type resolution</td>
+      <td>Requires type information from compiled code; no relationship graph; no AI CLI semantic naming; no correlation strength scoring</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>CodeQL (GitHub)<br><small>2019+</small></td>
+      <td>Graph-based code analysis with dataflow queries</td>
+      <td>Code-level data flow, not configuration file proximity; no AI CLI naming semantics</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>MCP-Scan (Invariant Labs)<br><small>2025</small></td>
+      <td>Runtime MCP traffic interception for prompt injection</td>
+      <td>Runtime proxy mode; single MCP server focus; no cross-file relationship graph; no static correlation analysis</td>
+      <td class="pa-none">NO</td>
+    </tr>
+  </table>
+
+  <div class="callout">
+    <strong>Key Novelty Point:</strong> All prior cross-file analysis systems depend on program structure
+    (call graphs, data flow, type resolution). This invention is the first to use <em>directory proximity
+    combined with AI CLI semantic naming patterns</em> as the basis for a relationship graph, enabling
+    attack chain detection in configuration-file environments where no program structure exists.
+  </div>
+
+  <h2>Disclosure Bar &amp; Filing Urgency</h2>
+
+  <div class="callout warning">
+    <strong>URGENT — Competitor Risk:</strong> MCP-Scan (Snyk/Invariant Labs) is an active product in the
+    adjacent space. Any patent filing they make on cross-file correlation or multi-file attack chain
+    detection after <strong>2026-01-31</strong> would be barred by Ferret's prior public disclosure, but
+    Ferret must file to hold the right. File provisional within 30 days.
+  </div>
+
+  <table>
+    <tr><th>Event</th><th>Date</th><th>Status</th></tr>
+    <tr><td>npm publish (public disclosure)</td><td>2026-01-31</td><td>Clock starts</td></tr>
+    <tr><td>This disclosure prepared</td><td>2026-03-22</td><td>Pro se filing prepared</td></tr>
+    <tr><td><strong>Provisional filing target</strong></td><td><strong>2026-04-22</strong></td><td><strong>TARGET</strong></td></tr>
+    <tr><td>US grace period hard deadline</td><td>2027-01-31</td><td>Absolute latest</td></tr>
+  </table>
+
+  <h2>Recommended Filing Strategy</h2>
+  <ul>
+    <li><strong>Provisional (US):</strong> File within 30 days. This is the highest-priority filing in the portfolio — the most technically novel and defensible claim.</li>
+    <li><strong>PCT:</strong> File concurrently. Cross-file attack chain correlation has global applicability for enterprise security tools.</li>
+    <li><strong>Consider continuation:</strong> A second claim set covering the specific AI CLI semantic naming relationship patterns (hooks↔skills, CLAUDE.md↔.mcp.json) as a standalone sub-invention.</li>
+  </ul>
+
+  <div class="doc-footer">
+    <p><strong>Ferret Security Project — Invention Disclosure FS-2026-002</strong></p>
+    <p>Inventor's working document for pro se patent filing. Claims and descriptions are considered final and ready for submission as a provisional patent application under 35 U.S.C. § 111(b).</p>
+    <p>Prepared: 2026-03-22 &nbsp;|&nbsp; Source: src/analyzers/CorrelationAnalyzer.ts &nbsp;|&nbsp; Classification: Confidential</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -3,7 +3,7 @@
  * Analyzes code blocks in markdown and TypeScript configurations for complex patterns
  */
 
-import * as ts from 'typescript';
+import type * as ts from 'typescript';
 import type {
   SemanticFinding,
   SemanticPattern,
@@ -14,6 +14,50 @@ import type {
   ContextLine
 } from '../types.js';
 import logger from '../utils/logger.js';
+
+let _ts: typeof import('typescript') | undefined;
+
+async function getTS(): Promise<typeof import('typescript')> {
+  if (!_ts) {
+    try {
+      _ts = await import('typescript');
+    } catch {
+      throw new Error(
+        'The "typescript" package is required for semantic analysis. ' +
+        'Install it with: npm install -D typescript'
+      );
+    }
+  }
+  return _ts;
+}
+
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function matchesSymbolLike(text: string, symbol: string): boolean {
+  // Match a function/property token within a dotted chain without substring false positives.
+  // Examples:
+  // - pattern "exec" should match "exec(" and "child_process.exec" but not "execute("
+  // - pattern "axios" should match "axios.get" and "axios(" but not "myaxios"
+  const trimmed = symbol.trim();
+  if (!trimmed) return false;
+
+  // Prefix-like patterns (e.g. "fs." or "process.env") used in some semantic rules.
+  if (trimmed.endsWith('.')) {
+    const base = trimmed.slice(0, -1);
+    const escapedBase = escapeRegExp(base);
+    return new RegExp(`(?:^|\\.)${escapedBase}\\.`).test(text);
+  }
+  if (trimmed.includes('.')) {
+    const escapedPrefix = escapeRegExp(trimmed);
+    return new RegExp(`(?:^|\\.)${escapedPrefix}(?:\\.|$)`).test(text);
+  }
+
+  const escaped = escapeRegExp(trimmed);
+  const re = new RegExp(`(?:^|\\.)${escaped}(?:$|[^A-Za-z0-9_$])`);
+  return re.test(text);
+}
 
 /**
  * Extract code blocks from markdown content
@@ -70,20 +114,20 @@ function isAnalyzableLanguage(language: string): boolean {
 /**
  * Create TypeScript AST from code
  */
-function createAST(code: string, fileName = 'analysis.ts'): ts.SourceFile {
-  return ts.createSourceFile(
+function createAST(tsLib: typeof import('typescript'), code: string, fileName = 'analysis.ts'): ts.SourceFile {
+  return tsLib.createSourceFile(
     fileName,
     code,
-    ts.ScriptTarget.Latest,
+    tsLib.ScriptTarget.Latest,
     true,
-    fileName?.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    fileName?.endsWith('.tsx') ? tsLib.ScriptKind.TSX : tsLib.ScriptKind.TS
   );
 }
 
 /**
  * Extract semantic context from AST
  */
-function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
+function extractSemanticContext(tsLib: typeof import('typescript'), sourceFile: ts.SourceFile): SemanticContext {
   const context: SemanticContext = {
     variables: [],
     imports: [],
@@ -92,23 +136,23 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
 
   function visit(node: ts.Node): void {
     switch (node.kind) {
-      case ts.SyntaxKind.ImportDeclaration: {
+      case tsLib.SyntaxKind.ImportDeclaration: {
         const importDecl = node as ts.ImportDeclaration;
-        if (importDecl.moduleSpecifier && ts.isStringLiteral(importDecl.moduleSpecifier)) {
+        if (importDecl.moduleSpecifier && tsLib.isStringLiteral(importDecl.moduleSpecifier)) {
           context.imports!.push(importDecl.moduleSpecifier.text);
         }
         break;
       }
 
-      case ts.SyntaxKind.VariableDeclaration: {
+      case tsLib.SyntaxKind.VariableDeclaration: {
         const varDecl = node as ts.VariableDeclaration;
-        if (varDecl.name && ts.isIdentifier(varDecl.name)) {
+        if (varDecl.name && tsLib.isIdentifier(varDecl.name)) {
           context.variables!.push(varDecl.name.text);
         }
         break;
       }
 
-      case ts.SyntaxKind.CallExpression: {
+      case tsLib.SyntaxKind.CallExpression: {
         const callExpr = node as ts.CallExpression;
         const callText = callExpr.expression.getText(sourceFile);
         context.callChain!.push(callText);
@@ -116,7 +160,7 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
       }
     }
 
-    ts.forEachChild(node, visit);
+    tsLib.forEachChild(node, visit);
   }
 
   visit(sourceFile);
@@ -127,6 +171,7 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
  * Find security patterns in AST, with optional time and node-count guards.
  */
 function findSecurityPatterns(
+  tsLib: typeof import('typescript'),
   sourceFile: ts.SourceFile,
   patterns: SemanticPattern[],
   opts?: { deadline?: number; maxNodes?: number }
@@ -142,7 +187,7 @@ function findSecurityPatterns(
     if (deadline !== undefined && Date.now() > deadline) return;
 
     for (const pattern of patterns) {
-      const match = matchSemanticPattern(node, pattern, sourceFile);
+      const match = matchSemanticPattern(tsLib, node, pattern, sourceFile);
       if (match) {
         matches.push({
           pattern,
@@ -152,7 +197,7 @@ function findSecurityPatterns(
       }
     }
 
-    ts.forEachChild(node, visit);
+    tsLib.forEachChild(node, visit);
   }
 
   visit(sourceFile);
@@ -163,6 +208,7 @@ function findSecurityPatterns(
  * Match a semantic pattern against an AST node
  */
 function matchSemanticPattern(
+  tsLib: typeof import('typescript'),
   node: ts.Node,
   pattern: SemanticPattern,
   sourceFile: ts.SourceFile
@@ -172,29 +218,33 @@ function matchSemanticPattern(
 
   switch (pattern.type) {
     case 'function-call':
-      if (ts.isCallExpression(node)) {
+      if (tsLib.isCallExpression(node)) {
         const functionName = node.expression.getText(sourceFile);
-        if (functionName.includes(pattern.pattern)) {
+        if (matchesSymbolLike(functionName, pattern.pattern)) {
           return { confidence };
         }
       }
       break;
 
     case 'property-access':
-      if (ts.isPropertyAccessExpression(node)) {
+      if (tsLib.isPropertyAccessExpression(node)) {
         const fullAccess = node.getText(sourceFile);
-        if (fullAccess.includes(pattern.pattern)) {
+        if (matchesSymbolLike(fullAccess, pattern.pattern)) {
           return { confidence };
         }
       }
       break;
 
     case 'dynamic-import':
-      if (ts.isCallExpression(node)) {
-        if (node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-          // Dynamic import detected - pattern for security analysis only
+      if (tsLib.isCallExpression(node)) {
+        if (node.expression.kind === tsLib.SyntaxKind.ImportKeyword) {
+          const arg = node.arguments[0];
+          if (arg && (tsLib.isStringLiteralLike(arg) || tsLib.isNoSubstitutionTemplateLiteral(arg))) {
+            break;
+          }
+
           if (pattern.pattern === 'dynamic-import' || nodeText.includes(pattern.pattern)) {
-            confidence += 0.1; // Higher confidence for dynamic imports
+            confidence += 0.1;
             return { confidence };
           }
         }
@@ -202,18 +252,27 @@ function matchSemanticPattern(
       break;
 
     case 'eval-chain':
-      if (nodeText.toLowerCase().includes('eval') ||
-          nodeText.includes('Function(')) {
-        // Detecting eval patterns for security analysis - not executing
-        if (pattern.pattern === 'eval' || nodeText.includes(pattern.pattern)) {
-          confidence += 0.2; // Higher confidence for eval usage
+      if (tsLib.isCallExpression(node) || tsLib.isNewExpression(node)) {
+        const expr = node.expression;
+        const target = pattern.pattern;
+
+        if (tsLib.isIdentifier(expr) && expr.text === target) {
+          confidence += 0.2;
           return { confidence };
+        }
+
+        if (tsLib.isPropertyAccessExpression(expr) && expr.name.text === target) {
+          const receiver = expr.expression;
+          if (tsLib.isIdentifier(receiver) && (receiver.text === 'globalThis' || receiver.text === 'window')) {
+            confidence += 0.2;
+            return { confidence };
+          }
         }
       }
       break;
 
     case 'object-structure':
-      if (ts.isObjectLiteralExpression(node)) {
+      if (tsLib.isObjectLiteralExpression(node)) {
         if (nodeText.includes(pattern.pattern)) {
           return { confidence };
         }
@@ -227,27 +286,27 @@ function matchSemanticPattern(
 /**
  * Create AST node info
  */
-function createASTNodeInfo(node: ts.Node, sourceFile: ts.SourceFile): ASTNodeInfo {
-  const nodeName = getNodeName(node);
+function createASTNodeInfo(tsLib: typeof import('typescript'), node: ts.Node, sourceFile: ts.SourceFile): ASTNodeInfo {
+  const nodeName = getNodeName(tsLib, node);
   return {
-    nodeType: ts.SyntaxKind[node.kind],
+    nodeType: tsLib.SyntaxKind[node.kind],
     ...(nodeName && { name: nodeName }),
-    ...(node.parent && { parent: ts.SyntaxKind[node.parent.kind] }),
-    children: node.getChildren(sourceFile).map(child => ts.SyntaxKind[child.kind])
+    ...(node.parent && { parent: tsLib.SyntaxKind[node.parent.kind] }),
+    children: node.getChildren(sourceFile).map(child => tsLib.SyntaxKind[child.kind])
   };
 }
 
 /**
  * Get node name/identifier
  */
-function getNodeName(node: ts.Node): string | undefined {
-  if (ts.isIdentifier(node)) {
+function getNodeName(tsLib: typeof import('typescript'), node: ts.Node): string | undefined {
+  if (tsLib.isIdentifier(node)) {
     return node.text;
   }
-  if (ts.isFunctionDeclaration(node) && node.name) {
+  if (tsLib.isFunctionDeclaration(node) && node.name) {
     return node.name.text;
   }
-  if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+  if (tsLib.isVariableDeclaration(node) && tsLib.isIdentifier(node.name)) {
     return node.name.text;
   }
   return undefined;
@@ -295,12 +354,12 @@ function createContextLines(
 /**
  * Analyze a single file for semantic patterns
  */
-export function analyzeFile(
+export async function analyzeFile(
   file: DiscoveredFile,
   content: string,
   rules: Rule[],
   opts?: { maxMs?: number; maxNodes?: number; maxBlockMs?: number }
-): SemanticFinding[] {
+): Promise<SemanticFinding[]> {
   const findings: SemanticFinding[] = [];
   const maxMs = opts?.maxMs ?? 2000;
   const maxNodes = opts?.maxNodes ?? 50_000;
@@ -313,6 +372,8 @@ export function analyzeFile(
     if (semanticRules.length === 0) {
       return findings;
     }
+
+    const tsLib = await getTS();
 
     logger.debug(`AST analysis for ${file.relativePath} with ${semanticRules.length} semantic rules`);
 
@@ -335,31 +396,24 @@ export function analyzeFile(
         break;
       }
       try {
-        const sourceFile = createAST(codeBlock.code, `${file.relativePath}_block_${codeBlock.line}.${codeBlock.language}`);
-        const semanticContext = extractSemanticContext(sourceFile);
+        const sourceFile = createAST(tsLib, codeBlock.code, `${file.relativePath}_block_${codeBlock.line}.${codeBlock.language}`);
+        const semanticContext = extractSemanticContext(tsLib, sourceFile);
 
-        // Per-block deadline: min of (remaining file budget, per-block cap). This prevents
-        // a single hostile block from consuming the entire file budget, while the file-scoped
-        // check above prevents unbounded total analysis time.
+        // Per-block deadline: min of (remaining file budget, per-block cap).
         const blockDeadline = Math.min(fileDeadline, Date.now() + perBlockMs);
-        const blockedByPerBlock = blockDeadline < fileDeadline;
 
         // Check each semantic rule
         for (const rule of semanticRules) {
           if (!rule.semanticPatterns) continue;
 
-          const patternMatches = findSecurityPatterns(sourceFile, rule.semanticPatterns, {
+          const patternMatches = findSecurityPatterns(tsLib, sourceFile, rule.semanticPatterns, {
             deadline: blockDeadline,
             maxNodes,
           });
 
-          if (blockedByPerBlock && Date.now() >= blockDeadline) {
-            logger.warn(`AST analysis per-block deadline (${perBlockMs}ms) reached in ${file.relativePath} at block line ${codeBlock.line}`);
-          }
-
           for (const match of patternMatches) {
             const position = getPositionFromNode(match.node, sourceFile);
-            const astNodeInfo = createASTNodeInfo(match.node, sourceFile);
+            const astNodeInfo = createASTNodeInfo(tsLib, match.node, sourceFile);
             const contextLines = createContextLines(sourceFile, match.node, 3);
 
             const finding: SemanticFinding = {

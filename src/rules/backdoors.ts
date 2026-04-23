@@ -13,12 +13,15 @@ export const backdoorRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects eval usage which can execute arbitrary code',
     patterns: [
-      /eval\s*\(/gi,
+      /\beval\s+\$\(/gi, // eval $(...)
       /eval\s+"\$\(/gi,
       /eval\s+['"`]/gi,
     ],
     fileTypes: ['sh', 'bash', 'zsh', 'md'],
     components: ['hook', 'skill', 'agent', 'ai-config-md', 'plugin'],
+    excludePatterns: [
+      /\.\s*eval\s*\(/gi, // e.g. client.eval(...), model.eval() (common non-shell meanings)
+    ],
     remediation: 'Remove eval statements. Eval can execute arbitrary code and is a security risk.',
     references: [],
     enabled: true,

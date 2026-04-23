@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Specification — FS-2026-002: Cross-File Attack Chain Correlation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #d0d0d0;
+    font-family: Arial, sans-serif;
+    padding: 24px;
+  }
+
+  .page {
+    width: 760px;
+    min-height: 1000px;
+    background: #fff;
+    margin: 24px auto;
+    padding: 72px 80px 72px 100px;
+    border: 1px solid #888;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.65;
+    color: #000;
+  }
+
+  .page-top-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 24px;
+    letter-spacing: 0.03em;
+  }
+
+  .lined-content {
+    position: relative;
+  }
+
+  .ln {
+    position: absolute;
+    left: -52px;
+    width: 36px;
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    top: 0.1em;
+  }
+
+  h1.doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  h2.section-head {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  p.body-para {
+    text-indent: 2em;
+    margin-bottom: 10px;
+  }
+
+  p.no-indent {
+    margin-bottom: 10px;
+  }
+
+  .claim-item {
+    margin-bottom: 8px;
+    padding-left: 2em;
+    text-indent: -2em;
+  }
+
+  .claim-item.main-claim {
+    font-weight: normal;
+  }
+
+  .claim-sub {
+    padding-left: 4em;
+    text-indent: -2em;
+    margin-bottom: 6px;
+  }
+
+  .abstract-box {
+    border: 1px solid #000;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .drawings-ref {
+    font-style: italic;
+  }
+
+  .formula {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 13pt;
+    display: block;
+    margin: 12px 0 12px 3em;
+    font-style: italic;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10.5pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — Title, Cross-Reference, Technical Field, Background -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 1</div>
+
+  <h1 class="doc-title">Cross-File Attack Chain Correlation<br>in AI CLI Configuration Environments</h1>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Cross-Reference to Related Applications</h2>
+
+    <p class="body-para">
+      <span class="ln">5</span>
+      This application is related to co-pending U.S. Patent Application FS-2026-001, entitled
+      "AI Agent Capability Profile Generation from AI CLI Configuration Files"; co-pending
+      Application FS-2026-003, entitled "AST-Based Markdown Parsing for AI CLI Security
+      Analysis"; co-pending Application FS-2026-004, entitled "MCP Tool Declaration Validation
+      and Risk Scoring"; and co-pending Application FS-2026-005, entitled "Ignore-File Expiration
+    </p>
+    <p class="body-para">
+      <span class="ln">10</span>
+      and Hygiene Enforcement for AI CLI Environments." All of the foregoing applications are
+      incorporated herein by reference in their entirety.
+    </p>
+
+    <h2 class="section-head">Technical Field</h2>
+
+    <p class="body-para">
+      <span class="ln">15</span>
+      The present invention relates generally to multi-file static analysis and artificial
+      intelligence security, and more particularly to systems and methods that detect coordinated
+      attack chains distributed across multiple AI CLI configuration files by constructing a
+      file relationship graph, searching for cross-file content patterns, and computing
+      a quantitative correlation strength score that determines whether a multi-file finding
+      should be emitted.
+    </p>
+    <p class="body-para">
+      <span class="ln">20</span>
+      More specifically, the invention concerns the exploitation of structural relationships
+      unique to AI CLI configuration environments — namely directory proximity between files
+      and semantic naming conventions governing subdirectory types such as hooks, skills, and
+      agents — as a basis for inferring whether multiple independently benign configuration
+      artifacts form a coherent attack chain when considered in combination.
+    </p>
+
+    <h2 class="section-head">Background of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">25</span>
+      AI CLI configuration environments present a novel and previously unaddressed attack surface
+      for static security analysis. A sophisticated attacker who has obtained write access to a
+      developer's project directory can distribute a coordinated attack chain across multiple
+      configuration files such that no individual file, when analyzed in isolation, exhibits
+      characteristics sufficient to trigger conventional security alerts.
+    </p>
+    <p class="body-para">
+      <span class="ln">30</span>
+      For example, an attacker may place a data collection script at a path such as
+      hooks/post-commit.sh, which is a standard location for post-commit hook scripts in
+      Claude Code environments, and separately place an exfiltration instruction in a skills
+      file at skills/exfil.md, which superficially resembles a legitimate agent skill
+      definition. Neither file, in isolation, would necessarily raise a red flag under
+    </p>
+    <p class="body-para">
+      <span class="ln">35</span>
+      conventional pattern matching, because the hook file contains only standard shell
+      constructs and the skills file contains only natural-language text. The attack is
+      revealed only when the two files are analyzed together and their combined semantic
+      content is understood to constitute a coordinated credential harvesting and exfiltration
+      chain.
+    </p>
+    <p class="body-para">
+      <span class="ln">40</span>
+      Traditional cross-file taint analysis techniques rely on program flow graphs, call graphs,
+      or data flow graphs extracted from source code. These techniques require that the files
+      under analysis contain formal programming constructs — function declarations, variable
+      assignments, control flow statements — that can be parsed into an abstract syntax tree
+      and connected across files through resolved import, require, or include directives.
+    </p>
+    <p class="body-para">
+      <span class="ln">45</span>
+      AI CLI configuration files do not satisfy these requirements. They are predominantly
+      comprised of Markdown-formatted natural language, YAML or JSON-serialized configuration
+      objects, and shell scripts that are never directly imported by or linked to other files
+      in the configuration environment. Consequently, traditional cross-file taint analysis
+      does not apply to this domain, and no prior art system has addressed the challenge of
+      detecting coordinated attack chains distributed across AI CLI configuration files.
+    </p>
+    <p class="body-para">
+      <span class="ln">50</span>
+      The AI CLI configuration environment, however, exhibits two structural properties that
+      are unique to this domain and that serve as a substitute for the program-flow connectivity
+      exploited by traditional cross-file taint analysis. First, configuration files that are
+      relevant to the same AI agent context are almost always stored in the same project
+      directory or in closely related subdirectories, making directory proximity a reliable
+      indicator of file relationship. Second, AI CLI platforms impose a conventional directory
+    </p>
+    <p class="body-para">
+      <span class="ln">55</span>
+      structure in which specific subdirectory names such as "hooks", "skills", and "agents"
+      denote files that interact at runtime: hook files are executed by the AI platform
+      at defined lifecycle points, skill files define behavioral capabilities that agents can
+      invoke, and agent files define autonomous sub-agents. Files residing in these
+      conventionally related subdirectories are therefore related by semantic naming convention
+      even if no explicit import or dependency declaration links them.
+    </p>
+    <p class="body-para">
+      <span class="ln">60</span>
+      There is therefore a need for a system and method that constructs a file relationship
+      graph encoding both directory proximity and semantic naming relationships, applies
+      multi-file content pattern matching rules against sets of related files, computes a
+      quantitative correlation strength score, and emits structured findings for file
+      combinations whose correlation strength meets or exceeds a configurable threshold.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — Summary, Brief Description of Drawings             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 2</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Summary of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">65</span>
+      The present invention provides a system and method for detecting coordinated attack chains
+      distributed across multiple AI CLI configuration files. The system constructs a file
+      relationship graph in which nodes represent configuration files and edges represent
+      relationships established through directory proximity or semantic naming conventions.
+      The system applies a library of correlation rules, each specifying file-type patterns and
+    </p>
+    <p class="body-para">
+      <span class="ln">70</span>
+      content patterns that, when co-occurring across related files, indicate a potential attack
+      chain. For each correlation rule, the system searches for pattern matches across the
+      related file sets identified by the graph, computes a quantitative correlation strength
+      score using a formula that rewards both content pattern coverage and cross-file
+      distribution of matches, and emits a structured correlation finding when the score meets
+      or exceeds a configurable threshold.
+    </p>
+    <p class="body-para">
+      <span class="ln">75</span>
+      In a preferred embodiment, the system infers one or more risk vectors from each emitted
+      correlation finding, classifying the finding according to the type of attack it represents,
+      such as Credential Exposure, Data Exfiltration, Command Injection, Persistent Backdoor,
+      or Supply Chain Compromise. The complete correlation finding, comprising the related files,
+      correlation strength score, and inferred risk vectors, is provided as output for
+      consumption by downstream security tooling or human review.
+    </p>
+
+    <h2 class="section-head">Brief Description of the Drawings</h2>
+
+    <p class="body-para">
+      <span class="ln">80</span>
+      The accompanying drawings, which are incorporated in and constitute a part of this
+      specification, illustrate preferred embodiments of the invention and, together with the
+      description, serve to explain the principles of the invention.
+    </p>
+    <p class="body-para">
+      <span class="ln">85</span>
+      <span class="drawings-ref">FIG. 1</span> is a graph diagram illustrating the file relationship graph structure
+      according to a preferred embodiment of the present invention, showing six file nodes —
+      CLAUDE.md (200), .mcp.json (202), settings.json (204), hooks/post.sh (206),
+      skills/exfil.md (208), and agents/helper.md (210) — connected by edges of three types:
+      solid lines representing directory proximity relationships (212), dashed lines representing
+      semantic naming relationships (214), and bold solid lines representing dual-type
+      relationships (216). FIG. 1 further shows the ATTACK CHAIN (218) identified by the
+      system as a bold dashed arc from hooks/post.sh (206) to skills/exfil.md (208).
+    </p>
+    <p class="body-para">
+      <span class="ln">90</span>
+      <span class="drawings-ref">FIG. 2</span> is a formula diagram illustrating the correlation strength computation
+      according to a preferred embodiment of the present invention, showing the formula
+      S = (M/P) + min(F/F&#x2099;, 1) &times; 0.2 + 0.1, the variable key defining M (220), P (222),
+      F (224), F&#x2099; (226), and the cap at 1.0 (228), and a threshold bar showing the emit-finding
+      threshold (230) above which a correlation finding is generated.
+    </p>
+    <p class="body-para">
+      <span class="ln">95</span>
+      <span class="drawings-ref">FIG. 3</span> is a flowchart illustrating the analysis pipeline method according to a
+      preferred embodiment of the present invention, beginning with config file discovery (234),
+      file relationship graph construction (236) with side inputs from directory distance
+      calculation (238) and semantic naming patterns (240), per-rule correlation analysis (242),
+      cross-file pattern matching (244), correlation strength computation (246), a threshold
+      decision (248), risk vector inference (250), finding emission (252), and concluding
+      at END (254).
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — Detailed Description (Part 1)                      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 3</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Detailed Description of the Preferred Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">100</span>
+      Reference will now be made in detail to the presently preferred embodiments of the
+      invention, examples of which are illustrated in the accompanying drawings. Wherever
+      possible, the same reference numbers will be used throughout the drawings to refer to
+      the same or like parts.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">I. File Relationship Graph Construction (FIG. 1)</h2>
+
+    <p class="body-para">
+      <span class="ln">105</span>
+      Referring now to FIG. 1, the file relationship graph is a data structure in which each
+      node represents a configuration file discovered in the target directory tree, and each
+      edge represents a relationship between two files. Three types of edges are recognized.
+      A directory proximity edge (212) is drawn between two files when the number of path
+      components separating their respective containing directories does not exceed a threshold,
+    </p>
+    <p class="body-para">
+      <span class="ln">110</span>
+      which in a preferred embodiment is set to two. This threshold is justified by the
+      observation that AI CLI configuration files relevant to the same agent context are
+      consistently stored within two directory levels of one another in standard project layouts.
+      A semantic naming edge (214) is drawn between two files when their containing directories
+      are members of a predefined set of semantically related directory-name pairs. A dual-type
+    </p>
+    <p class="body-para">
+      <span class="ln">115</span>
+      edge (216) is drawn when both directory proximity and semantic naming criteria are
+      satisfied simultaneously. In FIG. 1, the bold solid line between hooks/post.sh (206) and
+      agents/helper.md (210) represents such a dual-type edge.
+    </p>
+    <p class="body-para">
+      <span class="ln">120</span>
+      The graph is constructed by a function <code>buildFileRelationships(files)</code> that
+      accepts a list of file path strings and returns a map associating each file path with a
+      set of related file paths. The function computes the directory distance between every
+      ordered pair of files and, for pairs whose distance does not exceed the proximity
+      threshold, adds a directory proximity edge. For every pair of files, the function also
+    </p>
+    <p class="body-para">
+      <span class="ln">125</span>
+      invokes a subsidiary function <code>areFilesRelatedByNaming(fileA, fileB)</code>, which
+      extracts the last path component of the containing directory for each file and tests
+      whether that pair of directory names appears in the predefined semantic naming pattern
+      table. If so, a semantic naming edge is added for that pair.
+    </p>
+    <p class="body-para">
+      <span class="ln">130</span>
+      The directory distance metric is computed as the count of path components that must be
+      traversed to reach one directory from the other within the file system tree. For two
+      files located at paths /project/.claude/hooks/post.sh and /project/.claude/skills/exfil.md,
+      the respective containing directories are /project/.claude/hooks and
+      /project/.claude/skills. These directories share the common ancestor /project/.claude,
+    </p>
+    <p class="body-para">
+      <span class="ln">135</span>
+      and each directory requires one step to reach that ancestor, yielding a total directory
+      distance of two. This distance is equal to the proximity threshold, so these two files
+      receive a directory proximity edge.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">II. Semantic Naming Patterns</h2>
+
+    <p class="body-para">
+      <span class="ln">140</span>
+      The semantic naming pattern table maintained by the <code>areFilesRelatedByNaming()</code>
+      function comprises a plurality of ordered and unordered directory-name pairs that represent
+      known runtime interaction relationships in AI CLI configuration environments. In a preferred
+      embodiment, the semantic naming pattern table includes the following pairs: hooks ↔ skills,
+      indicating that hook execution scripts and skill definition files interact through the
+    </p>
+    <p class="body-para">
+      <span class="ln">145</span>
+      agent's skill invocation mechanism; hooks ↔ agents, indicating that hook execution scripts
+      and agent definition files interact through the agent lifecycle management mechanism;
+      CLAUDE.md ↔ .mcp.json, indicating that the primary behavioral instruction file and the
+      MCP server declaration file are consumed by the same agent process and therefore have
+      combined semantic effect; settings.json ↔ config.*, indicating that settings files and
+    </p>
+    <p class="body-para">
+      <span class="ln">150</span>
+      configuration files with variable suffixes are frequently used in conjunction to define
+      the same agent configuration; and agent ↔ skill, indicating that agent definition files
+      and skill definition files interact through skill invocation.
+    </p>
+    <p class="body-para">
+      <span class="ln">155</span>
+      The semantic naming pattern matching is case-insensitive and applies to the terminal
+      directory name component. For files stored directly in the project root without a
+      distinguishing subdirectory, the containing directory name is the project root name,
+      and semantic naming relationships are evaluated against the file names themselves
+      rather than their containing directory names in this special case.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — Detailed Description (Part 2)                      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 4</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">III. Correlation Rules</h2>
+
+    <p class="body-para">
+      <span class="ln">160</span>
+      The correlation analysis system maintains a library of correlation rules, each of which
+      specifies the conditions under which a multi-file attack chain should be flagged. Each
+      correlation rule comprises three fields: a <code>filePatterns</code> array, a
+      <code>contentPatterns</code> array, and a <code>description</code> string. The
+      <code>filePatterns</code> array specifies glob patterns matching the types of files that
+    </p>
+    <p class="body-para">
+      <span class="ln">165</span>
+      are expected to participate in this type of attack chain. For example, a rule targeting
+      hook-and-skill coordination attacks might specify the file patterns ["**/*.sh", "**/*.md"]
+      to match shell scripts and Markdown files. The <code>contentPatterns</code> array
+      specifies regular expression patterns that, when matched across the participating files,
+      indicate the presence of malicious content or coordinated intent. The
+    </p>
+    <p class="body-para">
+      <span class="ln">170</span>
+      <code>description</code> field provides a human-readable characterization of the attack
+      chain type for use in generated findings, such as "Hook execution with exfiltration
+      skill coordination" or "MCP tool injection with credential harvesting."
+    </p>
+    <p class="body-para">
+      <span class="ln">175</span>
+      The correlation rule library is extensible without modification of the analysis engine.
+      New rules may be added by appending entries to the rule array, and each entry is
+      processed uniformly by the cross-file pattern matching and correlation strength
+      computation logic. This design ensures that the invention remains applicable to novel
+      attack patterns discovered after the system's initial deployment.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">IV. Cross-File Pattern Matching</h2>
+
+    <p class="body-para">
+      <span class="ln">180</span>
+      For each correlation rule, the system executes a function
+      <code>findCrossFilePatterns(rule, files, relationships)</code> that accepts the
+      correlation rule, the full set of discovered configuration files, and the file
+      relationship graph, and returns a cross-file match result comprising the set of files
+      in which at least one content pattern match was found and the set of content patterns
+      that produced at least one match across the file set.
+    </p>
+    <p class="body-para">
+      <span class="ln">185</span>
+      The function first identifies the candidate file set for the rule by filtering the
+      full file list to retain only files whose paths match at least one of the rule's
+      <code>filePatterns</code> glob patterns. It then groups the candidate files into
+      relationship clusters by consulting the file relationship graph: two files are placed
+      in the same cluster if they are connected by at least one edge in the graph.
+    </p>
+    <p class="body-para">
+      <span class="ln">190</span>
+      For each relationship cluster, the function reads the content of each file in the cluster
+      and applies each regular expression in the rule's <code>contentPatterns</code> array
+      against the file content. A content pattern is considered matched for the cluster if it
+      produces at least one match in any file within the cluster. The function records which
+      files contributed at least one match and which patterns were matched, producing the
+      cross-file match result.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">V. Correlation Strength Computation (FIG. 2)</h2>
+
+    <p class="body-para">
+      <span class="ln">195</span>
+      Referring now to FIG. 2, the correlation strength score S for a given cluster and
+      correlation rule is computed according to the formula:
+    </p>
+
+    <span class="formula">S = (M / P) + min(F / F&#x2099;, 1) &times; 0.2 + 0.1</span>
+
+    <p class="body-para">
+      <span class="ln">200</span>
+      where M (220) is the number of content patterns in the rule that were matched across
+      the file cluster; P (222) is the total number of content patterns specified in the
+      rule; F (224) is the count of distinct files in the cluster that contributed at least
+      one pattern match; and F&#x2099; (226) is the count of file patterns specified in the rule.
+      The resulting score S is capped at 1.0 (228).
+    </p>
+    <p class="body-para">
+      <span class="ln">205</span>
+      The formula has three additive components. The primary component M/P measures content
+      coverage: the fraction of the rule's content patterns that were actually matched. A
+      cluster that matches all of a rule's content patterns achieves a primary component
+      value of 1.0, while a cluster that matches none achieves 0.0. The secondary component
+      min(F/F&#x2099;, 1) &times; 0.2 measures file distribution: the degree to which the matched
+    </p>
+    <p class="body-para">
+      <span class="ln">210</span>
+      content is spread across multiple files as expected by the rule, rather than concentrated
+      in a single file. This component rewards cross-file distribution of evidence and
+      penalizes cases where all matched content appears in a single file, which is less
+      indicative of a coordinated multi-file attack chain. The constant additive term 0.1
+      represents a base presence bonus awarded whenever any file in the cluster matches any
+    </p>
+    <p class="body-para">
+      <span class="ln">215</span>
+      file pattern in the rule, ensuring that a cluster scoring 0 on both primary and secondary
+      components but satisfying the file type requirements receives a non-zero score.
+    </p>
+    <p class="body-para">
+      <span class="ln">220</span>
+      The threshold bar illustrated at the bottom of FIG. 2 represents the configurable
+      emit-finding threshold (230). The system emits a correlation finding for a cluster only
+      when its computed score S meets or exceeds this threshold. In a preferred embodiment,
+      the default threshold value is 0.3, which is positioned at approximately 30% of the
+      0.0-to-1.0 score range. This default is calibrated to detect attack chains in which at
+    </p>
+    <p class="body-para">
+      <span class="ln">225</span>
+      least one content pattern is matched and the matched content appears in more than one
+      file, while avoiding false positives from random co-occurrence of file types without
+      meaningful content pattern coverage.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — Detailed Description (Part 3) + Method             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 5</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">VI. Risk Vector Inference</h2>
+
+    <p class="body-para">
+      <span class="ln">230</span>
+      For each correlation finding whose score S meets or exceeds the threshold, the system
+      invokes a function <code>generateRiskVectors(finding)</code> that accepts the finding
+      and returns an array of risk vector strings. The function derives the risk vectors by
+      analyzing the human-readable description field of the matched correlation rule using
+      a secondary pattern-matching step that identifies semantically significant phrases.
+    </p>
+    <p class="body-para">
+      <span class="ln">235</span>
+      Specifically, the function detects the presence of terms associated with each of the
+      following recognized risk vector categories: Credential Exposure, detected by phrases
+      such as "credential", "token", "key", "secret", "password", "api key", or "auth";
+      Data Exfiltration, detected by phrases such as "exfil", "exfiltrat", "leak",
+      "send data", or "transmit"; Command Injection, detected by phrases such as "inject",
+    </p>
+    <p class="body-para">
+      <span class="ln">240</span>
+      "command injection", "shell inject", or "code inject"; Persistent Backdoor, detected
+      by phrases such as "backdoor", "persist", "startup", "autorun", or "cron"; and
+      Supply Chain Compromise, detected by phrases such as "supply chain", "dependency",
+      "package", "registry", or "upstream". A single correlation finding may be assigned
+      multiple risk vectors when its description contains terms matching more than one
+      category.
+    </p>
+    <p class="body-para">
+      <span class="ln">245</span>
+      The CorrelationFinding data structure produced as output by the system comprises the
+      following fields: <code>relatedFiles</code>, an array of the file paths in the matched
+      cluster; <code>correlationStrength</code>, the numeric score S computed for the cluster;
+      <code>riskVectors</code>, the array of risk vector strings produced by
+      <code>generateRiskVectors()</code>; <code>rule</code>, the correlation rule that
+    </p>
+    <p class="body-para">
+      <span class="ln">250</span>
+      produced the finding; and <code>matchedPatterns</code>, the subset of the rule's content
+      patterns that produced at least one match across the related files. This structure
+      provides sufficient information for downstream security tooling to categorize, prioritize,
+      and remediate the identified attack chain.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VII. Analysis Pipeline Method (FIG. 3)</h2>
+
+    <p class="body-para">
+      <span class="ln">255</span>
+      Referring now to FIG. 3, the analysis pipeline method begins at START (232). At step 234,
+      the system discovers configuration files in the target directory by scanning recursively
+      for files whose names or paths match any of the known AI CLI configuration file patterns.
+      The discovery step returns a list of file paths for further analysis.
+    </p>
+    <p class="body-para">
+      <span class="ln">260</span>
+      At step 236, the system constructs the file relationship graph from the discovered files
+      using the <code>buildFileRelationships()</code> function. This step uses two side inputs:
+      the directory distance calculation logic (238), which computes the number of path
+      components between file directories, and the semantic naming patterns table (240), which
+      specifies the recognized directory-name pairs. The output of step 236 is a complete
+    </p>
+    <p class="body-para">
+      <span class="ln">265</span>
+      file relationship graph encoding both proximity and naming edges between all relevant
+      file pairs.
+    </p>
+    <p class="body-para">
+      <span class="ln">270</span>
+      At step 242, the system iterates over each correlation rule in the rule library. For each
+      rule, at step 244, the system invokes <code>findCrossFilePatterns()</code> to identify
+      which related file clusters contain matches for the rule's file patterns and content
+      patterns. At step 246, the correlation strength score S is computed for each cluster
+      using the formula of FIG. 2.
+    </p>
+    <p class="body-para">
+      <span class="ln">275</span>
+      At decision point 248, the system determines whether the computed score S meets or exceeds
+      the configured threshold. If the threshold is not met (NO branch from 248), the system
+      returns to step 242 to process the next rule, without emitting any finding for the current
+      cluster and rule combination. If the threshold is met (YES branch from 248), the system
+      proceeds to step 250, where <code>generateRiskVectors()</code> is invoked to infer the
+    </p>
+    <p class="body-para">
+      <span class="ln">280</span>
+      risk vectors associated with the finding. At step 252, a complete CorrelationFinding
+      structure is emitted as output, comprising the related files, correlation strength score,
+      matched patterns, and inferred risk vectors. After all rules have been processed for all
+      clusters, the method concludes at END (254).
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VIII. Configurability and Extension</h2>
+
+    <p class="body-para">
+      <span class="ln">285</span>
+      The emit-finding threshold (230) is configurable at runtime, enabling security teams to
+      adjust sensitivity to match their operational requirements. A lower threshold value
+      increases recall at the cost of additional false positives; a higher threshold value
+      increases precision at the cost of potentially missing lower-confidence attack chains.
+      In a preferred embodiment, the threshold is specified as a floating-point number in the
+    </p>
+    <p class="body-para">
+      <span class="ln">290</span>
+      range [0.0, 1.0] and is passed to the analysis function as a configuration parameter
+      with a default value of 0.3. The threshold may be specified globally, applying uniformly
+      to all correlation rules, or may be specified per-rule, enabling fine-grained tuning of
+      detection sensitivity for specific attack chain types.
+    </p>
+    <p class="body-para">
+      <span class="ln">295</span>
+      The semantic naming pattern table is also configurable, enabling the invention to be
+      extended to support novel AI CLI platforms that employ different subdirectory naming
+      conventions without modification of the core graph construction or correlation analysis
+      logic. New platform-specific naming patterns are added by appending entries to the
+      pattern table, and take effect immediately upon the next analysis run.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — Claims                                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 6</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Claims</h2>
+
+    <p class="no-indent" style="margin-bottom:12px; font-weight:bold;">What is claimed is:</p>
+
+    <!-- Claim 1 -->
+    <p class="claim-item main-claim">
+      <span class="ln">300</span>
+      <strong>1.</strong> A computer-implemented method for detecting coordinated attack chains distributed
+      across multiple AI CLI configuration files, the method comprising:
+    </p>
+    <p class="claim-sub">
+      discovering, by one or more processors, a plurality of configuration files associated with
+      one or more AI coding assistant command-line interface (CLI) tools located within a target
+      directory;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">305</span>
+      constructing, by the one or more processors, a file relationship graph comprising a
+      plurality of nodes each representing one of the discovered configuration files and a
+      plurality of edges each representing a relationship between a pair of files, wherein
+      each edge is determined by at least one of:
+    </p>
+    <p class="claim-sub" style="padding-left: 6em; text-indent: -2em;">
+      a directory distance between the containing directories of the respective files not
+      exceeding a proximity threshold; or
+    </p>
+    <p class="claim-sub" style="padding-left: 6em; text-indent: -2em;">
+      <span class="ln">310</span>
+      the containing directory names of the respective files comprising a pair that appears
+      in a predefined semantic naming pattern table;
+    </p>
+    <p class="claim-sub">
+      searching, by the one or more processors, for content pattern matches across pairs or
+      groups of configuration files connected by edges in the file relationship graph, in
+      accordance with a plurality of correlation rules each specifying file-type patterns and
+      content patterns;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">315</span>
+      computing, by the one or more processors, a correlation strength score for each searched
+      group of files and correlation rule combination based on the number of content patterns
+      matched and the number of distinct files contributing matches; and
+    </p>
+    <p class="claim-sub">
+      emitting, by the one or more processors, a correlation finding for each group and rule
+      combination whose correlation strength score meets or exceeds a configurable threshold,
+      wherein the correlation finding identifies the related files and the computed score.
+    </p>
+
+    <!-- Claim 2 -->
+    <p class="claim-item main-claim" style="margin-top:14px;">
+      <span class="ln">320</span>
+      <strong>2.</strong> A system for detecting coordinated attack chains distributed across multiple AI
+      CLI configuration files, the system comprising:
+    </p>
+    <p class="claim-sub">
+      one or more processors; and
+    </p>
+    <p class="claim-sub">
+      one or more non-transitory computer-readable media storing instructions that, when executed
+      by the one or more processors, cause the system to perform operations comprising:
+    </p>
+    <p class="claim-sub">
+      <span class="ln">325</span>
+      a file discovery module configured to locate AI CLI configuration files within a target
+      directory;
+    </p>
+    <p class="claim-sub">
+      a relationship graph builder configured to construct a file relationship graph using
+      directory distance calculation and semantic naming pattern matching;
+    </p>
+    <p class="claim-sub">
+      a pattern matcher configured to search for cross-file content pattern matches in
+      accordance with correlation rules; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">330</span>
+      a correlation engine configured to compute correlation strength scores and emit
+      correlation findings above a configurable threshold.
+    </p>
+
+    <!-- Claim 3 -->
+    <p class="claim-item" style="margin-top:14px;">
+      <span class="ln">335</span>
+      <strong>3.</strong> The method of claim 1, wherein the predefined semantic naming pattern table comprises
+      at least the following directory-name pairs: hooks and skills; hooks and agents; CLAUDE.md
+      and .mcp.json; settings.json and config.*; and agent and skill.
+    </p>
+
+    <!-- Claim 4 -->
+    <p class="claim-item">
+      <span class="ln">340</span>
+      <strong>4.</strong> The method of claim 1, wherein the correlation strength score S is computed
+      according to the formula: S = (M/P) + min(F/F&#x2099;, 1) &times; 0.2 + 0.1, wherein M is the
+      number of content patterns matched across the file group, P is the total number of content
+      patterns specified in the correlation rule, F is the number of distinct files contributing
+      at least one match, and F&#x2099; is the number of file patterns specified in the rule,
+      and wherein S is capped at a maximum value of 1.0.
+    </p>
+
+    <!-- Claim 5 -->
+    <p class="claim-item">
+      <span class="ln">345</span>
+      <strong>5.</strong> The method of claim 1, further comprising inferring one or more risk vectors for
+      each emitted correlation finding by performing secondary pattern matching against the
+      description field of the matched correlation rule, wherein the recognized risk vector
+      categories include at least Credential Exposure, Data Exfiltration, Command Injection,
+      Persistent Backdoor, and Supply Chain Compromise.
+    </p>
+
+    <!-- Claim 6 -->
+    <p class="claim-item">
+      <span class="ln">350</span>
+      <strong>6.</strong> The method of claim 1, wherein the configurable threshold is a floating-point value
+      in the range [0.0, 1.0] that may be specified globally for all correlation rules or
+      individually per correlation rule, such that detection sensitivity may be tuned
+      independently for different attack chain types.
+    </p>
+
+    <!-- Claim 7 -->
+    <p class="claim-item">
+      <span class="ln">355</span>
+      <strong>7.</strong> The method of claim 1, wherein the configuration files comprise one or more of:
+      Markdown-formatted behavioral instruction files, JSON-serialized MCP server declaration
+      files, YAML-formatted agent configuration files, shell script hook execution files,
+      Markdown-formatted agent skill definition files, and Markdown-formatted agent definition
+      files associated with AI CLI platforms including at least Claude Code, Cursor, Windsurf,
+      Continue, Aider, Cline, and Model Context Protocol (MCP).
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — Abstract                                            -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-002 &nbsp;&nbsp;|&nbsp;&nbsp; Page 7</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Abstract</h2>
+
+    <div class="abstract-box">
+      <p class="no-indent">
+        <span class="ln">360</span>
+        A system and method detect coordinated attack chains distributed across multiple AI CLI
+        configuration files by constructing a file relationship graph whose edges encode
+        directory proximity and semantic naming relationships unique to AI CLI environments,
+        including hooks-to-skills, hooks-to-agents, and CLAUDE.md-to-.mcp.json conventions.
+        For each correlation rule specifying file-type patterns and content patterns, the system
+        searches for cross-file pattern matches within related file clusters and computes a
+        correlation strength score using the formula S = (M/P) + min(F/F&#x2099;, 1) &times; 0.2 + 0.1.
+        Findings are emitted for clusters whose score meets or exceeds a configurable threshold.
+        Each finding is annotated with inferred risk vectors — including Credential Exposure,
+        Data Exfiltration, and Command Injection — derived from secondary pattern matching
+        on the rule description. The method operates entirely through static analysis without
+        executing any AI CLI tooling.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

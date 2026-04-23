@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FS-2026-005 Patent Drawings</title>
+<style>
+  body {
+    background: #ccc;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+  }
+  .sheet {
+    background: #fff;
+    border: 1px solid #000;
+    width: 720px;
+    margin: 0 auto 40px auto;
+    padding: 24px;
+    box-sizing: border-box;
+    page-break-after: always;
+  }
+  .sheet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: normal;
+  }
+  .fig-label {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    margin-top: 10px;
+  }
+  svg text {
+    fill: #000;
+    font-family: Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<!-- ===================== SHEET 1 OF 3 — FIG. 1 ===================== -->
+<div class="sheet">
+  <div class="sheet-header">
+    <span>FS-2026-005</span>
+    <span>Sheet 1 of 3</span>
+  </div>
+
+  <svg width="672" height="820" viewBox="0 0 672 820" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 Z" fill="#000"/>
+      </marker>
+    </defs>
+
+    <!-- Style defaults -->
+    <style>
+      text { font-family: Arial, sans-serif; font-size: 9.5px; fill: #000; }
+      .ref { font-weight: bold; font-size: 11px; }
+      .boxlabel { font-size: 9px; text-anchor: middle; dominant-baseline: middle; }
+      .arrow { stroke: #000; stroke-width: 1; fill: none; marker-end: url(#arr); }
+      .box { fill: #fff; stroke: #000; stroke-width: 1.2; }
+      .leader { stroke: #000; stroke-width: 0.75; fill: none; }
+    </style>
+
+    <!-- ── AI CONFIG FILE (502) ── top-left -->
+    <rect class="box" x="20" y="60" width="130" height="44"/>
+    <text fill="#000" class="boxlabel" x="85" y="78">AI CONFIG FILE</text>
+    <text fill="#000" class="boxlabel" x="85" y="92" font-weight="bold" font-size="11px">(502)</text>
+
+    <!-- ── SECURITY SCANNER ENGINE (500) ── center top -->
+    <rect class="box" x="261" y="60" width="150" height="44"/>
+    <text fill="#000" class="boxlabel" x="336" y="75">SECURITY SCANNER</text>
+    <text fill="#000" class="boxlabel" x="336" y="87">ENGINE</text>
+    <text fill="#000" class="boxlabel" x="336" y="99" font-weight="bold" font-size="11px">(500)</text>
+
+    <!-- ── SUPPRESSION DIRECTIVE PARSER (504) ── center, row 2 -->
+    <rect class="box" x="231" y="170" width="210" height="44"/>
+    <text fill="#000" class="boxlabel" x="336" y="187">SUPPRESSION DIRECTIVE</text>
+    <text fill="#000" class="boxlabel" x="336" y="199">PARSER</text>
+    <text fill="#000" class="boxlabel" x="336" y="211" font-weight="bold" font-size="11px">(504)</text>
+
+    <!-- Arrow: 502 → 504 (config file feeds parser) -->
+    <path class="arrow" d="M150,82 L231,192"/>
+
+    <!-- Arrow: 500 → 504 (scanner engine drives parser) -->
+    <line class="arrow" x1="336" y1="104" x2="336" y2="170"/>
+
+    <!-- ── EXPIRATION DATE STORE (506) ── left side, row 3 -->
+    <rect class="box" x="60" y="280" width="145" height="44"/>
+    <text fill="#000" class="boxlabel" x="132" y="297">EXPIRATION DATE</text>
+    <text fill="#000" class="boxlabel" x="132" y="309">STORE</text>
+    <text fill="#000" class="boxlabel" x="132" y="321" font-weight="bold" font-size="11px">(506)</text>
+
+    <!-- ── JUSTIFICATION CODE STORE (508) ── right side, row 3 -->
+    <rect class="box" x="467" y="280" width="175" height="44"/>
+    <text fill="#000" class="boxlabel" x="554" y="297">JUSTIFICATION CODE</text>
+    <text fill="#000" class="boxlabel" x="554" y="309">STORE</text>
+    <text fill="#000" class="boxlabel" x="554" y="321" font-weight="bold" font-size="11px">(508)</text>
+
+    <!-- Arrow: 504 → 506 -->
+    <path class="arrow" d="M260,214 L180,280"/>
+
+    <!-- Arrow: 504 → 508 -->
+    <path class="arrow" d="M412,214 L510,280"/>
+
+    <!-- ── CURRENT DATE SOURCE (512) ── far left, row 4 -->
+    <rect class="box" x="20" y="390" width="135" height="44"/>
+    <text fill="#000" class="boxlabel" x="87" y="407">CURRENT DATE</text>
+    <text fill="#000" class="boxlabel" x="87" y="419">SOURCE</text>
+    <text fill="#000" class="boxlabel" x="87" y="431" font-weight="bold" font-size="11px">(512)</text>
+
+    <!-- ── DATE COMPARATOR (510) ── center-left, row 4 -->
+    <rect class="box" x="195" y="390" width="145" height="44"/>
+    <text fill="#000" class="boxlabel" x="267" y="407">DATE</text>
+    <text fill="#000" class="boxlabel" x="267" y="419">COMPARATOR</text>
+    <text fill="#000" class="boxlabel" x="267" y="431" font-weight="bold" font-size="11px">(510)</text>
+
+    <!-- Arrow: 506 → 510 -->
+    <path class="arrow" d="M155,324 L242,390"/>
+
+    <!-- Arrow: 512 → 510 -->
+    <line class="arrow" x1="155" y1="412" x2="195" y2="412"/>
+
+    <!-- ── APPROVED CODES LIST (516) ── far right, row 4 -->
+    <rect class="box" x="517" y="390" width="135" height="44"/>
+    <text fill="#000" class="boxlabel" x="584" y="407">APPROVED CODES</text>
+    <text fill="#000" class="boxlabel" x="584" y="419">LIST</text>
+    <text fill="#000" class="boxlabel" x="584" y="431" font-weight="bold" font-size="11px">(516)</text>
+
+    <!-- ── JUSTIFICATION VALIDATOR (514) ── center-right, row 4 -->
+    <rect class="box" x="362" y="390" width="145" height="44"/>
+    <text fill="#000" class="boxlabel" x="434" y="407">JUSTIFICATION</text>
+    <text fill="#000" class="boxlabel" x="434" y="419">VALIDATOR</text>
+    <text fill="#000" class="boxlabel" x="434" y="431" font-weight="bold" font-size="11px">(514)</text>
+
+    <!-- Arrow: 508 → 514 -->
+    <path class="arrow" d="M519,324 L459,390"/>
+
+    <!-- Arrow: 516 → 514 -->
+    <line class="arrow" x1="517" y1="412" x2="507" y2="412"/>
+
+    <!-- ── FINDING SUPPRESSOR (518) ── center, row 5 -->
+    <rect class="box" x="231" y="510" width="210" height="44"/>
+    <text fill="#000" class="boxlabel" x="336" y="527">FINDING</text>
+    <text fill="#000" class="boxlabel" x="336" y="539">SUPPRESSOR</text>
+    <text fill="#000" class="boxlabel" x="336" y="551" font-weight="bold" font-size="11px">(518)</text>
+
+    <!-- Arrow: 510 → 518 (YES) -->
+    <path class="arrow" d="M267,434 L295,510"/>
+    <text fill="#000" x="248" y="475" font-size="9px">YES</text>
+
+    <!-- Arrow: 514 → 518 (YES) -->
+    <path class="arrow" d="M434,434 L380,510"/>
+    <text fill="#000" x="408" y="475" font-size="9px">YES</text>
+
+    <!-- ── FINDING REACTIVATOR (520) ── left, row 5 -->
+    <rect class="box" x="30" y="510" width="160" height="44"/>
+    <text fill="#000" class="boxlabel" x="110" y="527">FINDING</text>
+    <text fill="#000" class="boxlabel" x="110" y="539">REACTIVATOR</text>
+    <text fill="#000" class="boxlabel" x="110" y="551" font-weight="bold" font-size="11px">(520)</text>
+
+    <!-- Arrow: 510 → 520 (NO/expired) -->
+    <path class="arrow" d="M220,434 L140,510"/>
+    <text fill="#000" x="152" y="475" font-size="9px">NO</text>
+    <text fill="#000" x="135" y="487" font-size="8px">(expired)</text>
+
+    <!-- ── AUDIT MODE REPORTER (522) ── right, row 5 -->
+    <rect class="box" x="482" y="510" width="160" height="44"/>
+    <text fill="#000" class="boxlabel" x="562" y="527">AUDIT MODE</text>
+    <text fill="#000" class="boxlabel" x="562" y="539">REPORTER</text>
+    <text fill="#000" class="boxlabel" x="562" y="551" font-weight="bold" font-size="11px">(522)</text>
+
+    <!-- Arrow: 506 → 522 (near-expiry warnings) -->
+    <path class="arrow" d="M205,302 Q562,350 562,510"/>
+
+    <!-- ── FINDINGS OUTPUT (524) ── center, row 6 -->
+    <rect class="box" x="231" y="640" width="210" height="44"/>
+    <text fill="#000" class="boxlabel" x="336" y="657">FINDINGS</text>
+    <text fill="#000" class="boxlabel" x="336" y="669">OUTPUT</text>
+    <text fill="#000" class="boxlabel" x="336" y="681" font-weight="bold" font-size="11px">(524)</text>
+
+    <!-- Arrow: 518 → 524 -->
+    <line class="arrow" x1="336" y1="554" x2="336" y2="640"/>
+
+    <!-- Arrow: 520 → 524 -->
+    <path class="arrow" d="M110,554 L270,640"/>
+
+    <!-- Arrow: 500 → 524 (direct findings passthrough) -->
+    <path class="arrow" d="M411,104 Q650,370 420,640"/>
+
+    <!-- Arrow: 522 → 524 (audit warnings to output) -->
+    <path class="arrow" d="M562,554 Q562,600 442,640"/>
+
+    <!-- Leader lines for reference labels on arrows -->
+  </svg>
+
+  <div class="fig-label">FIG. 1</div>
+</div>
+
+<!-- ===================== SHEET 2 OF 3 — FIG. 2 ===================== -->
+<div class="sheet">
+  <div class="sheet-header">
+    <span>FS-2026-005</span>
+    <span>Sheet 2 of 3</span>
+  </div>
+
+  <svg width="672" height="980" viewBox="0 0 672 980" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr2" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 Z" fill="#000"/>
+      </marker>
+    </defs>
+    <style>
+      text { font-family: Arial, sans-serif; font-size: 9.5px; fill: #000; }
+      .ref { font-weight: bold; font-size: 11px; }
+      .boxlabel { font-size: 9px; text-anchor: middle; dominant-baseline: middle; }
+      .diamond-label { font-size: 9px; text-anchor: middle; dominant-baseline: middle; }
+      .arrow2 { stroke: #000; stroke-width: 1; fill: none; marker-end: url(#arr2); }
+      .proc { fill: #fff; stroke: #000; stroke-width: 1.2; }
+      .oval { fill: #fff; stroke: #000; stroke-width: 1.2; }
+    </style>
+
+    <!-- cx for main spine: 336 -->
+
+    <!-- START (530) oval -->
+    <ellipse class="oval" cx="336" cy="38" rx="55" ry="22"/>
+    <text fill="#000" class="boxlabel" x="336" y="34">START</text>
+    <text fill="#000" class="boxlabel ref" x="336" y="47" font-weight="bold" font-size="11px">(530)</text>
+
+    <!-- Arrow down -->
+    <line class="arrow2" x1="336" y1="60" x2="336" y2="82"/>
+
+    <!-- 532: PARSE SUPPRESSION DIRECTIVES -->
+    <rect class="proc" x="216" y="82" width="240" height="40"/>
+    <text fill="#000" class="boxlabel" x="336" y="97">PARSE SUPPRESSION DIRECTIVES</text>
+    <text fill="#000" class="boxlabel" x="336" y="109">FROM CONFIG</text>
+    <text fill="#000" class="boxlabel ref" x="460" y="97" font-weight="bold" font-size="11px">(532)</text>
+
+    <!-- Arrow down -->
+    <line class="arrow2" x1="336" y1="122" x2="336" y2="144"/>
+
+    <!-- 534: FOR EACH SECURITY FINDING — loop marker (rect with double left border) -->
+    <rect class="proc" x="216" y="144" width="240" height="40"/>
+    <line x1="222" y1="144" x2="222" y2="184" stroke="#000" stroke-width="1.2"/>
+    <text fill="#000" class="boxlabel" x="340" y="159">FOR EACH SECURITY FINDING</text>
+    <text fill="#000" class="boxlabel ref" x="460" y="159" font-weight="bold" font-size="11px">(534)</text>
+    <text fill="#000" class="boxlabel" x="340" y="173" font-style="italic" font-size="8px">[loop start]</text>
+
+    <!-- Arrow down -->
+    <line class="arrow2" x1="336" y1="184" x2="336" y2="210"/>
+
+    <!-- 536: DOES MATCHING SUPPRESSION DIRECTIVE EXIST? diamond -->
+    <polygon class="proc" points="336,210 436,248 336,286 236,248"/>
+    <text fill="#000" class="diamond-label" x="336" y="242">DOES MATCHING SUPPRESSION</text>
+    <text fill="#000" class="diamond-label" x="336" y="254">DIRECTIVE EXIST?</text>
+    <text fill="#000" class="diamond-label ref" x="336" y="268" font-weight="bold" font-size="11px">(536)</text>
+
+    <!-- NO → right → 538 EMIT AS-IS -->
+    <path class="arrow2" d="M436,248 L540,248"/>
+    <text fill="#000" x="452" y="243" font-size="9px">NO</text>
+    <rect class="proc" x="540" y="228" width="112" height="40"/>
+    <text fill="#000" class="boxlabel" x="596" y="243">EMIT FINDING</text>
+    <text fill="#000" class="boxlabel" x="596" y="255">AS-IS</text>
+    <text fill="#000" class="boxlabel ref" x="596" y="267" font-weight="bold" font-size="11px">(538)</text>
+    <!-- Loop back arrow from 538 back up to 534 -->
+    <path class="arrow2" d="M652,248 L660,248 L660,164 L456,164"/>
+    <text fill="#000" x="656" y="210" font-size="8px" writing-mode="tb">↑ loop</text>
+
+    <!-- YES → down from 536 -->
+    <line class="arrow2" x1="336" y1="286" x2="336" y2="310"/>
+    <text fill="#000" x="341" y="302" font-size="9px">YES</text>
+
+    <!-- 540: DIRECTIVE HAS EXPIRATION DATE? diamond -->
+    <polygon class="proc" points="336,310 436,348 336,386 236,348"/>
+    <text fill="#000" class="diamond-label" x="336" y="342">DIRECTIVE HAS</text>
+    <text fill="#000" class="diamond-label" x="336" y="354">EXPIRATION DATE?</text>
+    <text fill="#000" class="diamond-label ref" x="336" y="368" font-weight="bold" font-size="11px">(540)</text>
+
+    <!-- YES → down (DATE path) from 540 -->
+    <line class="arrow2" x1="336" y1="386" x2="336" y2="408"/>
+    <text fill="#000" x="341" y="402" font-size="9px">YES</text>
+
+    <!-- 542: COMPARE EXPIRY DATE TO CURRENT DATE -->
+    <rect class="proc" x="216" y="408" width="240" height="40"/>
+    <text fill="#000" class="boxlabel" x="336" y="423">COMPARE EXPIRY DATE TO</text>
+    <text fill="#000" class="boxlabel" x="336" y="435">CURRENT DATE</text>
+    <text fill="#000" class="boxlabel ref" x="460" y="423" font-weight="bold" font-size="11px">(542)</text>
+
+    <line class="arrow2" x1="336" y1="448" x2="336" y2="468"/>
+
+    <!-- 544: EXPIRY DATE IN FUTURE? diamond -->
+    <polygon class="proc" points="336,468 430,506 336,544 242,506"/>
+    <text fill="#000" class="diamond-label" x="336" y="500">EXPIRY DATE</text>
+    <text fill="#000" class="diamond-label" x="336" y="512">IN FUTURE?</text>
+    <text fill="#000" class="diamond-label ref" x="336" y="526" font-weight="bold" font-size="11px">(544)</text>
+
+    <!-- YES → left → 546 SUPPRESS FINDING -->
+    <path class="arrow2" d="M242,506 L160,506"/>
+    <text fill="#000" x="190" y="500" font-size="9px">YES</text>
+    <rect class="proc" x="60" y="486" width="100" height="40"/>
+    <text fill="#000" class="boxlabel" x="110" y="501">SUPPRESS</text>
+    <text fill="#000" class="boxlabel" x="110" y="513">FINDING</text>
+    <text fill="#000" class="boxlabel ref" x="110" y="525" font-weight="bold" font-size="11px">(546)</text>
+
+    <!-- NO → right → 548 REACTIVATE + ANNOTATE -->
+    <path class="arrow2" d="M430,506 L510,506"/>
+    <text fill="#000" x="444" y="500" font-size="9px">NO</text>
+    <rect class="proc" x="510" y="478" width="142" height="40"/>
+    <text fill="#000" class="boxlabel" x="581" y="492">REACTIVATE FINDING +</text>
+    <text fill="#000" class="boxlabel" x="581" y="504">ANNOTATE EXPIRED</text>
+    <text fill="#000" class="boxlabel ref" x="581" y="518" font-weight="bold" font-size="11px">(548)</text>
+
+    <!-- 550: OUTPUT EXPIRED-SUPPRESSION FINDING -->
+    <rect class="proc" x="510" y="540" width="142" height="40"/>
+    <text fill="#000" class="boxlabel" x="581" y="555">OUTPUT EXPIRED-</text>
+    <text fill="#000" class="boxlabel" x="581" y="567">SUPPRESSION FINDING</text>
+    <text fill="#000" class="boxlabel ref" x="581" y="579" font-weight="bold" font-size="11px">(550)</text>
+    <line class="arrow2" x1="581" y1="518" x2="581" y2="540"/>
+
+    <!-- NO branch from 540 → right → REASON CODE path: 552 VALIDATE REASON CODE -->
+    <path class="arrow2" d="M436,348 L510,348"/>
+    <text fill="#000" x="448" y="342" font-size="9px">NO</text>
+    <!-- Down from 436,348 to 510,348 label -->
+
+    <rect class="proc" x="510" y="328" width="142" height="40"/>
+    <text fill="#000" class="boxlabel" x="581" y="342">VALIDATE</text>
+    <text fill="#000" class="boxlabel" x="581" y="354">REASON CODE</text>
+    <text fill="#000" class="boxlabel ref" x="581" y="368" font-weight="bold" font-size="11px">(552)</text>
+
+    <!-- Arrow 552 → 554 -->
+    <line class="arrow2" x1="581" y1="368" x2="581" y2="390"/>
+
+    <!-- 554: CODE VALID? diamond -->
+    <polygon class="proc" points="581,390 641,416 581,442 521,416"/>
+    <text fill="#000" class="diamond-label" x="581" y="410">CODE</text>
+    <text fill="#000" class="diamond-label" x="581" y="422">VALID?</text>
+    <text fill="#000" class="diamond-label ref" x="581" y="434" font-weight="bold" font-size="11px">(554)</text>
+
+    <!-- YES from 554 → down → connects to 546 -->
+    <path class="arrow2" d="M581,442 L581,462 L160,462 L160,526"/>
+    <text fill="#000" x="560" y="456" font-size="9px">YES</text>
+
+    <!-- NO from 554 → right → 556 EMIT INVALID-SUPPRESSION -->
+    <path class="arrow2" d="M641,416 L672,416"/>
+    <text fill="#000" x="645" y="410" font-size="9px">NO</text>
+    <!-- note: clipped, show partial -->
+    <rect class="proc" x="672" y="396" width="0" height="40" visibility="hidden"/>
+    <!-- Use left-overflow approach: put 556 box below, connected differently -->
+    <!-- Actually place 556 below 554 on the right side -->
+    <rect class="proc" x="510" y="610" width="142" height="40"/>
+    <text fill="#000" class="boxlabel" x="581" y="624">EMIT INVALID-</text>
+    <text fill="#000" class="boxlabel" x="581" y="636">SUPPRESSION FINDING</text>
+    <text fill="#000" class="boxlabel ref" x="581" y="648" font-weight="bold" font-size="11px">(556)</text>
+    <path class="arrow2" d="M641,416 L660,416 L660,630 L652,630"/>
+    <text fill="#000" x="643" y="430" font-size="8px">NO</text>
+
+    <!-- 558: MORE FINDINGS? diamond — main spine below 546 area -->
+    <!-- Collect flows: 546 (suppress), 550 (expired output), 556 (invalid) all feed into 558 -->
+    <polygon class="proc" points="336,680 430,718 336,756 242,718"/>
+    <text fill="#000" class="diamond-label" x="336" y="712">MORE</text>
+    <text fill="#000" class="diamond-label" x="336" y="724">FINDINGS?</text>
+    <text fill="#000" class="diamond-label ref" x="336" y="738" font-weight="bold" font-size="11px">(558)</text>
+
+    <!-- 546 → 558 -->
+    <path class="arrow2" d="M110,526 L110,660 L242,710"/>
+
+    <!-- 550 → 558 -->
+    <path class="arrow2" d="M510,560 L430,718"/>
+
+    <!-- 556 → 558 -->
+    <path class="arrow2" d="M510,630 L430,718"/>
+
+    <!-- YES from 558 → loop back to 534 -->
+    <path class="arrow2" d="M430,718 L650,718 L650,164 L456,164"/>
+    <text fill="#000" x="445" y="712" font-size="9px">YES</text>
+
+    <!-- NO from 558 → down -->
+    <line class="arrow2" x1="336" y1="756" x2="336" y2="778"/>
+    <text fill="#000" x="341" y="772" font-size="9px">NO</text>
+
+    <!-- 560: AUDIT MODE ACTIVE? diamond -->
+    <polygon class="proc" points="336,778 430,816 336,854 242,816"/>
+    <text fill="#000" class="diamond-label" x="336" y="810">AUDIT MODE</text>
+    <text fill="#000" class="diamond-label" x="336" y="822">ACTIVE?</text>
+    <text fill="#000" class="diamond-label ref" x="336" y="836" font-weight="bold" font-size="11px">(560)</text>
+
+    <!-- YES → left -->
+    <path class="arrow2" d="M242,816 L150,816"/>
+    <text fill="#000" x="175" y="810" font-size="9px">YES</text>
+    <rect class="proc" x="20" y="796" width="130" height="40"/>
+    <text fill="#000" class="boxlabel" x="85" y="811">IDENTIFY NEAR-</text>
+    <text fill="#000" class="boxlabel" x="85" y="823">EXPIRY DIRECTIVES</text>
+    <text fill="#000" class="boxlabel ref" x="85" y="835" font-weight="bold" font-size="11px">(562)</text>
+
+    <!-- 562 → 564 EMIT INFORMATIONAL FINDINGS -->
+    <line class="arrow2" x1="85" y1="836" x2="85" y2="858"/>
+    <rect class="proc" x="20" y="858" width="130" height="40"/>
+    <text fill="#000" class="boxlabel" x="85" y="872">EMIT INFORMATIONAL</text>
+    <text fill="#000" class="boxlabel" x="85" y="884">FINDINGS</text>
+    <text fill="#000" class="boxlabel ref" x="85" y="896" font-weight="bold" font-size="11px">(564)</text>
+
+    <!-- NO from 560 → down → END -->
+    <line class="arrow2" x1="336" y1="854" x2="336" y2="880"/>
+    <text fill="#000" x="341" y="870" font-size="9px">NO</text>
+
+    <!-- 564 → END (merge) -->
+    <path class="arrow2" d="M85,898 L85,930 L281,930"/>
+
+    <!-- END (566) oval -->
+    <ellipse class="oval" cx="336" cy="930" rx="55" ry="22"/>
+    <text fill="#000" class="boxlabel" x="336" y="926">END</text>
+    <text fill="#000" class="boxlabel ref" x="336" y="939" font-weight="bold" font-size="11px">(566)</text>
+    <line class="arrow2" x1="336" y1="880" x2="336" y2="908"/>
+  </svg>
+
+  <div class="fig-label">FIG. 2</div>
+</div>
+
+<!-- ===================== SHEET 3 OF 3 — FIG. 3 ===================== -->
+<div class="sheet">
+  <div class="sheet-header">
+    <span>FS-2026-005</span>
+    <span>Sheet 3 of 3</span>
+  </div>
+
+  <svg width="672" height="500" viewBox="0 0 672 500" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="arr3" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+        <path d="M0,0 L0,6 L8,3 Z" fill="#000"/>
+      </marker>
+      <marker id="arr3rev" markerWidth="8" markerHeight="8" refX="1" refY="3" orient="auto">
+        <path d="M8,0 L8,6 L0,3 Z" fill="#000"/>
+      </marker>
+    </defs>
+    <style>
+      text { font-family: Arial, sans-serif; font-size: 9.5px; fill: #000; }
+      .ref { font-weight: bold; font-size: 11px; }
+      .tl-arrow { stroke: #000; stroke-width: 1.5; fill: none; marker-end: url(#arr3); }
+      .vert { stroke: #000; stroke-width: 1.2; fill: none; }
+      .vert-dashed { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 5,3; }
+      .vert-bold { stroke: #000; stroke-width: 2.5; fill: none; }
+      .bracket { stroke: #000; stroke-width: 1.2; fill: none; }
+      .leader { stroke: #000; stroke-width: 0.75; fill: none; }
+    </style>
+
+    <!-- ═══ TIMELINE AXIS ═══ -->
+    <!-- Main horizontal axis -->
+    <line class="tl-arrow" x1="40" y1="180" x2="650" y2="180"/>
+    <text fill="#000" x="548" y="172" font-size="9.5px">TIME →</text>
+
+    <!-- ── KEY X POSITIONS ── -->
+    <!-- 570: DIRECTIVE CREATED  x=80 -->
+    <!-- 576: WARN THRESHOLD     x=380 -->
+    <!-- 574: EXPIRY DATE        x=480 -->
+    <!-- right zone end          x=620 -->
+
+    <!-- ── DIRECTIVE CREATED (570) ── thin vertical line at x=80 -->
+    <line class="vert" x1="80" y1="120" x2="80" y2="230"/>
+    <!-- Leader line to label -->
+    <line class="leader" x1="80" y1="118" x2="80" y2="100"/>
+    <text fill="#000" x="82" y="115" font-size="9px">DIRECTIVE</text>
+    <text fill="#000" x="82" y="105" font-size="9px">CREATED</text>
+    <text fill="#000" x="82" y="95" font-weight="bold" font-size="11px">(570)</text>
+
+    <!-- ── ACTIVE ZONE bracket (80 → 480) ── -->
+    <!-- top bracket line -->
+    <path class="bracket" d="M80,148 L80,140 L480,140 L480,148"/>
+    <!-- Label in center of bracket -->
+    <text fill="#000" x="180" y="135" font-size="9px" text-anchor="middle">ACTIVE ZONE — FINDING SUPPRESSED</text>
+    <text fill="#000" x="280" y="124" font-weight="bold" font-size="10px" text-anchor="middle">(572)</text>
+    <!-- Sub-label below axis -->
+    <text fill="#000" x="240" y="198" font-size="9px" font-style="italic">shouldIgnoreFinding() → true</text>
+
+    <!-- ── WARN ZONE (576 → 574) ── dashed vertical at x=380 -->
+    <line class="vert-dashed" x1="380" y1="110" x2="380" y2="230"/>
+    <!-- Label above -->
+    <line class="leader" x1="380" y1="108" x2="340" y2="70"/>
+    <text fill="#000" x="200" y="68" font-size="9px">AUDIT WARNING THRESHOLD</text>
+    <text fill="#000" x="200" y="58" font-size="9px">(EXPIRY DATE − LOOKAHEAD_DAYS)</text>
+    <text fill="#000" x="200" y="48" font-weight="bold" font-size="11px">(576)</text>
+
+    <!-- WARN ZONE small bracket (380 → 480) -->
+    <path class="bracket" d="M380,158 L380,152 L480,152 L480,158"/>
+    <text fill="#000" x="430" y="148" font-size="8px" text-anchor="middle">WARN ZONE</text>
+    <text fill="#000" x="430" y="139" font-weight="bold" font-size="10px" text-anchor="middle">(578)</text>
+
+    <!-- ── EXPIRY DATE (574) ── bold vertical at x=480 -->
+    <line class="vert-bold" x1="480" y1="115" x2="480" y2="230"/>
+    <!-- Label above -->
+    <line class="leader" x1="480" y1="113" x2="530" y2="80"/>
+    <text fill="#000" x="532" y="78" font-size="9px">EXPIRY DATE</text>
+    <text fill="#000" x="532" y="68" font-weight="bold" font-size="11px">(574)</text>
+
+    <!-- ── EXPIRED ZONE bracket (480 → 620) ── -->
+    <path class="bracket" d="M480,148 L480,140 L620,140 L620,148"/>
+    <text fill="#000" x="550" y="135" font-size="9px" text-anchor="middle">EXPIRED ZONE — FINDING</text>
+    <text fill="#000" x="550" y="124" font-size="9px" text-anchor="middle">REACTIVATED</text>
+    <text fill="#000" x="550" y="113" font-weight="bold" font-size="10px" text-anchor="middle">(580)</text>
+    <!-- Sub-label below axis -->
+    <text fill="#000" x="548" y="198" font-size="9px" font-style="italic">shouldIgnoreFinding() → false</text>
+    <text fill="#000" x="548" y="209" font-size="9px" font-style="italic">suppressionExpired: true</text>
+
+    <!-- ═══ SCAN TIME MARKER ROW ═══ -->
+    <!-- Divider line -->
+    <line x1="40" y1="255" x2="640" y2="255" stroke="#000" stroke-width="0.5" stroke-dasharray="3,3"/>
+    <text fill="#000" x="40" y="273" font-size="9px" font-weight="bold">SCAN TIME</text>
+    <text fill="#000" x="40" y="285" font-weight="bold" font-size="11px">(582)</text>
+    <text fill="#000" x="120" y="273" font-size="9px" font-style="italic">— moveable marker on timeline</text>
+
+    <!-- Scenario 1: 582 < 574 (suppressed) -->
+    <!-- Marker triangle at x=240 -->
+    <polygon points="240,300 233,315 247,315" fill="#000" stroke="#000" stroke-width="0.5"/>
+    <line x1="240" y1="315" x2="240" y2="330" stroke="#000" stroke-width="1"/>
+    <line x1="40" y1="315" x2="640" y2="315" stroke="#000" stroke-width="0.5"/>
+    <!-- Reference axis ticks -->
+    <line x1="80" y1="312" x2="80" y2="318" stroke="#000" stroke-width="1"/>
+    <line x1="380" y1="312" x2="380" y2="318" stroke="#000" stroke-width="1"/>
+    <line x1="480" y1="312" x2="480" y2="318" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="240" y="345" font-size="9px" text-anchor="middle" font-style="italic">582 &lt; 574 → finding suppressed</text>
+    <text fill="#000" x="240" y="357" font-size="8px" text-anchor="middle">(SCAN TIME before expiry)</text>
+
+    <!-- Scenario 2: 582 >= 574 (reactivated) -->
+    <polygon points="530,380 523,395 537,395" fill="#000" stroke="#000" stroke-width="0.5"/>
+    <line x1="530" y1="395" x2="530" y2="410" stroke="#000" stroke-width="1"/>
+    <line x1="40" y1="395" x2="640" y2="395" stroke="#000" stroke-width="0.5"/>
+    <line x1="80" y1="392" x2="80" y2="398" stroke="#000" stroke-width="1"/>
+    <line x1="380" y1="392" x2="380" y2="398" stroke="#000" stroke-width="1"/>
+    <line x1="480" y1="392" x2="480" y2="398" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="530" y="425" font-size="9px" text-anchor="middle" font-style="italic">582 ≥ 574 → finding reactivated</text>
+    <text fill="#000" x="530" y="437" font-size="8px" text-anchor="middle">(SCAN TIME at or after expiry)</text>
+
+    <!-- Scenario 3: 576 <= 582 < 574 (warn zone) -->
+    <polygon points="420,455 413,470 427,470" fill="none" stroke="#000" stroke-width="1"/>
+    <line x1="420" y1="470" x2="420" y2="485" stroke="#000" stroke-width="1" stroke-dasharray="3,2"/>
+    <line x1="40" y1="470" x2="640" y2="470" stroke="#000" stroke-width="0.5"/>
+    <line x1="80" y1="467" x2="80" y2="473" stroke="#000" stroke-width="1"/>
+    <line x1="380" y1="467" x2="380" y2="473" stroke="#000" stroke-width="1"/>
+    <line x1="480" y1="467" x2="480" y2="473" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="420" y="492" font-size="9px" text-anchor="middle" font-style="italic">576 ≤ 582 &lt; 574 → audit warning emitted</text>
+    <text fill="#000" x="420" y="503" font-size="8px" text-anchor="middle">(SCAN TIME in warn zone, suppression still active)</text>
+  </svg>
+
+  <div class="fig-label">FIG. 3</div>
+</div>
+
+</body>
+</html>

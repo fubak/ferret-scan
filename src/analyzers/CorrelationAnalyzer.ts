@@ -8,12 +8,40 @@ import { dirname, relative } from 'node:path';
 import type {
   CorrelationFinding,
   CorrelationRule,
+  ComponentType,
   DiscoveredFile,
   Rule,
   ContextLine,
 } from '../types.js';
 import logger from '../utils/logger.js';
-import { compileSafePattern, runBounded } from '../utils/safeRegex.js';
+
+const KNOWN_COMPONENT_TYPES = new Set([
+  'skill',
+  'agent',
+  'hook',
+  'plugin',
+  'mcp',
+  'settings',
+  'ai-config-md',
+  'rules-file',
+]);
+
+function matchesFilePattern(file: DiscoveredFile, pattern: string): boolean {
+  const p = pattern.trim().toLowerCase();
+  if (!p) return false;
+  if (p === '*' || p === 'any') return true;
+
+  // Prefer component matching when the pattern looks like a component type.
+  if (KNOWN_COMPONENT_TYPES.has(p)) {
+    return file.component === (p as ComponentType);
+  }
+
+  return file.relativePath.toLowerCase().includes(p);
+}
+
+function uniqueByPath(files: DiscoveredFile[]): DiscoveredFile[] {
+  return Array.from(new Map(files.map(f => [f.path, f])).values());
+}
 
 /**
  * File relationship map
@@ -118,33 +146,54 @@ function areFilesRelatedByNaming(file1: DiscoveredFile, file2: DiscoveredFile): 
  */
 function findCrossFilePatterns(
   relationships: FileRelationship[],
-  correlationRules: CorrelationRule[],
-  contentCache?: { get(key: string): string | undefined }
+  correlationRules: CorrelationRule[]
 ): CrossFileMatch[] {
   const matches: CrossFileMatch[] = [];
+  const seen = new Set<string>();
+  const perRuleCount = new Map<string, number>();
+  const MAX_MATCHES_PER_RULE = 3;
 
   for (const rule of correlationRules) {
     logger.debug(`Checking correlation rule: ${rule.id}`);
 
     for (const relationship of relationships) {
-      const allFiles = [relationship.file, ...relationship.relatedFiles];
+      const currentCount = perRuleCount.get(rule.id) ?? 0;
+      if (currentCount >= MAX_MATCHES_PER_RULE) break;
 
-      // Check if rule file patterns match
-      // Empty filePatterns means match-all (no regex needed)
-      const matchingFiles = allFiles.filter(file => {
-        if (rule.filePatterns.length === 0) return true;
-        return rule.filePatterns.some(pattern =>
-          pattern === '*' || file.relativePath.toLowerCase().includes(pattern.toLowerCase())
-        );
+      const maxDistance = typeof rule.maxDistance === 'number' ? rule.maxDistance : 2;
+      const baseDir = dirname(relationship.file.path);
+      const relatedWithinDistance = relationship.relatedFiles.filter((other) => {
+        const dist = calculateDirectoryDistance(baseDir, dirname(other.path));
+        return dist <= maxDistance;
       });
+
+      const allFiles = [relationship.file, ...relatedWithinDistance];
+
+      // Require that *each* file pattern is present (the type definition says "must be present").
+      // We treat filePatterns as OR within each pattern group, AND across the list.
+      const requiredGroups = rule.filePatterns.map((fp) => allFiles.filter((f) => matchesFilePattern(f, fp)));
+      if (requiredGroups.some((g) => g.length === 0)) continue;
+
+      const matchingFiles = uniqueByPath(requiredGroups.flat());
 
       if (matchingFiles.length < 2) continue; // Need at least 2 files for correlation
 
       // Find content patterns across files
-      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns, contentCache);
+      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns);
 
       if (contentMatches.length >= rule.contentPatterns.length) {
+        // Ensure this is actually cross-file: require matches across at least 2 distinct files.
+        const uniqueMatchedFiles = new Set(contentMatches.map(m => m.file.path));
+        if (uniqueMatchedFiles.size < 2) continue;
+
         const strength = calculateCorrelationStrength(contentMatches, rule);
+        const keyFiles = Array.from(uniqueMatchedFiles).sort().join('|');
+        const keyPatterns = Array.from(new Set(contentMatches.map(m => m.pattern))).sort().join('|');
+        const key = `${rule.id}|${keyFiles}|${keyPatterns}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+
+        perRuleCount.set(rule.id, currentCount + 1);
 
         matches.push({
           rule,
@@ -161,50 +210,39 @@ function findCrossFilePatterns(
 
 /**
  * Find content patterns across multiple files
- *
- * Accepts an optional content cache to avoid redundant disk reads.
- * Files larger than 1MB are not cached to control memory usage.
  */
 function findContentPatternsAcrossFiles(
   files: DiscoveredFile[],
-  patterns: string[],
-  contentCache?: { get(key: string): string | undefined }
+  patterns: string[]
 ): { file: DiscoveredFile; pattern: string; line: number; match: string }[] {
   const matches: { file: DiscoveredFile; pattern: string; line: number; match: string }[] = [];
 
   for (const file of files) {
-    let content: string;
     try {
-      // Prefer cache over disk; fall back to sync read when cache is absent
-      content = contentCache?.get(file.path) ?? readFileSync(file.path, 'utf-8');
-    } catch (error) {
-      logger.warn(`Error reading file ${file.relativePath} for correlation analysis: ${error instanceof Error ? error.message : String(error)}`);
-      continue;
-    }
+      const content = readFileSync(file.path, 'utf-8');
+      const lines = content.split('\n');
 
-    const lines = content.split('\n');
+      for (const pattern of patterns) {
+        const regex = new RegExp(pattern, 'gi');
 
-    for (const pattern of patterns) {
-      const regex = compileSafePattern(pattern, 'gi');
-      if (!regex) {
-        logger.debug(`Skipping unsafe correlation pattern: ${pattern}`);
-        continue;
-      }
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i] ?? '';
+          const match = regex.exec(line);
 
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i] ?? '';
-        const result = runBounded(regex, line, { maxMatches: 1, maxMs: 100 });
-
-        if (result.matches.length > 0) {
-          matches.push({
-            file,
-            pattern,
-            line: i + 1,
-            match: result.matches[0]![0]
-          });
-          break; // One match per pattern per file is enough
+          if (match) {
+            matches.push({
+              file,
+              pattern,
+              line: i + 1,
+              match: match[0]
+            });
+            regex.lastIndex = 0; // Reset regex for next iteration
+            break; // One match per pattern per file is enough
+          }
         }
       }
+    } catch (error) {
+      logger.warn(`Error reading file ${file.relativePath} for correlation analysis: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -352,8 +390,7 @@ function generateRiskVectors(match: CrossFileMatch): string[] {
  */
 export function analyzeCorrelations(
   files: DiscoveredFile[],
-  rules: Rule[],
-  contentCache?: { get(key: string): string | undefined }
+  rules: Rule[]
 ): CorrelationFinding[] {
   const findings: CorrelationFinding[] = [];
 
@@ -377,8 +414,7 @@ export function analyzeCorrelations(
     // Find cross-file patterns
     const matches = findCrossFilePatterns(
       relationships,
-      correlationRules.map(r => ({ ...r, parentRule: undefined })),
-      contentCache
+      correlationRules.map(r => ({ ...r, parentRule: undefined }))
     );
 
     // Convert to findings

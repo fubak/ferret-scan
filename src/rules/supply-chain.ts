@@ -82,12 +82,15 @@ export const supplyChainRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects potential typosquatting variants of popular packages in dependency contexts',
     patterns: [
-      /["']l[o0]d[a4]sh["']/gi, // lodash typos in quoted strings
-      /["']requ[ei]st["']/gi, // request typos (but not just "request")
+      // NOTE: These patterns must NOT match legitimate package names.
+      // Prefer explicit typo variants over character classes that can match
+      // the correct spelling (e.g., /l[o0]d[a4]sh/ matches "lodash").
+      /["'](?:l0dash|lod4sh|loda5h|l0d4sh|l0da5h|lod45h|1odash)["']/gi, // lodash typos
+      /["'](?:reqeust|requset|requets|requesst|requiest)["']/gi, // request typos
       /["']expresss["']/gi, // express typos
       /["']reactt["']/gi, // react typos
       /["']angularr["']/gi, // angular typos
-      /npm\s+i(nstall)?\s+.*l[o0]d[a4]sh/gi, // npm install typos
+      /npm\s+i(nstall)?\s+.*(?:l0dash|lod4sh|loda5h|l0d4sh|l0da5h|lod45h|1odash)/gi, // npm install typos
       /npm\s+i(nstall)?\s+.*expresss/gi,
     ],
     fileTypes: ['json'],

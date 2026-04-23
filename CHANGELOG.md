@@ -8,14 +8,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned Features
-- VS Code extension for IDE integration
-- CI/CD plugins for Jenkins, GitLab, Azure DevOps
+- Complete LSP server implementation
+- Complete IntelliJ plugin implementation
+- Community rule sharing backend
+- Real-time monitoring dashboard
+- CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
-- Machine learning model for advanced anomaly detection
-- Compliance framework integration (SOC2, ISO27001)
-- Community rule marketplace
-- Advanced threat hunting capabilities
 - SIEM/SOAR integrations
+
+## [2.1.0] - 2026-02-16
+
+### Added
+- **NO_COLOR support**: Respects the `NO_COLOR` environment variable per no-color.org standard. Chalk auto-detects terminal capabilities and disables color output when `NO_COLOR` is set
+- **SSRF protection for custom rules**: Remote URLs in `--custom-rules` are now blocked by default. Use the new `--allow-remote-rules` flag to opt in to loading rules from URLs
+- **SIGINT handler**: Graceful shutdown on Ctrl+C during scan with cleanup message and exit code 130
+- **Interactive baseline removal**: `ferret baseline remove` now prompts for confirmation interactively instead of requiring `--yes`
+- **Dockerfile updated**: Multi-stage build with Node.js 20, non-root user, proper signal handling, and minimal image size
+- **npm-shrinkwrap.json**: Deterministic dependency installs for reproducible builds
+- **ESM exports map**: Added `"exports"` field to package.json for proper ESM module resolution
+- **Version command changelog link**: `ferret version` now includes a link to the changelog
+- **Comprehensive test suite**: 244 tests covering rule matching (positive/negative cases for all 9 categories), config loading, reporter output, exit codes, and SARIF validation
+
+### Changed
+- **Chalk replaces raw ANSI codes**: ConsoleReporter now uses chalk consistently instead of raw ANSI escape sequences. This automatically supports `NO_COLOR`, `FORCE_COLOR`, and terminal capability detection
+- **Invalid input warnings**: Unknown `--severity` and `--category` values now produce a warning instead of being silently dropped
+- **typescript moved to devDependencies**: Saves ~60MB on production installs
+
+### Security
+- **SSRF protection**: Custom rules from remote URLs require explicit opt-in via `--allow-remote-rules` to prevent server-side request forgery
+
+### Fixed
+- Missing `allowRemoteRules` field in MarketplaceScanner config
+
+## [2.0.0] - 2026-02-15
+
+### Added
+- **IDE Integrations**
+  - VS Code extension with real-time security scanning
+  - Inline diagnostics with severity-based warnings
+  - Quick fix code actions for common issues
+  - Security findings tree view in sidebar
+  - LSP server infrastructure for universal IDE support
+  - IntelliJ plugin infrastructure
+
+- **Advanced Behavior Analysis**
+  - Runtime agent execution monitoring
+  - Anomaly detection based on behavioral baselines
+  - Resource usage tracking (CPU, memory, disk)
+  - Network activity monitoring
+  - Sensitive file access detection
+  - Event-based real-time alerting system
+
+- **Marketplace Security**
+  - Claude Skills marketplace scanner
+  - Cursor extensions security analysis
+  - Plugin permission risk detection
+  - Dangerous capability combination analysis
+  - Automated risk scoring and recommendations
+  - Source code scanning integration
+
+- **AI-Powered Features**
+  - LLM-based rule generation from threat intelligence
+  - Automated rule validation and testing
+  - Community rule sharing infrastructure
+  - Confidence scoring for generated rules
+  - MITRE ATLAS technique mapping
+
+- **Sandboxing Integration**
+  - Pre-execution security validation
+  - Runtime constraint enforcement
+  - Policy violation detection
+  - Dangerous command pattern blocking
+  - Resource limit generation
+  - Network and file system access controls
+
+- **Compliance Frameworks**
+  - SOC2 compliance assessment and reporting
+  - ISO 27001 control mapping
+  - GDPR privacy impact assessment
+  - Automated evidence collection
+  - Compliance scoring system
+  - Remediation recommendations
+
+### Changed
+- Version bumped from 1.0.10 to 2.0.0
+- Package description updated to reflect platform capabilities
+- README enhanced with v2.0 features and IDE integration docs
+- Repository structure reorganized for better maintainability
+- Documentation moved to docs/ folder
+
+### Fixed
+- All TypeScript compilation errors in new modules
+- Unused import and variable warnings
+- Build system optimizations
 
 ## [1.0.10] - 2026-02-12
 

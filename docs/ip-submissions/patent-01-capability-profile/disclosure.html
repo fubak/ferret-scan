@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patent Disclosure — AI Agent Capability Profile Generation</title>
+  <style>
+    :root {
+      --ink: #0f1117;
+      --muted: #4a5568;
+      --border: #cbd5e0;
+      --accent: #1a365d;
+      --highlight: #ebf4ff;
+      --critical: #c53030;
+      --warning: #d97706;
+      --safe: #276749;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 12pt;
+      line-height: 1.7;
+      color: var(--ink);
+      background: #fff;
+      padding: 0;
+    }
+    .page {
+      max-width: 8.5in;
+      margin: 0 auto;
+      padding: 1in 1.1in;
+    }
+    /* Header */
+    .doc-header {
+      border-top: 4px solid var(--accent);
+      border-bottom: 2px solid var(--border);
+      padding: 24px 0 20px;
+      margin-bottom: 36px;
+    }
+    .doc-header .classification {
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .doc-header h1 {
+      font-size: 20pt;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .doc-header .subtitle {
+      font-size: 11pt;
+      color: var(--muted);
+      font-style: italic;
+    }
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 32px;
+      margin-top: 18px;
+      font-family: Arial, sans-serif;
+      font-size: 9.5pt;
+    }
+    .meta-item { display: flex; gap: 8px; }
+    .meta-label { color: var(--muted); min-width: 130px; font-weight: 600; }
+    .meta-value { color: var(--ink); }
+    .verdict-badge {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 4px 14px;
+      border-radius: 3px;
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      background: #276749;
+      color: #fff;
+    }
+    /* Sections */
+    h2 {
+      font-family: Arial, sans-serif;
+      font-size: 13pt;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1.5px solid var(--border);
+      padding-bottom: 6px;
+      margin: 32px 0 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    h3 {
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+      font-weight: 700;
+      color: var(--ink);
+      margin: 22px 0 8px;
+    }
+    p { margin-bottom: 12px; }
+    ul, ol { padding-left: 24px; margin-bottom: 14px; }
+    li { margin-bottom: 5px; }
+    code {
+      font-family: 'Courier New', monospace;
+      font-size: 9.5pt;
+      background: #f7f8fa;
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+    }
+    pre {
+      font-family: 'Courier New', monospace;
+      font-size: 9pt;
+      background: #f7f8fa;
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--accent);
+      border-radius: 3px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      margin: 14px 0;
+      line-height: 1.5;
+    }
+    /* Callout boxes */
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: var(--highlight);
+      padding: 12px 16px;
+      margin: 16px 0;
+      border-radius: 0 4px 4px 0;
+    }
+    .callout.warning {
+      border-color: var(--critical);
+      background: #fff5f5;
+    }
+    .callout strong { font-family: Arial, sans-serif; font-size: 9.5pt; }
+    /* Claim block */
+    .claim-block {
+      border: 1.5px solid var(--accent);
+      border-radius: 4px;
+      padding: 20px 24px;
+      margin: 16px 0;
+      background: #f9fbff;
+    }
+    .claim-block .claim-number {
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+    .claim-block p { font-style: italic; margin-bottom: 6px; }
+    /* SVG diagrams */
+    .diagram-wrap {
+      margin: 24px 0;
+      text-align: center;
+    }
+    .diagram-caption {
+      font-family: Arial, sans-serif;
+      font-size: 9pt;
+      color: var(--muted);
+      margin-top: 8px;
+      font-style: italic;
+    }
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      font-size: 10.5pt;
+    }
+    th {
+      background: var(--accent);
+      color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 9.5pt;
+      font-weight: 600;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f9fbff; }
+    /* Prior art table */
+    .pa-none { color: var(--safe); font-weight: 700; }
+    .pa-partial { color: var(--warning); font-weight: 700; }
+    .pa-blocks { color: var(--critical); font-weight: 700; }
+    /* Footer */
+    .doc-footer {
+      margin-top: 48px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      font-family: Arial, sans-serif;
+      font-size: 8.5pt;
+      color: var(--muted);
+    }
+    .page-break { page-break-before: always; }
+    @media print {
+      body { padding: 0; }
+      .page { padding: 0.75in 1in; }
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="doc-header">
+    <div class="classification">Invention Disclosure — Pro Se Filing Document</div>
+    <h1>AI Agent Capability Profile Generation<br>from AI CLI Configuration Files</h1>
+    <div class="subtitle">Patent Submission No. FS-2026-001 &nbsp;|&nbsp; Ferret Security Project</div>
+    <div class="meta-grid">
+      <div class="meta-item"><span class="meta-label">Inventor(s):</span><span class="meta-value">Ferret Security Team</span></div>
+      <div class="meta-item"><span class="meta-label">Filing Jurisdiction:</span><span class="meta-value">United States (USPTO) + PCT</span></div>
+      <div class="meta-item"><span class="meta-label">First Public Disclosure:</span><span class="meta-value">2026-01-31 (npm: ferret-scan)</span></div>
+      <div class="meta-item"><span class="meta-label">Grace Period Expires:</span><span class="meta-value">2027-01-31</span></div>
+      <div class="meta-item"><span class="meta-label">Priority Filing Target:</span><span class="meta-value">Within 30 days of this disclosure</span></div>
+      <div class="meta-item"><span class="meta-label">Source File:</span><span class="meta-value">src/features/capabilityMapping.ts</span></div>
+    </div>
+    <div class="verdict-badge">Patentability: Strong</div>
+  </div>
+
+  <!-- ABSTRACT -->
+  <h2>Abstract</h2>
+  <p>
+    A computer-implemented system automatically generates structured security profiles for artificial intelligence
+    command-line interface (AI CLI) agents by parsing their configuration files. The system classifies each declared
+    permission into a canonical capability taxonomy (encompassing file access, code execution, shell access, network
+    access, and related categories), assigns a risk level to each capability, and aggregates these into a holistic
+    agent risk score with actionable remediation recommendations. The system supports multiple AI CLI platforms
+    through a unified registry-based classification approach.
+  </p>
+
+  <!-- TECHNICAL FIELD -->
+  <h2>Technical Field</h2>
+  <p>
+    This invention relates to computer security, specifically to automated risk assessment of AI agent configurations
+    by parsing and classifying capability declarations across heterogeneous AI CLI environments.
+  </p>
+
+  <!-- BACKGROUND -->
+  <h2>Background</h2>
+  <p>
+    AI CLI agents (including Claude Code, Cursor, Windsurf, Continue, Aider, and Cline) expose rich capability
+    systems through configuration files. These capabilities — such as file write, shell execution, and network access
+    — carry material security risks when granted inappropriately. Prior to this invention, no automated system existed
+    to:
+  </p>
+  <ul>
+    <li>Parse configuration files from multiple AI CLI platforms through a unified interface</li>
+    <li>Map AI CLI-specific permission keys to a canonical, platform-independent capability taxonomy</li>
+    <li>Assign calibrated risk levels to individual capabilities</li>
+    <li>Generate a structured, actionable capability profile for security review</li>
+  </ul>
+  <p>
+    Existing security scanners treat AI CLI configs as generic configuration files, missing the semantic meaning
+    of capability declarations. This gap leaves organizations unable to systematically audit what access they have
+    granted to AI agents.
+  </p>
+
+  <!-- DETAILED DESCRIPTION -->
+  <h2>Detailed Description of the Invention</h2>
+
+  <h3>1. System Architecture</h3>
+  <p>
+    The capability profile generation system operates in three pipeline stages: <strong>Agent Detection</strong>,
+    <strong>Capability Extraction</strong>, and <strong>Risk Assessment &amp; Report Generation</strong>.
+  </p>
+
+  <!-- ARCHITECTURE DIAGRAM -->
+  <div class="diagram-wrap">
+    <svg width="680" height="320" viewBox="0 0 680 320" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif">
+      <!-- Background -->
+      <rect width="680" height="320" fill="#f9fbff" rx="8" stroke="#cbd5e0" stroke-width="1"/>
+
+      <!-- Stage boxes -->
+      <!-- Stage 1 -->
+      <rect x="30" y="60" width="180" height="200" rx="6" fill="#fff" stroke="#1a365d" stroke-width="1.5"/>
+      <rect x="30" y="60" width="180" height="32" rx="6" fill="#1a365d"/>
+      <rect x="30" y="78" width="180" height="14" fill="#1a365d"/>
+      <text x="120" y="82" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">Stage 1</text>
+      <text x="120" y="96" text-anchor="middle" fill="#fff" font-size="9">AGENT DETECTION</text>
+      <text x="45" y="120" fill="#0f1117" font-size="9">• File path received</text>
+      <text x="45" y="137" fill="#0f1117" font-size="9">• Match against AI_CLI_CONFIGS</text>
+      <text x="45" y="154" fill="#0f1117" font-size="9">  registry (7 platforms)</text>
+      <text x="45" y="171" fill="#0f1117" font-size="9">• Pattern: name, dir match</text>
+      <text x="45" y="188" fill="#0f1117" font-size="9">• Returns: agent type string</text>
+      <text x="45" y="205" fill="#0f1117" font-size="9">  or null (unknown agent)</text>
+
+      <!-- Arrow 1→2 -->
+      <line x1="210" y1="160" x2="245" y2="160" stroke="#1a365d" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="227" y="153" text-anchor="middle" fill="#4a5568" font-size="8">agent</text>
+      <text x="227" y="163" text-anchor="middle" fill="#4a5568" font-size="8">type</text>
+
+      <!-- Stage 2 -->
+      <rect x="245" y="60" width="185" height="200" rx="6" fill="#fff" stroke="#1a365d" stroke-width="1.5"/>
+      <rect x="245" y="60" width="185" height="32" rx="6" fill="#1a365d"/>
+      <rect x="245" y="78" width="185" height="14" fill="#1a365d"/>
+      <text x="337" y="82" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">Stage 2</text>
+      <text x="337" y="96" text-anchor="middle" fill="#fff" font-size="9">CAPABILITY EXTRACTION</text>
+      <text x="260" y="120" fill="#0f1117" font-size="9">• Parse JSON (fallback YAML)</text>
+      <text x="260" y="137" fill="#0f1117" font-size="9">• findNestedValue() recursive</text>
+      <text x="260" y="154" fill="#0f1117" font-size="9">• Map keys → CapabilityType</text>
+      <text x="260" y="171" fill="#0f1117" font-size="9">• Scan MCP sub-configs</text>
+      <text x="260" y="188" fill="#0f1117" font-size="9">• Parse allowedTools arrays</text>
+      <text x="260" y="205" fill="#0f1117" font-size="9">• mapToolToCapability()</text>
+
+      <!-- Arrow 2→3 -->
+      <line x1="430" y1="160" x2="465" y2="160" stroke="#1a365d" stroke-width="2" marker-end="url(#arr)"/>
+      <text x="447" y="153" text-anchor="middle" fill="#4a5568" font-size="8">cap</text>
+      <text x="447" y="163" text-anchor="middle" fill="#4a5568" font-size="8">list</text>
+
+      <!-- Stage 3 -->
+      <rect x="465" y="60" width="185" height="200" rx="6" fill="#fff" stroke="#1a365d" stroke-width="1.5"/>
+      <rect x="465" y="60" width="185" height="32" rx="6" fill="#1a365d"/>
+      <rect x="465" y="78" width="185" height="14" fill="#1a365d"/>
+      <text x="557" y="82" text-anchor="middle" fill="#fff" font-size="11" font-weight="bold">Stage 3</text>
+      <text x="557" y="96" text-anchor="middle" fill="#fff" font-size="9">RISK ASSESSMENT</text>
+      <text x="480" y="120" fill="#0f1117" font-size="9">• CAPABILITY_RISKS lookup</text>
+      <text x="480" y="137" fill="#0f1117" font-size="9">• calculateOverallRisk()</text>
+      <text x="480" y="154" fill="#0f1117" font-size="9">• generateRecommendations()</text>
+      <text x="480" y="171" fill="#0f1117" font-size="9">• AgentCapabilityProfile{}</text>
+      <text x="480" y="188" fill="#0f1117" font-size="9">• capabilityProfileToFindings()</text>
+      <text x="480" y="205" fill="#0f1117" font-size="9">• SARIF / HTML / JSON output</text>
+
+      <!-- Input arrow -->
+      <line x1="10" y1="160" x2="28" y2="160" stroke="#276749" stroke-width="2" marker-end="url(#arrg)"/>
+      <text x="3" y="153" fill="#276749" font-size="8">Config</text>
+      <text x="3" y="163" fill="#276749" font-size="8">File</text>
+
+      <!-- Output arrow -->
+      <line x1="650" y1="160" x2="668" y2="160" stroke="#276749" stroke-width="2" marker-end="url(#arrg)"/>
+      <text x="655" y="153" fill="#276749" font-size="8">Profile</text>
+
+      <!-- Defs -->
+      <defs>
+        <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#1a365d"/>
+        </marker>
+        <marker id="arrg" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+          <path d="M0,0 L0,6 L8,3 z" fill="#276749"/>
+        </marker>
+      </defs>
+
+      <!-- Title -->
+      <text x="340" y="290" text-anchor="middle" fill="#4a5568" font-size="9" font-style="italic">
+        Fig. 1 — Capability Profile Generation Pipeline
+      </text>
+    </svg>
+    <div class="diagram-caption">Figure 1. Three-stage pipeline: Agent Detection → Capability Extraction → Risk Assessment</div>
+  </div>
+
+  <h3>2. AI CLI Registry (Stage 1)</h3>
+  <p>
+    The system maintains a static registry <code>AI_CLI_CONFIGS</code> mapping seven AI CLI platform identifiers
+    to file path patterns and capability key mappings. Detection matches the input file path (filename and parent
+    directory) against each platform's pattern list. The registry is extensible — adding support for a new AI CLI
+    requires only a new registry entry.
+  </p>
+  <p>Supported platforms and their canonical names in the registry:</p>
+
+  <!-- Platform table -->
+  <div class="diagram-wrap">
+    <svg width="620" height="220" viewBox="0 0 620 220" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif" font-size="10">
+      <rect width="620" height="220" fill="#f9fbff" rx="6" stroke="#cbd5e0"/>
+      <!-- Header -->
+      <rect x="0" y="0" width="620" height="28" rx="6" fill="#1a365d"/>
+      <rect x="0" y="14" width="620" height="14" fill="#1a365d"/>
+      <text x="80" y="19" fill="#fff" font-weight="bold" font-size="10">Platform Key</text>
+      <text x="200" y="19" fill="#fff" font-weight="bold" font-size="10">Display Name</text>
+      <text x="340" y="19" fill="#fff" font-weight="bold" font-size="10">Key Config Files</text>
+      <text x="520" y="19" fill="#fff" font-weight="bold" font-size="10">Capabilities Mapped</text>
+      <!-- Rows -->
+      <rect x="0" y="28" width="620" height="27" fill="#fff"/>
+      <text x="14" y="47" fill="#0f1117">claude-code</text>
+      <text x="200" y="47" fill="#0f1117">Claude Code</text>
+      <text x="340" y="47" fill="#0f1117">.claude/, CLAUDE.md, .mcp.json</text>
+      <text x="520" y="47" fill="#0f1117">10</text>
+
+      <rect x="0" y="55" width="620" height="27" fill="#ebf4ff"/>
+      <text x="14" y="74" fill="#0f1117">cursor</text>
+      <text x="200" y="74" fill="#0f1117">Cursor</text>
+      <text x="340" y="74" fill="#0f1117">.cursorrules, .cursor/</text>
+      <text x="520" y="74" fill="#0f1117">4</text>
+
+      <rect x="0" y="82" width="620" height="27" fill="#fff"/>
+      <text x="14" y="101" fill="#0f1117">windsurf</text>
+      <text x="200" y="101" fill="#0f1117">Windsurf</text>
+      <text x="340" y="101" fill="#0f1117">.windsurfrules, windsurf.json</text>
+      <text x="520" y="101" fill="#0f1117">3</text>
+
+      <rect x="0" y="109" width="620" height="27" fill="#ebf4ff"/>
+      <text x="14" y="128" fill="#0f1117">continue</text>
+      <text x="200" y="128" fill="#0f1117">Continue</text>
+      <text x="340" y="128" fill="#0f1117">.continue/config.json</text>
+      <text x="520" y="128" fill="#0f1117">3</text>
+
+      <rect x="0" y="136" width="620" height="27" fill="#fff"/>
+      <text x="14" y="155" fill="#0f1117">aider</text>
+      <text x="200" y="155" fill="#0f1117">Aider</text>
+      <text x="340" y="155" fill="#0f1117">.aider.conf.yml</text>
+      <text x="520" y="155" fill="#0f1117">4</text>
+
+      <rect x="0" y="163" width="620" height="27" fill="#ebf4ff"/>
+      <text x="14" y="182" fill="#0f1117">cline</text>
+      <text x="200" y="182" fill="#0f1117">Cline</text>
+      <text x="340" y="182" fill="#0f1117">.clinerules, cline.json</text>
+      <text x="520" y="182" fill="#0f1117">3</text>
+
+      <rect x="0" y="190" width="620" height="27" fill="#fff"/>
+      <text x="14" y="209" fill="#0f1117">mcp</text>
+      <text x="200" y="209" fill="#0f1117">MCP Server</text>
+      <text x="340" y="209" fill="#0f1117">.mcp.json, mcp.json</text>
+      <text x="520" y="209" fill="#0f1117">3</text>
+    </svg>
+    <div class="diagram-caption">Table 1. AI CLI platform registry with file patterns and mapped capability counts</div>
+  </div>
+
+  <h3>3. Capability Taxonomy</h3>
+  <p>
+    The system defines eighteen canonical capability types covering the full surface area of AI agent permissions.
+    Each type carries a base risk level used in aggregate scoring:
+  </p>
+
+  <!-- Risk taxonomy diagram -->
+  <div class="diagram-wrap">
+    <svg width="660" height="280" viewBox="0 0 660 280" xmlns="http://www.w3.org/2000/svg" font-family="Arial, sans-serif" font-size="9.5">
+      <rect width="660" height="280" fill="#f9fbff" rx="6" stroke="#cbd5e0"/>
+
+      <!-- Critical column -->
+      <rect x="20" y="20" width="140" height="24" rx="4" fill="#c53030"/>
+      <text x="90" y="36" text-anchor="middle" fill="#fff" font-weight="bold" font-size="10">CRITICAL</text>
+      <rect x="20" y="50" width="140" height="20" rx="3" fill="#fed7d7"/>
+      <text x="90" y="64" text-anchor="middle" fill="#c53030">file_delete</text>
+      <rect x="20" y="74" width="140" height="20" rx="3" fill="#fed7d7"/>
+      <text x="90" y="88" text-anchor="middle" fill="#c53030">code_execution</text>
+      <rect x="20" y="98" width="140" height="20" rx="3" fill="#fed7d7"/>
+      <text x="90" y="112" text-anchor="middle" fill="#c53030">shell_access</text>
+      <rect x="20" y="122" width="140" height="20" rx="3" fill="#fed7d7"/>
+      <text x="90" y="136" text-anchor="middle" fill="#c53030">credential_access</text>
+      <rect x="20" y="146" width="140" height="20" rx="3" fill="#fed7d7"/>
+      <text x="90" y="160" text-anchor="middle" fill="#c53030">docker_access</text>
+
+      <!-- High column -->
+      <rect x="175" y="20" width="140" height="24" rx="4" fill="#c05621"/>
+      <text x="245" y="36" text-anchor="middle" fill="#fff" font-weight="bold" font-size="10">HIGH</text>
+      <rect x="175" y="50" width="140" height="20" rx="3" fill="#feebc8"/>
+      <text x="245" y="64" text-anchor="middle" fill="#c05621">file_write</text>
+      <rect x="175" y="74" width="140" height="20" rx="3" fill="#feebc8"/>
+      <text x="245" y="88" text-anchor="middle" fill="#c05621">network_access</text>
+      <rect x="175" y="98" width="140" height="20" rx="3" fill="#feebc8"/>
+      <text x="245" y="112" text-anchor="middle" fill="#c05621">browser_automation</text>
+      <rect x="175" y="122" width="140" height="20" rx="3" fill="#feebc8"/>
+      <text x="245" y="136" text-anchor="middle" fill="#c05621">process_management</text>
+      <rect x="175" y="146" width="140" height="20" rx="3" fill="#feebc8"/>
+      <text x="245" y="160" text-anchor="middle" fill="#c05621">database_access</text>
+
+      <!-- Medium column -->
+      <rect x="330" y="20" width="140" height="24" rx="4" fill="#b7791f"/>
+      <text x="400" y="36" text-anchor="middle" fill="#fff" font-weight="bold" font-size="10">MEDIUM</text>
+      <rect x="330" y="50" width="140" height="20" rx="3" fill="#fefcbf"/>
+      <text x="400" y="64" text-anchor="middle" fill="#744210">mcp_tools</text>
+      <rect x="330" y="74" width="140" height="20" rx="3" fill="#fefcbf"/>
+      <text x="400" y="88" text-anchor="middle" fill="#744210">clipboard_access</text>
+      <rect x="330" y="98" width="140" height="20" rx="3" fill="#fefcbf"/>
+      <text x="400" y="112" text-anchor="middle" fill="#744210">api_access</text>
+      <rect x="330" y="122" width="140" height="20" rx="3" fill="#fefcbf"/>
+      <text x="400" y="136" text-anchor="middle" fill="#744210">git_operations</text>
+      <rect x="330" y="146" width="140" height="20" rx="3" fill="#fefcbf"/>
+      <text x="400" y="160" text-anchor="middle" fill="#744210">environment_variables</text>
+
+      <!-- Low column -->
+      <rect x="485" y="20" width="155" height="24" rx="4" fill="#276749"/>
+      <text x="562" y="36" text-anchor="middle" fill="#fff" font-weight="bold" font-size="10">LOW</text>
+      <rect x="485" y="50" width="155" height="20" rx="3" fill="#c6f6d5"/>
+      <text x="562" y="64" text-anchor="middle" fill="#276749">file_read</text>
+      <rect x="485" y="74" width="155" height="20" rx="3" fill="#c6f6d5"/>
+      <text x="562" y="88" text-anchor="middle" fill="#276749">system_info</text>
+      <rect x="485" y="98" width="155" height="20" rx="3" fill="#c6f6d5"/>
+      <text x="562" y="112" text-anchor="middle" fill="#276749">notification</text>
+
+      <!-- Aggregate arrow -->
+      <text x="330" y="210" text-anchor="middle" fill="#4a5568" font-size="10" font-style="italic">Aggregate: max(capability risk levels across all allowed capabilities)</text>
+      <text x="330" y="228" text-anchor="middle" fill="#4a5568" font-size="10" font-style="italic">→ AgentCapabilityProfile.overallRisk ∈ {critical, high, medium, low}</text>
+      <text x="330" y="262" text-anchor="middle" fill="#4a5568" font-size="9" font-style="italic">Fig. 2 — Capability Taxonomy with Risk Levels</text>
+    </svg>
+    <div class="diagram-caption">Figure 2. Eighteen-type capability taxonomy organized by risk level</div>
+  </div>
+
+  <h3>4. Recursive Configuration Parsing</h3>
+  <p>
+    A key technical element is the <code>findNestedValue()</code> function, which recursively traverses any
+    depth of JSON object to locate capability key declarations. This is necessary because AI CLI configurations
+    place capability declarations at varying nesting depths. For JSON parsing failures, the system falls back
+    to YAML-style regex key-value parsing, ensuring broad compatibility.
+  </p>
+
+  <h3>5. Tool-Name-to-Capability Mapping</h3>
+  <p>
+    The <code>mapToolToCapability()</code> function translates free-form tool name strings (e.g.,
+    <code>"Bash"</code>, <code>"WebFetch"</code>, <code>"NotebookEdit"</code>) to canonical capability
+    types. This allows the system to interpret <code>allowedTools</code> arrays without platform-specific
+    parsing logic for each tool name variant.
+  </p>
+
+  <!-- CLAIMS -->
+  <h2>Independent Claims</h2>
+
+  <div class="claim-block">
+    <div class="claim-number">Claim 1 — System</div>
+    <p>
+      A computer-implemented system for generating an AI agent capability profile, the system comprising:
+      one or more processors configured to: receive a path to at least one configuration file associated
+      with an artificial intelligence command-line interface (AI CLI) agent selected from a plurality of AI
+      CLI agents; classify the AI CLI agent by matching the file path against a stored registry mapping file
+      path patterns to AI CLI agent types; parse the configuration file to extract a set of declared
+      permissions; for each extracted permission, map the permission to a canonical capability type selected
+      from a predefined capability taxonomy comprising at least: file read, file write, code execution,
+      shell access, and network access; assign a risk level from a predefined risk hierarchy to each
+      canonical capability type; aggregate the risk levels to compute an overall agent risk score; and output
+      a structured capability profile comprising the canonical capability types, their individual risk levels,
+      and the overall agent risk score.
+    </p>
+  </div>
+
+  <div class="claim-block">
+    <div class="claim-number">Claim 2 — Method</div>
+    <p>
+      A computer-implemented method for classifying permissions in AI CLI agent configuration files,
+      comprising: maintaining a registry mapping file path patterns to AI CLI platform identifiers and
+      associated capability key sets; for a received configuration file, identifying a matching AI CLI
+      platform identifier by comparing the file path against the registry; parsing the configuration file
+      using a first parsing strategy comprising JSON deserialization with recursive key lookup; upon
+      failure of the first parsing strategy, applying a second parsing strategy comprising pattern-based
+      key-value extraction from the raw file content; for each capability key located by either strategy,
+      mapping the key's value to a canonical capability type and an associated base risk level; computing
+      an aggregate risk level by applying a monotonically escalating risk function over all mapped
+      capability types having an allowed permission state; and emitting a structured report enumerating
+      each capability type, its permission state, its risk level, and a set of generated remediation
+      recommendations.
+    </p>
+  </div>
+
+  <!-- PRIOR ART -->
+  <h2>Prior Art Analysis</h2>
+
+  <table>
+    <tr>
+      <th>Reference</th>
+      <th>Description</th>
+      <th>Relevance</th>
+      <th>Anticipates?</th>
+    </tr>
+    <tr>
+      <td>US10,715,543<br><small>Palo Alto Networks, 2020</small></td>
+      <td>Permission-based risk profiling for cloud service configurations</td>
+      <td>Cloud config scanning, different domain; no AI CLI registry, no multi-platform capability taxonomy</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>US9,882,931<br><small>IBM, 2018</small></td>
+      <td>Agent permission profiling for mainframe systems</td>
+      <td>Different domain (mainframe); no AI CLI specificity, no multi-platform registry, no tool-name mapping</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>Semgrep<br><small>Open source, 2020+</small></td>
+      <td>General-purpose static analysis with rule patterns</td>
+      <td>No AI CLI capability taxonomy, no structured capability profiles, no risk aggregation model</td>
+      <td class="pa-none">NO</td>
+    </tr>
+    <tr>
+      <td>GitGuardian / TruffleHog<br><small>Various, 2018+</small></td>
+      <td>Secret scanning in configuration files</td>
+      <td>Credential detection only; no capability mapping, no AI CLI registry, no risk profile generation</td>
+      <td class="pa-none">NO</td>
+    </tr>
+  </table>
+
+  <div class="callout">
+    <strong>Novelty Assessment:</strong> The specific combination of (1) multi-platform AI CLI registry,
+    (2) recursive JSON capability key extraction with YAML fallback, (3) tool-name-to-capability mapping,
+    and (4) monotonic aggregate risk scoring is not disclosed in any known prior art reference. The AI CLI
+    platform category (2024+) postdates all found references.
+  </div>
+
+  <!-- DISCLOSURE BAR -->
+  <h2>Disclosure Bar &amp; Filing Urgency</h2>
+
+  <div class="callout warning">
+    <strong>URGENT — 12-Month Grace Period:</strong> The invention was publicly disclosed on
+    <strong>2026-01-31</strong> via the npm package <code>ferret-scan</code> and the public GitHub
+    repository <code>github.com/fubak/ferret-scan</code>. Under 35 U.S.C. § 102(b)(1)(A), the inventor
+    has until <strong>2027-01-31</strong> to file a US application. A PCT application must be filed
+    within 12 months of the provisional to preserve international priority. <strong>File the
+    provisional within 30 days of this disclosure document.</strong>
+  </div>
+
+  <table>
+    <tr><th>Event</th><th>Date</th><th>Status</th></tr>
+    <tr><td>First git commit (private)</td><td>2026-01-31</td><td>Internal</td></tr>
+    <tr><td>npm publish (ferret-scan v1.0.0)</td><td>2026-01-31</td><td>Public disclosure — clock starts</td></tr>
+    <tr><td>GitHub repository public</td><td>2026-01-31</td><td>Public disclosure</td></tr>
+    <tr><td>This invention disclosure prepared</td><td>2026-03-22</td><td>Pro se filing prepared</td></tr>
+    <tr><td><strong>Provisional application deadline</strong></td><td><strong>2026-04-22</strong></td><td><strong>TARGET</strong></td></tr>
+    <tr><td>Non-provisional conversion deadline</td><td>2027-04-22</td><td>12 months after provisional</td></tr>
+    <tr><td>US grace period hard deadline</td><td>2027-01-31</td><td>Absolute latest (no provisional)</td></tr>
+  </table>
+
+  <!-- RECOMMENDED FILING STRATEGY -->
+  <h2>Recommended Filing Strategy</h2>
+  <ul>
+    <li><strong>Provisional Application (US):</strong> File within 30 days. Establishes priority date. Cost: ~$320 (micro entity) or $640 (small entity) USPTO filing fee.</li>
+    <li><strong>Non-Provisional Application (US):</strong> File within 12 months of provisional. Full examination.</li>
+    <li><strong>PCT Application:</strong> File concurrently with or within 12 months of provisional to preserve international rights in EU, UK, Canada, Japan, and other jurisdictions relevant to enterprise security software market.</li>
+    <li><strong>Continuation Claims:</strong> Consider dependent claims covering the SARIF-format output of capability profiles, the HTML report generation, and the MCP-server sub-analysis as part of capability mapping.</li>
+  </ul>
+
+  <!-- FOOTER -->
+  <div class="doc-footer">
+    <p><strong>Ferret Security Project — Invention Disclosure FS-2026-001</strong></p>
+    <p>This is the inventor's working reference document for pro se patent filing. Claims and descriptions are considered final and ready for submission as a provisional patent application under 35 U.S.C. § 111(b).</p>
+    <p>Prepared: 2026-03-22 &nbsp;|&nbsp; Source: src/features/capabilityMapping.ts &nbsp;|&nbsp; Classification: Inventor's Working Document</p>
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Disclosure FS-2026-003 — AST-Based Security Analysis of Markdown-Embedded Code</title>
+<style>
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 12pt;
+    line-height: 1.6;
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 1in;
+    color: #000;
+    background: #fff;
+  }
+  h1 { font-family: Arial, sans-serif; font-size: 18pt; text-align: center; margin-bottom: 0.2in; }
+  h2 { font-family: Arial, sans-serif; font-size: 14pt; margin-top: 0.3in; border-bottom: 1px solid #000; }
+  h3 { font-family: Arial, sans-serif; font-size: 12pt; margin-top: 0.2in; }
+  .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 0.3in; }
+  .meta-table td { border: 1px solid #999; padding: 6px 10px; }
+  .meta-table td:first-child { font-weight: bold; width: 30%; background: #f5f5f5; }
+  .claim { margin: 0.15in 0; padding-left: 0.3in; }
+  .claim-num { font-weight: bold; }
+  .figure-caption { text-align: center; font-style: italic; font-size: 10pt; margin-top: 4px; }
+  .prior-art-table { width: 100%; border-collapse: collapse; margin: 0.2in 0; }
+  .prior-art-table th { background: #2c3e50; color: #fff; padding: 8px; font-family: Arial, sans-serif; font-size: 10pt; }
+  .prior-art-table td { border: 1px solid #ccc; padding: 7px 10px; font-size: 10pt; }
+  .prior-art-table tr:nth-child(even) td { background: #f8f8f8; }
+  .alert-box { border: 2px solid #c0392b; background: #fdf0f0; padding: 0.15in; margin: 0.2in 0; border-radius: 4px; }
+  .alert-box strong { color: #c0392b; }
+  code { font-family: "Courier New", monospace; font-size: 10pt; background: #f4f4f4; padding: 1px 4px; border-radius: 2px; }
+  svg text { font-family: Arial, sans-serif; }
+  .page-break { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<h1>PATENT DISCLOSURE DOCUMENT</h1>
+<h1 style="font-size:14pt;">FS-2026-003: Security Analysis of Code Blocks Embedded in Markdown Configuration Files via Abstract Syntax Tree Parsing</h1>
+
+<table class="meta-table">
+  <tr><td>Disclosure ID</td><td>FS-2026-003</td></tr>
+  <tr><td>Filing Priority</td><td><strong>HIGH</strong> — Provisional within 30 days</td></tr>
+  <tr><td>Technology Domain</td><td>Static Analysis, AI Security, Developer Tooling</td></tr>
+  <tr><td>Primary Inventor(s)</td><td>[To Be Completed]</td></tr>
+  <tr><td>Assignee (Proposed)</td><td>[Organization Name]</td></tr>
+  <tr><td>First Public Disclosure</td><td>2026-01-31 (npm publication)</td></tr>
+  <tr><td>Grace Period Expires</td><td>2027-01-31</td></tr>
+  <tr><td>Target Provisional Filing</td><td>2026-04-22</td></tr>
+  <tr><td>Primary Source File</td><td>src/analyzers/AstAnalyzer.ts</td></tr>
+  <tr><td>Related Cases</td><td>FS-2026-001, FS-2026-002</td></tr>
+</table>
+
+<div class="alert-box">
+  <strong>&#9888; Filing Urgency:</strong> The ferret-scan npm package was published on 2026-01-31, constituting a public disclosure under 35 U.S.C. &sect; 102(b)(1)(A). The one-year grace period for filing a U.S. provisional application expires <strong>2027-01-31</strong>. International PCT filing (no grace period) should occur <strong>before 2026-01-31</strong>. File the provisional application immediately.
+</div>
+
+<h2>I. BACKGROUND AND PROBLEM STATEMENT</h2>
+
+<p>Modern AI coding assistants (Claude Code, Cursor, Windsurf, Continue, Aider, Cline) are configured through markdown-formatted files such as <code>CLAUDE.md</code>, <code>.cursorrules</code>, and <code>AGENTS.md</code>. These files occupy a unique position in software security: they contain natural-language instructions to AI systems, but they also routinely embed fenced code blocks, shell scripts, and executable snippets intended to demonstrate desired behaviors or configure automated workflows.</p>
+
+<p>Prior art in static analysis focuses on analyzing actual source code files &mdash; JavaScript, TypeScript, Python, etc. &mdash; where the primary artifact is executable code. No prior tool analyzes markdown configuration files as a mixed-type artifact where natural language sections and embedded code blocks must be treated differently and where the security implications arise from AI interpretation rather than direct execution.</p>
+
+<p>The problem addressed by this invention: embedded code blocks in AI configuration markdown can instruct AI agents to perform dangerous operations. A prompt-injection attacker can embed a fenced code block containing a shell command, dynamic import chain, or dangerous function call within what appears to be documentation. The AI agent, upon reading its configuration file, may execute these instructions literally. No existing security scanner extracts, parses, and analyzes these embedded code blocks using formal Abstract Syntax Tree (AST) analysis as distinct artifacts from the surrounding prose.</p>
+
+<h2>II. SUMMARY OF THE INVENTION</h2>
+
+<p>The present invention provides a method and system for extracting fenced code blocks from markdown-formatted AI configuration files, submitting each extracted block to language-appropriate AST parsing, and applying a catalog of semantic security patterns to the resulting AST to identify dangerous constructs &mdash; all without executing any code. The invention addresses threats including dynamic module loading, dangerous built-in function invocations, property-chain traversals to security-sensitive objects, and object structures designed to exfiltrate or relay data.</p>
+
+<p>A key novelty is the <strong>semantic pattern matching</strong> layer: rather than simple string or regex matching against raw text, the invention matches against AST node structures, providing resistance to obfuscation techniques such as Unicode escaping, string concatenation, and identifier aliasing.</p>
+
+<h2>III. DETAILED DESCRIPTION OF THE INVENTION</h2>
+
+<h3>A. System Architecture</h3>
+
+<!-- Figure 1: Analysis Pipeline -->
+<svg width="720" height="300" viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <defs>
+    <marker id="arr3" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#555"/>
+    </marker>
+  </defs>
+  <rect width="720" height="300" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="360" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 1 &#8212; AST-Based Analysis Pipeline for Markdown-Embedded Code</text>
+
+  <!-- Stage 1 -->
+  <rect x="20" y="50" width="120" height="60" fill="#3498db" rx="6"/>
+  <text x="80" y="75" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Markdown</text>
+  <text x="80" y="91" text-anchor="middle" font-size="10" fill="white">Config File</text>
+  <text x="80" y="106" text-anchor="middle" font-size="9" fill="#bde3f7">CLAUDE.md / .cursorrules</text>
+
+  <line x1="140" y1="80" x2="175" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <!-- Stage 2 -->
+  <rect x="175" y="50" width="120" height="60" fill="#16a085" rx="6"/>
+  <text x="235" y="75" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Code Block</text>
+  <text x="235" y="91" text-anchor="middle" font-size="10" fill="white">Extractor</text>
+  <text x="235" y="106" text-anchor="middle" font-size="9" fill="#a2ddd4">Regex + state machine</text>
+
+  <line x1="295" y1="80" x2="330" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <!-- Stage 3 -->
+  <rect x="330" y="50" width="120" height="60" fill="#8e44ad" rx="6"/>
+  <text x="390" y="75" text-anchor="middle" font-size="11" fill="white" font-weight="bold">AST Parser</text>
+  <text x="390" y="91" text-anchor="middle" font-size="10" fill="white">(TypeScript API)</text>
+  <text x="390" y="106" text-anchor="middle" font-size="9" fill="#d7b8ea">Language-aware</text>
+
+  <line x1="450" y1="80" x2="485" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <!-- Stage 4 -->
+  <rect x="485" y="50" width="120" height="60" fill="#e74c3c" rx="6"/>
+  <text x="545" y="75" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Semantic</text>
+  <text x="545" y="91" text-anchor="middle" font-size="10" fill="white">Pattern Matcher</text>
+  <text x="545" y="106" text-anchor="middle" font-size="9" fill="#f0b8b3">5 pattern types</text>
+
+  <line x1="605" y1="80" x2="640" y2="80" stroke="#555" stroke-width="2" marker-end="url(#arr3)"/>
+
+  <!-- Stage 5 -->
+  <rect x="640" y="50" width="65" height="60" fill="#f39c12" rx="6"/>
+  <text x="672" y="75" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Risk</text>
+  <text x="672" y="91" text-anchor="middle" font-size="10" fill="white">Findings</text>
+
+  <!-- Detail: Block extraction -->
+  <rect x="175" y="140" width="120" height="80" fill="white" rx="4" stroke="#16a085" stroke-width="1.5"/>
+  <text x="235" y="158" text-anchor="middle" font-size="10" font-weight="bold" fill="#16a085">Extracted Block</text>
+  <text x="235" y="174" text-anchor="middle" font-size="9" fill="#333">Language tag</text>
+  <text x="235" y="188" text-anchor="middle" font-size="9" fill="#333">Start/end line</text>
+  <text x="235" y="202" text-anchor="middle" font-size="9" fill="#333">Content string</text>
+  <text x="235" y="216" text-anchor="middle" font-size="9" fill="#333">Surrounding prose</text>
+  <line x1="235" y1="110" x2="235" y2="140" stroke="#16a085" stroke-width="1.5" stroke-dasharray="4"/>
+
+  <!-- Detail: Pattern types -->
+  <rect x="485" y="140" width="120" height="108" fill="white" rx="4" stroke="#e74c3c" stroke-width="1.5"/>
+  <text x="545" y="158" text-anchor="middle" font-size="10" font-weight="bold" fill="#e74c3c">Pattern Types</text>
+  <text x="545" y="174" text-anchor="middle" font-size="9" fill="#333">&#x2022; function-call</text>
+  <text x="545" y="188" text-anchor="middle" font-size="9" fill="#333">&#x2022; property-access</text>
+  <text x="545" y="202" text-anchor="middle" font-size="9" fill="#333">&#x2022; dynamic-import</text>
+  <text x="545" y="216" text-anchor="middle" font-size="9" fill="#333">&#x2022; indirect-exec</text>
+  <text x="545" y="230" text-anchor="middle" font-size="9" fill="#333">&#x2022; object-structure</text>
+  <text x="545" y="244" text-anchor="middle" font-size="9" fill="#555">AST node matching</text>
+  <line x1="545" y1="110" x2="545" y2="140" stroke="#e74c3c" stroke-width="1.5" stroke-dasharray="4"/>
+</svg>
+<p class="figure-caption">Figure 1. Five-stage analysis pipeline: markdown input &rarr; code block extraction &rarr; AST parsing &rarr; semantic pattern matching &rarr; risk findings.</p>
+
+<h3>B. Code Block Extraction (Step 1)</h3>
+
+<p>The <code>extractCodeBlocks()</code> function implements a two-pass state machine over the lines of a markdown file. In the first pass, it identifies fenced code blocks delimited by triple-backtick sequences including optional language tags (e.g., <code>&#96;&#96;&#96;javascript</code>, <code>&#96;&#96;&#96;bash</code>). Each extracted block is represented as an object with the following properties:</p>
+
+<ul>
+  <li><strong>language</strong>: The language hint from the opening fence (normalized to lowercase)</li>
+  <li><strong>content</strong>: The verbatim text content between the fences</li>
+  <li><strong>startLine / endLine</strong>: Source line numbers within the markdown file</li>
+  <li><strong>context</strong>: Up to 3 lines of prose immediately preceding the block</li>
+</ul>
+
+<p>The second pass applies language detection heuristics to blocks with absent or ambiguous language tags, using token frequency analysis to distinguish JavaScript/TypeScript from shell scripts, Python, and other languages. This is critical because AI configuration files frequently omit language tags.</p>
+
+<h3>C. AST Construction (Step 2)</h3>
+
+<p>Each extracted code block with a recognized scripting language (JavaScript, TypeScript) is submitted to the TypeScript compiler API (<code>ts.createSourceFile()</code>) to produce a full Abstract Syntax Tree. The AST captures structural relationships between tokens &mdash; function calls, property chains, import expressions, and object literals &mdash; rather than treating the code as flat text. The use of a compiler-grade AST provides resistance to trivial obfuscation: whitespace insertion, line breaks, and comment injection do not affect AST structure.</p>
+
+<p>Shell script blocks are processed by a purpose-built command tokenizer rather than a full AST parser, which identifies dangerous command patterns (data exfiltration utilities, remote execution, process substitution) in a structure-aware manner.</p>
+
+<h3>D. Semantic Pattern Catalog (Step 3)</h3>
+
+<!-- Figure 2: Pattern Taxonomy -->
+<svg width="700" height="360" viewBox="0 0 700 360" xmlns="http://www.w3.org/2000/svg" style="display:block;margin:0.2in auto;">
+  <rect width="700" height="360" fill="#fafafa" rx="8" stroke="#ddd"/>
+  <text x="350" y="24" text-anchor="middle" font-size="13" font-weight="bold" fill="#2c3e50">Fig. 2 &#8212; Semantic Security Pattern Taxonomy</text>
+
+  <!-- Root -->
+  <rect x="270" y="38" width="160" height="36" fill="#2c3e50" rx="6"/>
+  <text x="350" y="62" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Security Patterns</text>
+
+  <!-- Lines to children -->
+  <line x1="350" y1="74" x2="100" y2="114" stroke="#888" stroke-width="1.5"/>
+  <line x1="350" y1="74" x2="225" y2="114" stroke="#888" stroke-width="1.5"/>
+  <line x1="350" y1="74" x2="350" y2="114" stroke="#888" stroke-width="1.5"/>
+  <line x1="350" y1="74" x2="475" y2="114" stroke="#888" stroke-width="1.5"/>
+  <line x1="350" y1="74" x2="600" y2="114" stroke="#888" stroke-width="1.5"/>
+
+  <!-- Pattern nodes -->
+  <rect x="35" y="114" width="130" height="44" fill="#e74c3c" rx="5"/>
+  <text x="100" y="134" text-anchor="middle" font-size="11" fill="white" font-weight="bold">function-call</text>
+  <text x="100" y="150" text-anchor="middle" font-size="9" fill="#f0b8b3">Dangerous built-ins</text>
+
+  <rect x="160" y="114" width="130" height="44" fill="#e67e22" rx="5"/>
+  <text x="225" y="134" text-anchor="middle" font-size="11" fill="white" font-weight="bold">property-access</text>
+  <text x="225" y="150" text-anchor="middle" font-size="9" fill="#fde3b8">Sensitive obj chains</text>
+
+  <rect x="285" y="114" width="130" height="44" fill="#8e44ad" rx="5"/>
+  <text x="350" y="134" text-anchor="middle" font-size="11" fill="white" font-weight="bold">dynamic-import</text>
+  <text x="350" y="150" text-anchor="middle" font-size="9" fill="#d7b8ea">Runtime module load</text>
+
+  <rect x="410" y="114" width="130" height="44" fill="#16a085" rx="5"/>
+  <text x="475" y="134" text-anchor="middle" font-size="11" fill="white" font-weight="bold">indirect-exec</text>
+  <text x="475" y="150" text-anchor="middle" font-size="9" fill="#a2ddd4">Dynamic code exec</text>
+
+  <rect x="535" y="114" width="130" height="44" fill="#2980b9" rx="5"/>
+  <text x="600" y="134" text-anchor="middle" font-size="11" fill="white" font-weight="bold">object-structure</text>
+  <text x="600" y="150" text-anchor="middle" font-size="9" fill="#aed6f1">Exfil data shapes</text>
+
+  <!-- Example boxes -->
+  <rect x="20" y="178" width="160" height="80" fill="white" rx="4" stroke="#e74c3c"/>
+  <text x="100" y="195" text-anchor="middle" font-size="9" font-weight="bold" fill="#e74c3c">Examples</text>
+  <text x="30" y="210" font-size="9" fill="#333">&#x2022; process.exit()</text>
+  <text x="30" y="224" font-size="9" fill="#333">&#x2022; spawn(command)</text>
+  <text x="30" y="238" font-size="9" fill="#333">&#x2022; execSync(cmd)</text>
+  <text x="30" y="252" font-size="9" fill="#333">&#x2022; Dangerous built-in call</text>
+  <line x1="100" y1="158" x2="100" y2="178" stroke="#e74c3c" stroke-dasharray="3"/>
+
+  <rect x="155" y="178" width="140" height="80" fill="white" rx="4" stroke="#e67e22"/>
+  <text x="225" y="195" text-anchor="middle" font-size="9" font-weight="bold" fill="#e67e22">Examples</text>
+  <text x="165" y="210" font-size="9" fill="#333">&#x2022; process.env.SECRET</text>
+  <text x="165" y="224" font-size="9" fill="#333">&#x2022; fs.readFileSync()</text>
+  <text x="165" y="238" font-size="9" fill="#333">&#x2022; net.createServer()</text>
+  <text x="165" y="252" font-size="9" fill="#333">&#x2022; os.homedir()</text>
+  <line x1="225" y1="158" x2="225" y2="178" stroke="#e67e22" stroke-dasharray="3"/>
+
+  <rect x="280" y="178" width="140" height="80" fill="white" rx="4" stroke="#8e44ad"/>
+  <text x="350" y="195" text-anchor="middle" font-size="9" font-weight="bold" fill="#8e44ad">Examples</text>
+  <text x="290" y="210" font-size="9" fill="#333">&#x2022; import(variable)</text>
+  <text x="290" y="224" font-size="9" fill="#333">&#x2022; require(variable)</text>
+  <text x="290" y="238" font-size="9" fill="#333">&#x2022; import(template)</text>
+  <text x="290" y="252" font-size="9" fill="#333">&#x2022; Dynamic path require</text>
+  <line x1="350" y1="158" x2="350" y2="178" stroke="#8e44ad" stroke-dasharray="3"/>
+
+  <rect x="405" y="178" width="140" height="80" fill="white" rx="4" stroke="#16a085"/>
+  <text x="475" y="195" text-anchor="middle" font-size="9" font-weight="bold" fill="#16a085">Examples</text>
+  <text x="415" y="210" font-size="9" fill="#333">&#x2022; Obfuscated invocation</text>
+  <text x="415" y="224" font-size="9" fill="#333">&#x2022; Function constructor</text>
+  <text x="415" y="238" font-size="9" fill="#333">&#x2022; setTimeout(string)</text>
+  <text x="415" y="252" font-size="9" fill="#333">&#x2022; setInterval(string)</text>
+  <line x1="475" y1="158" x2="475" y2="178" stroke="#16a085" stroke-dasharray="3"/>
+
+  <rect x="530" y="178" width="155" height="80" fill="white" rx="4" stroke="#2980b9"/>
+  <text x="607" y="195" text-anchor="middle" font-size="9" font-weight="bold" fill="#2980b9">Examples</text>
+  <text x="540" y="210" font-size="9" fill="#333">&#x2022; {url, headers, body}</text>
+  <text x="540" y="224" font-size="9" fill="#333">&#x2022; fetch config objects</text>
+  <text x="540" y="238" font-size="9" fill="#333">&#x2022; Webhook payloads</text>
+  <text x="540" y="252" font-size="9" fill="#333">&#x2022; API key containers</text>
+  <line x1="607" y1="158" x2="607" y2="178" stroke="#2980b9" stroke-dasharray="3"/>
+
+  <!-- Innovation note -->
+  <rect x="20" y="278" width="660" height="66" fill="#fef9e7" rx="4" stroke="#f39c12"/>
+  <text x="350" y="296" text-anchor="middle" font-size="10" font-weight="bold" fill="#e67e22">Key Innovation: AST-Level vs. String-Level Matching</text>
+  <text x="350" y="313" text-anchor="middle" font-size="9" fill="#333">String matching: fails on whitespace, aliases, concatenation, comment injection</text>
+  <text x="350" y="329" text-anchor="middle" font-size="9" fill="#333">AST matching: captures semantic equivalents regardless of surface-level obfuscation</text>
+  <text x="350" y="345" text-anchor="middle" font-size="9" fill="#555">The invention matches at the structural (node type + identifier) level, not the character level</text>
+</svg>
+<p class="figure-caption">Figure 2. Taxonomy of five semantic security pattern types applied to extracted ASTs, with examples of each category.</p>
+
+<h3>E. Semantic Pattern Matching Algorithm</h3>
+
+<p>The <code>matchSemanticPattern()</code> function performs AST traversal using recursive descent. For each node in the AST, it evaluates the node against each registered pattern based on the pattern's <code>type</code> discriminant:</p>
+
+<p><strong>function-call patterns</strong>: Match AST call expression nodes (<code>SyntaxKind.CallExpression</code>) where the callee identifier or member expression path appears in a catalog of dangerous function names. The catalog includes process termination, child process spawning, network socket creation, and indirect code execution functions. Matching is performed on the resolved callee name after stripping wrapper parentheses and type assertions.</p>
+
+<p><strong>property-access patterns</strong>: Match AST property access expression nodes (<code>SyntaxKind.PropertyAccessExpression</code>) where the object.property chain traverses known security-sensitive paths. The invention checks multi-level chains (e.g., <code>object.child.sensitive</code>) by following parent-child relationships in the AST, enabling detection of deeply nested accesses.</p>
+
+<p><strong>dynamic-import patterns</strong>: Match AST dynamic import expressions (<code>SyntaxKind.ImportExpression</code>, <code>SyntaxKind.CallExpression</code> with callee identifier "require") where the module specifier is not a string literal. Variable, template literal, and concatenation-expression module specifiers are flagged, as they indicate runtime-determined module loading which cannot be statically validated.</p>
+
+<p><strong>indirect-exec patterns</strong>: Match AST call expressions that convert strings into executable code at runtime. This category targets the "eval-chain" threat: call expressions whose callee resolves to well-known dynamic execution identifiers, Function constructor instantiation, and timer functions invoked with string arguments rather than function references. These are primary mechanisms for obfuscated prompt injection attacks.</p>
+
+<p><strong>object-structure patterns</strong>: Match AST object literal expressions (<code>SyntaxKind.ObjectLiteralExpression</code>) whose property key sets match the signature of known dangerous data transfer objects: fetch configuration objects (url + method + headers + body), API credential containers, and webhook payload objects. This detects code that constructs data exfiltration payloads even when the actual transmission function call is in a separate block.</p>
+
+<h3>F. Cross-Block Correlation</h3>
+
+<p>A significant novel aspect of the invention is cross-block analysis: findings from multiple code blocks within the same markdown file are correlated to identify split attack chains. For example, an object-structure finding in block #3 (constructing an exfiltration payload) combined with a property-access finding in block #7 (reading environment variables) produces a composite "credential exfiltration chain" finding of elevated severity, even though neither block alone would warrant a critical alert. This correlation is implemented in the <code>analyzeFile()</code> method by maintaining a finding accumulator across all blocks and applying combination rules after all individual-block analyses complete.</p>
+
+<h2>IV. INDEPENDENT CLAIMS</h2>
+
+<div class="claim">
+<span class="claim-num">Claim 1 (Method &mdash; Independent):</span> A computer-implemented method for analyzing security threats in AI agent configuration files, comprising: receiving a markdown-formatted configuration file associated with an AI coding assistant; extracting one or more fenced code blocks from the markdown content, each block including a content string and source position metadata; for each extracted code block having a recognized scripting language, constructing an Abstract Syntax Tree from the code block content using a compiler-grade parser; traversing the Abstract Syntax Tree to identify AST nodes matching one or more semantic security patterns selected from the group consisting of: dangerous function call patterns, security-sensitive property access chain patterns, dynamic module loading patterns, indirect code execution patterns, and data exfiltration object structure patterns; generating a security finding for each matched pattern, including the source position within the original markdown file; and correlating findings across multiple code blocks within the same file to identify composite attack chains.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 2 (System &mdash; Independent):</span> A system for detecting security threats in AI coding assistant configuration files, comprising: one or more processors; memory storing instructions that, when executed, implement: a code block extraction module configured to parse markdown content and extract fenced code blocks with associated language tags and source line numbers; an AST construction module configured to invoke a TypeScript compiler API to generate an Abstract Syntax Tree from each extracted code block; a semantic pattern matching module configured to traverse the Abstract Syntax Tree and match AST node structures against a catalog of security patterns using node type and identifier-based matching; a cross-block correlation module configured to identify composite attack chains by combining findings from multiple code blocks in the same file; and a finding reporting module configured to output security alerts with source positions traceable to the originating markdown file.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 3 (Dependent on Claim 1):</span> The method of claim 1, wherein the indirect code execution patterns match call expressions where the callee identifier resolves to a dynamic code evaluation function, including function constructor instantiation, and timer functions invoked with a string argument as the first parameter rather than a function reference.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 4 (Dependent on Claim 1):</span> The method of claim 1, wherein extracting fenced code blocks further comprises applying language detection heuristics to code blocks that lack language tags, the heuristics comprising token frequency analysis to classify the block as JavaScript/TypeScript, shell script, or other language.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 5 (Dependent on Claim 1):</span> The method of claim 1, wherein correlating findings further comprises applying severity escalation rules such that a composite finding derived from combining findings of two or more pattern types is assigned a severity level higher than either individual finding.
+</div>
+
+<div class="claim">
+<span class="claim-num">Claim 6 (Dependent on Claim 1):</span> The method of claim 1, wherein the markdown-formatted configuration file is one of: a CLAUDE.md file associated with the Claude Code AI coding assistant; a .cursorrules file associated with the Cursor AI coding assistant; an AGENTS.md file associated with a multi-agent AI system; or a system prompt configuration file associated with any large language model agent.
+</div>
+
+<h2 class="page-break">V. PRIOR ART ANALYSIS</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Reference</th>
+    <th>Type</th>
+    <th>Subject</th>
+    <th>Gap vs. Invention</th>
+    <th>Anticipates?</th>
+  </tr>
+  <tr>
+    <td>Semgrep (r2c/Semgrep)</td>
+    <td>Open Source Tool</td>
+    <td>AST-based static analysis for source code</td>
+    <td>Analyzes source code files, not markdown config. No markdown extraction layer. Not AI-specific.</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>CodeQL (GitHub)</td>
+    <td>Commercial Tool</td>
+    <td>Query-based AST analysis for compiled artifacts</td>
+    <td>Requires build artifacts; no markdown support; not designed for AI configuration context</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>ESLint (OpenJS)</td>
+    <td>Open Source Tool</td>
+    <td>AST-based JavaScript linting</td>
+    <td>Lints .js/.ts files only; no markdown extraction; no AI threat modeling</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>markdownlint</td>
+    <td>Open Source Tool</td>
+    <td>Markdown file linting</td>
+    <td>Style/structure checking only; does not extract or analyze embedded code blocks</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>remark-lint</td>
+    <td>Open Source Tool</td>
+    <td>Markdown processing and linting</td>
+    <td>No security analysis; does not apply AST pattern matching to embedded code</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>Snyk Code</td>
+    <td>Commercial Tool</td>
+    <td>SAST for source code</td>
+    <td>No markdown config analysis; not AI-assistant aware; no cross-block correlation</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>MCP-Scan (Invariant Labs)</td>
+    <td>Research/Tool</td>
+    <td>MCP server configuration scanning</td>
+    <td>Analyzes MCP server definitions, not markdown config files; no AST analysis; different threat model</td>
+    <td>No</td>
+  </tr>
+  <tr>
+    <td>US Patent 10,872,156 (Checkmarx)</td>
+    <td>Patent</td>
+    <td>SAST for web application source code</td>
+    <td>Claims cover traditional source code analysis; no markdown extraction; no AI context</td>
+    <td>No</td>
+  </tr>
+</table>
+
+<p><strong>Non-obviousness argument:</strong> A person of ordinary skill in the art (POSITA) would not have been motivated to combine markdown parsing with compiler-grade AST analysis for security purposes because: (1) markdown files are conventionally documentation, not security-relevant artifacts; (2) the threat model &mdash; an AI agent executing instructions from its own configuration file &mdash; was not well-understood until late 2024; and (3) the cross-block correlation technique for identifying split attack chains is not a natural extension of any single prior system.</p>
+
+<h2>VI. RECOMMENDED FILING STRATEGY</h2>
+
+<table class="prior-art-table">
+  <tr>
+    <th>Action</th>
+    <th>Jurisdiction</th>
+    <th>Deadline</th>
+    <th>Notes</th>
+  </tr>
+  <tr>
+    <td>Provisional Application</td>
+    <td>USPTO (US)</td>
+    <td>2026-04-22 (target)</td>
+    <td>Establishes priority date; 12-month window to convert</td>
+  </tr>
+  <tr>
+    <td>PCT Application</td>
+    <td>International</td>
+    <td>2026-04-22 (same)</td>
+    <td>File simultaneously with provisional; no grace period outside US</td>
+  </tr>
+  <tr>
+    <td>Non-Provisional Conversion</td>
+    <td>USPTO (US)</td>
+    <td>2027-04-22 (12 mo. from provisional)</td>
+    <td>Claims must be finalized</td>
+  </tr>
+  <tr>
+    <td>National Phase Entry</td>
+    <td>EU, JP, CN, KR</td>
+    <td>2028-10-22 (30 mo. from PCT)</td>
+    <td>Select jurisdictions based on business strategy</td>
+  </tr>
+</table>
+
+<p><strong>Bundling recommendation:</strong> FS-2026-003 shares the AST infrastructure with FS-2026-001 and FS-2026-002. Consider a single continuation or divisional strategy where the parent application covers the analysis pipeline and child applications cover specific pattern types and correlation techniques.</p>
+
+<hr>
+<p style="font-size:9pt;color:#666;text-align:center;">
+  Ferret-Scan Patent Disclosure FS-2026-003 | Pro Se Filing Document | Prepared 2026-03-22<br>
+  Inventor's working reference for pro se provisional patent application under 35 U.S.C. § 111(b).
+</p>
+
+</body>
+</html>

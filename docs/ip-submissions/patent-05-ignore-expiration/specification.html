@@ -1,0 +1,1242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Specification — FS-2026-005: Temporal Validity Enforcement for Security Finding Suppression Directives</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #d0d0d0;
+    font-family: Arial, sans-serif;
+    padding: 24px;
+  }
+
+  .page {
+    width: 760px;
+    min-height: 1000px;
+    background: #fff;
+    margin: 24px auto;
+    padding: 72px 80px 72px 100px;
+    border: 1px solid #888;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.65;
+    color: #000;
+  }
+
+  .page-top-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 24px;
+    letter-spacing: 0.03em;
+  }
+
+  /* Line numbers */
+  .lined-content {
+    position: relative;
+  }
+
+  .line-block {
+    display: block;
+    position: relative;
+    min-height: 1.65em;
+  }
+
+  .ln {
+    position: absolute;
+    left: -52px;
+    width: 36px;
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    top: 0.1em;
+  }
+
+  h1.doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  h2.section-head {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  p.body-para {
+    text-indent: 2em;
+    margin-bottom: 10px;
+  }
+
+  p.no-indent {
+    margin-bottom: 10px;
+  }
+
+  .claim-item {
+    margin-bottom: 8px;
+    padding-left: 2em;
+    text-indent: -2em;
+  }
+
+  .claim-item.main-claim {
+    font-weight: normal;
+  }
+
+  .claim-sub {
+    padding-left: 4em;
+    text-indent: -2em;
+    margin-bottom: 6px;
+  }
+
+  .abstract-box {
+    border: 1px solid #000;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .drawings-ref {
+    font-style: italic;
+  }
+
+  sup { font-size: 8pt; }
+
+  .formula {
+    font-family: 'Courier New', monospace;
+    display: block;
+    margin: 10px 0 10px 3em;
+  }
+
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10.5pt;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — Title, Cross-Reference, Technical Field, Background -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 1</div>
+
+  <h1 class="doc-title">System and Method for Temporal Validity Enforcement of<br>Security Finding Suppression Directives<br>in AI Agent Configuration Files</h1>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Cross-Reference to Related Applications</h2>
+
+    <p class="body-para">
+      <span class="ln">5</span>
+      This application is related to co-pending U.S. Patent Application FS-2026-001, entitled
+      "AI Agent Capability Profile Generation from AI CLI Configuration Files"; co-pending
+      Application FS-2026-002, entitled "Cross-File Attack Chain Correlation in AI CLI
+      Configuration Environments"; co-pending Application FS-2026-003, entitled "AST-Based
+      Markdown Parsing for AI CLI Security Analysis"; and co-pending Application FS-2026-004,
+    </p>
+    <p class="body-para">
+      <span class="ln">10</span>
+      entitled "MCP Tool Declaration Validation and Risk Scoring." All of the foregoing
+      applications are incorporated herein by reference in their entirety.
+    </p>
+
+    <h2 class="section-head">Technical Field</h2>
+
+    <p class="body-para">
+      <span class="ln">15</span>
+      The present invention relates generally to software security tooling and static analysis,
+      and more particularly to systems and methods that enforce temporal validity constraints
+      on security finding suppression directives embedded within AI agent configuration files,
+      thereby preventing permanently suppressed security findings from accumulating as
+      unreviewed security debt over time.
+    </p>
+    <p class="body-para">
+      <span class="ln">20</span>
+      More specifically, the invention concerns a suppression directive parser that extracts
+      expiration date and justification code metadata from ignore-style configuration entries,
+      a date comparator that evaluates whether each suppression directive remains temporally
+      valid relative to the current scan time, and a finding reactivator that restores expired
+      suppressions to the active findings output with appropriate diagnostic annotations.
+    </p>
+
+    <h2 class="section-head">Background of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">25</span>
+      Security scanners and static analysis tools have long provided mechanisms by which
+      individual security findings may be suppressed or ignored. These suppression mechanisms
+      are implemented as configuration files or inline annotations that instruct the scanning
+      engine to omit specific findings from its output. In the context of AI coding assistant
+      security scanners, such as the ferret-scan system described herein, suppression directives
+    </p>
+    <p class="body-para">
+      <span class="ln">30</span>
+      are typically embedded within AI agent configuration files such as CLAUDE.md, .gitignore,
+      .ferretignore, or equivalent platform-specific formats. Each directive associates a
+      finding identifier, rule name, or file path pattern with an instruction to suppress
+      matching findings. When the scanner processes a configuration file and encounters a
+      finding that matches a suppression directive, the finding is omitted from the scanner's
+    </p>
+    <p class="body-para">
+      <span class="ln">35</span>
+      output, and the developer or security engineer who added the directive has effectively
+      acknowledged the finding and accepted the associated risk for their operating context.
+    </p>
+    <p class="body-para">
+      <span class="ln">40</span>
+      A fundamental and widely recognized problem with suppression directive systems is the
+      tendency for suppressions to become permanent. When a developer adds a suppression
+      directive to address a finding that is temporarily acceptable — for example, because a
+      dependency upgrade is scheduled, a compensating control is in place, or the finding
+      applies to a component that will shortly be deprecated — the directive is added with
+    </p>
+    <p class="body-para">
+      <span class="ln">45</span>
+      implicit time-bounded intent. However, conventional suppression systems provide no
+      mechanism for encoding this temporal intent within the directive itself. The directive
+      remains active indefinitely unless it is explicitly removed, and removal requires manual
+      review of the suppression file at a future date. In practice, such review rarely occurs,
+      because there is no automated mechanism to surface expiration events to the development
+    </p>
+    <p class="body-para">
+      <span class="ln">50</span>
+      team. As a result, temporary suppressions become permanent suppressions, and security
+      findings that were once deliberately acknowledged accumulate as silent, unmonitored risks
+      within the codebase. This phenomenon is referred to herein as suppression-induced
+      security debt.
+    </p>
+    <p class="body-para">
+      <span class="ln">55</span>
+      The problem of suppression-induced security debt is compounded in AI agent configuration
+      environments. AI coding assistants such as Claude Code, Cursor, Windsurf, Continue, and
+      related platforms generate and modify configuration files at high velocity during normal
+      development activity. An AI agent instructed to suppress a particular finding may do so
+      by adding a suppression directive to an ignore-style configuration file without any
+    </p>
+    <p class="body-para">
+      <span class="ln">60</span>
+      human review of the temporal appropriateness of the suppression. Furthermore, the
+      configuration files maintained by AI CLI tools are frequently large and complex, making
+      manual review for expired suppressions impractical. The combination of high-velocity
+      AI-generated modifications, large and complex configuration files, and the absence of
+      any temporal constraint mechanism creates a significant risk that security findings of
+    </p>
+    <p class="body-para">
+      <span class="ln">65</span>
+      genuine concern will be permanently masked by suppression directives that were intended
+      to be temporary.
+    </p>
+    <p class="body-para">
+      <span class="ln">70</span>
+      Existing approaches to suppression hygiene are inadequate. Some scanning systems provide
+      reporting features that enumerate all active suppression directives, enabling manual
+      review. However, such reports are static and do not indicate which suppressions are
+      approaching or past any intended expiration. Other systems require suppressions to include
+      a free-text comment field intended for justification, but do not validate that comments
+    </p>
+    <p class="body-para">
+      <span class="ln">75</span>
+      are present, do not enforce any particular justification vocabulary, and do not extract
+      or act upon any date information that may be present within comment text. No prior art
+      system provides a structured suppression directive format that encodes expiration dates
+      and justification codes as machine-readable metadata, nor a scanning engine that evaluates
+      temporal validity of suppression directives as a first-class scanning operation.
+    </p>
+    <p class="body-para">
+      <span class="ln">80</span>
+      There is therefore a need in the art for a system and method that enforces temporal
+      validity of security finding suppression directives, enabling suppressions to carry
+      explicit expiration dates that are automatically evaluated at each scan execution, with
+      expired suppressions automatically reactivated in the findings output and annotated
+      with diagnostic information indicating that suppression has lapsed.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — Summary, Brief Description of Drawings             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 2</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Summary of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">85</span>
+      The present invention provides a system and method for temporal validity enforcement of
+      security finding suppression directives in AI agent configuration files. In a first
+      aspect, the invention provides a computer-implemented method comprising: parsing, by a
+      suppression directive parser, a set of suppression directives from one or more AI agent
+      configuration files, each directive comprising at least a finding identifier and an
+    </p>
+    <p class="body-para">
+      <span class="ln">90</span>
+      optional expiration date field; for each security finding produced by a security scanner
+      engine, determining whether a matching suppression directive exists; when a matching
+      directive exists and contains an expiration date, comparing the expiration date to the
+      current date supplied by a current date source; suppressing the finding when the current
+      date is before the expiration date, indicating that the directive is temporally valid;
+    </p>
+    <p class="body-para">
+      <span class="ln">95</span>
+      and reactivating the finding when the current date is on or after the expiration date,
+      indicating that the directive has expired, and annotating the reactivated finding with
+      a <code>suppressionExpired</code> field identifying the lapsed directive.
+    </p>
+    <p class="body-para">
+      <span class="ln">100</span>
+      In a second aspect, the invention provides that when a suppression directive contains a
+      justification code field, the justification validator component determines whether the
+      provided code appears in a configured approved codes list. Directives with unrecognized
+      justification codes emit an invalid-justification finding rather than suppressing the
+      associated security finding, ensuring that suppressions carry documented and approved
+    </p>
+    <p class="body-para">
+      <span class="ln">105</span>
+      rationale. In a third aspect, when audit mode is enabled, the system identifies all
+      active suppression directives whose expiration dates fall within a configurable
+      lookahead window, and emits informational findings for each such near-expiry directive,
+      enabling security teams to take proactive action before suppressions lapse.
+    </p>
+    <p class="body-para">
+      <span class="ln">110</span>
+      The invention further provides a system comprising a security scanner engine, a
+      suppression directive parser, an expiration date store, a justification code store,
+      a date comparator, a current date source, a justification validator, an approved codes
+      list, a finding suppressor, a finding reactivator, an audit mode reporter, and a
+      findings output component, all operating in combination to enforce temporal validity
+    </p>
+    <p class="body-para">
+      <span class="ln">115</span>
+      of suppression directives as described herein. The invention additionally provides a
+      non-transitory computer-readable medium storing instructions that, when executed by one
+      or more processors, cause the one or more processors to perform the temporal validity
+      enforcement method described herein.
+    </p>
+
+    <h2 class="section-head">Brief Description of the Drawings</h2>
+
+    <p class="body-para">
+      <span class="ln">120</span>
+      The accompanying drawings, which are incorporated herein and constitute part of this
+      specification, illustrate preferred embodiments of the invention and, together with the
+      description, serve to explain the principles of the invention.
+    </p>
+    <p class="body-para">
+      <span class="ln">125</span>
+      <span class="drawings-ref">FIG. 1</span> is a block diagram illustrating the system architecture of the temporal
+      validity enforcement system for security finding suppression directives, showing the
+      security scanner engine (500), AI config file (502), suppression directive parser (504),
+      expiration date store (506), justification code store (508), date comparator (510),
+      current date source (512), justification validator (514), approved codes list (516),
+    </p>
+    <p class="body-para">
+      <span class="ln">130</span>
+      finding suppressor (518), finding reactivator (520), audit mode reporter (522), and
+      findings output (524), and the data flows among these components.
+    </p>
+    <p class="body-para">
+      <span class="ln">135</span>
+      <span class="drawings-ref">FIG. 2</span> is a flowchart illustrating the method of temporal validity enforcement
+      performed for each security finding during a scan execution, beginning at START (530),
+      proceeding through the suppression directive matching decision (536), expiration date
+      check (540), date comparison (542), temporal validity determination (544), suppression
+      (546) or reactivation-with-annotation (548), justification code validation (552, 554),
+    </p>
+    <p class="body-para">
+      <span class="ln">140</span>
+      near-expiry audit reporting (560, 562, 564), and concluding at END (566).
+    </p>
+    <p class="body-para">
+      <span class="ln">145</span>
+      <span class="drawings-ref">FIG. 3</span> is a timeline diagram illustrating the temporal zones governing the lifecycle
+      of a suppression directive, showing the directive created event (570), the active zone
+      (572) during which the finding is suppressed, the expiry date (574), the audit warning
+      threshold (576) located a configurable number of lookahead days before the expiry date,
+      the warn zone (578) during which near-expiry informational findings are emitted, the
+    </p>
+    <p class="body-para">
+      <span class="ln">150</span>
+      expired zone (580) after the expiry date during which the finding is reactivated, and
+      a moveable scan time marker (582) indicating the current position of a scan execution
+      along the timeline.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — Detailed Description (Part 1): System Architecture  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 3</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Detailed Description of the Preferred Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">155</span>
+      The following detailed description is presented to enable any person skilled in the art
+      to make and use the invention. For purposes of explanation, specific details are set
+      forth to provide a thorough understanding of the present invention. However, it will be
+      apparent to one skilled in the art that these specific details are not required to
+      practice the invention. Descriptions of specific applications are provided only as
+    </p>
+    <p class="body-para">
+      <span class="ln">160</span>
+      representative examples. Various modifications to the preferred embodiments will be
+      readily apparent to one skilled in the art, and the general principles defined herein
+      may be applied to other embodiments and applications without departing from the scope
+      of the invention.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">I. System Architecture Overview (FIG. 1)</h2>
+
+    <p class="body-para">
+      <span class="ln">165</span>
+      Referring now to FIG. 1, the temporal validity enforcement system for security finding
+      suppression directives comprises a plurality of cooperating components. The central
+      processing element is the security scanner engine (500), which receives as input one or
+      more AI agent configuration files (502) from a target directory and produces as output
+      a stream of raw security findings representing potential issues detected within those
+    </p>
+    <p class="body-para">
+      <span class="ln">170</span>
+      configuration files. The security scanner engine (500) operates in accordance with a
+      library of detection rules covering categories such as capability abuse, credential
+      exposure, prompt injection patterns, and malicious tool declarations specific to AI
+      CLI environments. Each raw finding produced by the security scanner engine (500)
+      comprises at minimum a rule identifier, a severity level, a source file path, and a
+    </p>
+    <p class="body-para">
+      <span class="ln">175</span>
+      human-readable description. The raw findings stream is passed to the suppression
+      directive parser (504) before delivery to the findings output (524).
+    </p>
+    <p class="body-para">
+      <span class="ln">180</span>
+      The suppression directive parser (504) reads the AI config file (502) to extract all
+      suppression directives present therein. In the preferred embodiment, suppression
+      directives are stored in a dedicated ignore-style configuration file, such as a file
+      named .ferretignore, which coexists with the scanned configuration files in the project
+      directory hierarchy. Each suppression directive in the .ferretignore file occupies a
+    </p>
+    <p class="body-para">
+      <span class="ln">185</span>
+      single logical entry and encodes at minimum a finding identifier or rule name pattern.
+      Optionally, each directive may encode an expiration date in ISO 8601 format (YYYY-MM-DD)
+      and a justification code drawn from an organization-defined vocabulary of approved
+      suppression rationales. The suppression directive parser (504) applies a structured
+      parsing procedure to extract these fields and stores the resulting structured directive
+    </p>
+    <p class="body-para">
+      <span class="ln">190</span>
+      objects in two subsidiary stores: the expiration date store (506), which maps directive
+      identifiers to their associated expiration dates when present, and the justification
+      code store (508), which maps directive identifiers to their associated justification
+      codes when present. Directives lacking an expiration date are stored in the expiration
+      date store (506) with a sentinel value indicating no-expiry, and are treated by
+    </p>
+    <p class="body-para">
+      <span class="ln">195</span>
+      subsequent processing components as permanently active suppressions subject to audit
+      mode reporting.
+    </p>
+    <p class="body-para">
+      <span class="ln">200</span>
+      The date comparator (510) receives expiration date values from the expiration date
+      store (506) and current date values from the current date source (512). The current
+      date source (512) provides the wall-clock date at scan execution time, expressed as
+      an ISO 8601 date string. In test and simulation environments, the current date source
+      (512) may be overridden with a configurable fixed date to enable deterministic testing
+    </p>
+    <p class="body-para">
+      <span class="ln">205</span>
+      of temporal validity logic without dependence on the system clock. The date comparator
+      (510) implements the <code>shouldIgnoreFinding()</code> function, which accepts a
+      directive's expiration date and the current scan date as arguments and returns a Boolean
+      value: <code>true</code> when the scan time is strictly before the expiration date,
+      indicating that the suppression is temporally valid; and <code>false</code> when the
+    </p>
+    <p class="body-para">
+      <span class="ln">210</span>
+      scan time equals or exceeds the expiration date, indicating that the suppression has
+      expired. The precise predicate evaluated by <code>shouldIgnoreFinding()</code> is:
+      <code>scanDate &lt; expiryDate</code>, where both operands are compared as calendar
+      dates without regard to time-of-day components.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — Detailed Description (Part 2): Components          -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 4</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">II. Finding Suppressor and Finding Reactivator</h2>
+
+    <p class="body-para">
+      <span class="ln">215</span>
+      The finding suppressor (518) receives a raw security finding from the security scanner
+      engine (500) together with a Boolean temporal validity determination from the date
+      comparator (510) and a justification validity determination from the justification
+      validator (514). When both the temporal validity determination is <code>true</code>
+      (suppression has not expired) and the justification validity determination is
+    </p>
+    <p class="body-para">
+      <span class="ln">220</span>
+      <code>true</code> (justification code is approved or absent), the finding suppressor
+      (518) omits the finding from the findings output (524). The finding is effectively
+      silenced for the current scan execution. The finding suppressor (518) maintains an
+      internal counter of suppressed findings per scan session for inclusion in the scan
+      summary metadata delivered alongside the findings output (524).
+    </p>
+    <p class="body-para">
+      <span class="ln">225</span>
+      When the date comparator (510) returns <code>false</code> — indicating that the
+      expiration date of the matching suppression directive has passed — the finding
+      reactivator (520) is invoked. The finding reactivator (520) takes the raw finding
+      and produces an annotated finding for delivery to the findings output (524). The
+      annotated finding preserves all fields of the original raw finding and appends a
+    </p>
+    <p class="body-para">
+      <span class="ln">230</span>
+      <code>suppressionExpired</code> annotation field. The <code>suppressionExpired</code>
+      field is a structured object comprising: the directive identifier that was matched;
+      the original expiration date specified in the suppression directive; the current scan
+      date at which the expiration was detected; and the justification code if one was
+      present in the original directive. The <code>suppressionExpired</code> annotation
+    </p>
+    <p class="body-para">
+      <span class="ln">235</span>
+      enables downstream consumers of the findings output (524) — including continuous
+      integration systems, security dashboards, and human reviewers — to distinguish
+      reactivated findings from findings that were never suppressed, and to understand the
+      provenance of each reactivated finding in terms of the suppression directive that
+      previously masked it.
+    </p>
+    <p class="body-para">
+      <span class="ln">240</span>
+      In a preferred embodiment, the severity level of a reactivated finding is elevated
+      relative to the severity level that would have been assigned to the finding had no
+      suppression directive ever been applied. The rationale for severity elevation is that
+      a finding whose suppression has lapsed represents not only the original risk captured
+      by the detection rule, but also the additional risk that the finding was unmonitored
+    </p>
+    <p class="body-para">
+      <span class="ln">245</span>
+      for the duration of the suppression period. In a preferred embodiment, a finding
+      whose original severity is LOW is elevated to MEDIUM upon reactivation, and a finding
+      whose original severity is MEDIUM is elevated to HIGH upon reactivation. Findings
+      originally classified as HIGH or CRITICAL are not further elevated but are annotated
+      with the <code>suppressionExpired</code> field regardless.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">III. Justification Validator (514)</h2>
+
+    <p class="body-para">
+      <span class="ln">250</span>
+      The justification validator (514) receives the justification code associated with a
+      suppression directive from the justification code store (508) and determines whether
+      the code is recognized as a valid approved rationale. The approved codes list (516)
+      is a configurable data structure, stored in the scanner's configuration, that enumerates
+      the set of justification codes that the organization has approved for use in suppression
+    </p>
+    <p class="body-para">
+      <span class="ln">255</span>
+      directives. In a preferred embodiment, the approved codes list (516) contains codes
+      such as: ACCEPTED_RISK, indicating that the organization has formally accepted the
+      risk represented by the finding; COMPENSATING_CONTROL, indicating that an alternative
+      control measure addresses the risk; FALSE_POSITIVE, indicating that the finding has
+      been reviewed and determined not to represent a genuine vulnerability in the deployment
+    </p>
+    <p class="body-para">
+      <span class="ln">260</span>
+      context; PENDING_REMEDIATION, indicating that a remediation effort is planned and
+      tracked; and TEST_ENVIRONMENT, indicating that the suppression applies only within
+      a non-production testing context. The set of approved codes is fully configurable by
+      the deploying organization and may be extended, restricted, or replaced without
+      modification of the validation logic.
+    </p>
+    <p class="body-para">
+      <span class="ln">265</span>
+      When the justification validator (514) receives a justification code that is present
+      in the approved codes list (516), it returns a validity result of <code>true</code>,
+      permitting the finding suppressor (518) to proceed with suppression (subject to
+      temporal validity). When the justification validator (514) receives a code that is
+      absent from the approved codes list (516), it returns a validity result of
+    </p>
+    <p class="body-para">
+      <span class="ln">270</span>
+      <code>false</code>, and the finding suppressor (518) does not suppress the associated
+      security finding. Instead, an additional finding of type INVALID_SUPPRESSION_JUSTIFICATION
+      is emitted to the findings output (524), identifying the directive with the unrecognized
+      code and indicating that a suppression directive exists but cannot be honored because
+      its justification code is not in the approved vocabulary. When a suppression directive
+    </p>
+    <p class="body-para">
+      <span class="ln">275</span>
+      contains no justification code field, the justification validator (514) returns a
+      validity result of <code>true</code> by default, permitting suppression. However,
+      when the scanner is configured in strict justification mode, absence of a justification
+      code is treated equivalently to an unrecognized code, causing an
+      INVALID_SUPPRESSION_JUSTIFICATION finding to be emitted.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — Detailed Description (Part 3): Method and Timeline  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 5</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">IV. Temporal Validity Enforcement Method (FIG. 2)</h2>
+
+    <p class="body-para">
+      <span class="ln">280</span>
+      Referring now to FIG. 2, the temporal validity enforcement method begins at START (530).
+      At step 532, the suppression directive parser (504) reads all suppression directives
+      from the AI config file (502), populating the expiration date store (506) and the
+      justification code store (508) with the structured directive data. The parser (504)
+      applies a line-oriented parsing procedure in which each non-blank, non-comment line
+    </p>
+    <p class="body-para">
+      <span class="ln">285</span>
+      of the ignore-style configuration file is treated as a potential suppression directive.
+      Each such line is matched against a structured directive pattern that separates the
+      finding identifier or rule pattern from optional metadata fields delimited by a
+      recognized separator character. In a preferred embodiment, the metadata separator is
+      a space-delimited token beginning with the prefix <code>#expires:</code> for expiration
+    </p>
+    <p class="body-para">
+      <span class="ln">290</span>
+      dates and <code>#reason:</code> for justification codes, enabling the .ferretignore
+      file format to remain backward compatible with existing tooling that reads such files
+      as plain-text ignore lists while extending the format with structured metadata understood
+      exclusively by the ferret-scan engine.
+    </p>
+    <p class="body-para">
+      <span class="ln">295</span>
+      At step 534, the method enters a loop iterating over each security finding produced by
+      the security scanner engine (500). For each finding, at decision point 536, the system
+      determines whether any suppression directive in the expiration date store (506) matches
+      the finding's rule identifier or file path. The matching procedure evaluates both exact
+      rule identifier matches and glob-style file path pattern matches. If no matching
+    </p>
+    <p class="body-para">
+      <span class="ln">300</span>
+      directive is found (NO branch from 536), the finding is emitted as-is at step 538 to
+      the findings output (524), with no modification, because no suppression has been
+      declared for this finding.
+    </p>
+    <p class="body-para">
+      <span class="ln">305</span>
+      When a matching directive is found (YES branch from 536), the method proceeds to
+      decision point 540, which determines whether the matched directive contains an
+      expiration date in the expiration date store (506). If no expiration date is present
+      (NO branch from 540), the directive is a permanent suppression. Permanent suppressions
+      proceed directly to justification validation at step 552, bypassing the date comparison
+    </p>
+    <p class="body-para">
+      <span class="ln">310</span>
+      logic. If an expiration date is present (YES branch from 540), the method proceeds
+      to step 542, at which the date comparator (510) is invoked. The date comparator (510)
+      compares the expiration date retrieved from the expiration date store (506) against the
+      current date obtained from the current date source (512).
+    </p>
+    <p class="body-para">
+      <span class="ln">315</span>
+      At decision point 544, the method determines whether the expiration date is in the
+      future relative to the current scan date — that is, whether
+      <code>shouldIgnoreFinding()</code> returns <code>true</code>. If the expiration date
+      is in the future (YES branch from 544), the suppression is temporally valid, and the
+      method proceeds to step 546, where the finding suppressor (518) suppresses the finding.
+    </p>
+    <p class="body-para">
+      <span class="ln">320</span>
+      If the expiration date is not in the future (NO branch from 544), the suppression has
+      expired. At step 548, the finding reactivator (520) reactivates the finding and appends
+      the <code>suppressionExpired</code> annotation as described above. At step 550, the
+      reactivated and annotated finding is delivered directly to the findings output (524)
+      and the method advances to the next finding in the iteration loop.
+    </p>
+    <p class="body-para">
+      <span class="ln">325</span>
+      For findings that reached step 546 via the valid-suppression path, the method proceeds
+      to justification validation at step 552. The justification validator (514) checks the
+      justification code stored in the justification code store (508) against the approved
+      codes list (516). At decision point 554, the method determines whether the code is
+      valid. If the code is valid or absent (YES branch from 554), the suppression is
+    </p>
+    <p class="body-para">
+      <span class="ln">330</span>
+      honored and the finding is suppressed. If the code is invalid (NO branch from 554),
+      at step 556 an INVALID_SUPPRESSION_JUSTIFICATION finding is emitted to the findings
+      output (524) alongside the original finding, which is also emitted unsuppressed.
+    </p>
+    <p class="body-para">
+      <span class="ln">335</span>
+      At decision point 558, the method determines whether additional findings remain in
+      the iteration. If more findings remain (YES branch from 558), the method returns to
+      step 534 to process the next finding. When all findings have been processed (NO branch
+      from 558), the method proceeds to decision point 560.
+    </p>
+    <p class="body-para">
+      <span class="ln">340</span>
+      At decision point 560, the method determines whether audit mode is enabled for the
+      current scan execution. If audit mode is not enabled (NO branch from 560), the method
+      concludes at END (566). If audit mode is enabled (YES branch from 560), the method
+      proceeds to step 562, where the audit mode reporter (522) examines all active
+      suppression directives — meaning directives that are not yet expired — whose expiration
+    </p>
+    <p class="body-para">
+      <span class="ln">345</span>
+      dates fall within the configurable lookahead window defined by the LOOKAHEAD_DAYS
+      parameter. For each such near-expiry directive identified at step 562, the audit mode
+      reporter (522) emits an informational finding at step 564, identifying the directive,
+      its expiration date, the number of days remaining until expiration, and the finding
+      or findings that would be reactivated upon expiration. The method then concludes
+      at END (566).
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — Detailed Description (Part 4): Timeline and Config  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 6</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">V. Suppression Directive Lifecycle Timeline (FIG. 3)</h2>
+
+    <p class="body-para">
+      <span class="ln">350</span>
+      Referring now to FIG. 3, the suppression directive lifecycle timeline illustrates the
+      temporal zones that govern a single suppression directive across its operational
+      lifespan. The timeline progresses from left to right along a horizontal time axis.
+      The directive created event (570) marks the point at which the suppression directive
+      was added to the AI config file (502) by a developer or AI agent. From directive
+    </p>
+    <p class="body-para">
+      <span class="ln">355</span>
+      created (570) forward, the active zone (572) represents the temporal interval during
+      which the suppression is valid and the associated security finding is suppressed from
+      the scanner's findings output (524). Within the active zone (572), the
+      <code>shouldIgnoreFinding()</code> function returns <code>true</code> for all scan
+      executions whose scan time marker (582) falls within this zone.
+    </p>
+    <p class="body-para">
+      <span class="ln">360</span>
+      The expiry date (574) marks the boundary between the active zone (572) and the expired
+      zone (580). The expiry date (574) is the ISO 8601 date value stored in the
+      <code>#expires:</code> metadata field of the suppression directive. The expired zone
+      (580) extends from the expiry date (574) indefinitely forward in time, representing
+      all scan executions occurring after the suppression has lapsed. Within the expired
+    </p>
+    <p class="body-para">
+      <span class="ln">365</span>
+      zone (580), the <code>shouldIgnoreFinding()</code> function returns <code>false</code>,
+      and the finding reactivator (520) produces an annotated finding for each scan execution
+      whose scan time marker (582) falls within this zone.
+    </p>
+    <p class="body-para">
+      <span class="ln">370</span>
+      The audit warning threshold (576) is a derived date value located a configurable number
+      of days before the expiry date (574). Specifically, the audit warning threshold (576)
+      is computed as: <code>expiryDate - LOOKAHEAD_DAYS</code>, where LOOKAHEAD_DAYS is a
+      non-negative integer configuration parameter. In a preferred embodiment, LOOKAHEAD_DAYS
+      defaults to 14, meaning that the audit warning threshold (576) falls two weeks before
+    </p>
+    <p class="body-para">
+      <span class="ln">375</span>
+      the expiry date (574). The warn zone (578) is the interval between the audit warning
+      threshold (576) and the expiry date (574). When audit mode is enabled and the scan
+      time marker (582) falls within the warn zone (578), the audit mode reporter (522)
+      emits an informational near-expiry finding as described in the method of FIG. 2.
+    </p>
+    <p class="body-para">
+      <span class="ln">380</span>
+      The scan time marker (582) is a moveable indicator on the timeline representing the
+      current date at the time of a particular scan execution as provided by the current
+      date source (512). As successive scan executions are performed over time, the scan
+      time marker (582) advances along the timeline. A single suppression directive may
+      thus produce the following sequence of outcomes across successive scan executions:
+    </p>
+    <p class="body-para">
+      <span class="ln">385</span>
+      suppression (finding omitted) while the marker falls within the active zone (572);
+      informational near-expiry warnings while the marker falls within the warn zone (578)
+      and audit mode is enabled; and reactivation (finding emitted with
+      <code>suppressionExpired</code> annotation) once the marker crosses the expiry date
+      (574) into the expired zone (580).
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VI. Configuration File Format</h2>
+
+    <p class="body-para">
+      <span class="ln">390</span>
+      The suppression directive format employed in the preferred embodiment extends the
+      conventional line-oriented ignore file format used by tools such as .gitignore and
+      .eslintignore. Each line of the .ferretignore file is one of: a blank line, which
+      is ignored; a comment line beginning with a <code>#</code> character not followed by
+      a recognized metadata prefix, which is ignored; or a suppression directive line.
+    </p>
+    <p class="body-para">
+      <span class="ln">395</span>
+      A suppression directive line begins with a finding identifier or glob-style file path
+      pattern, followed optionally by one or more metadata fields separated by whitespace.
+      A metadata field begins with a recognized prefix token. The recognized prefix tokens
+      are <code>#expires:YYYY-MM-DD</code>, specifying the expiration date in ISO 8601
+      format, and <code>#reason:CODE</code>, specifying the justification code. An example
+    </p>
+    <p class="body-para">
+      <span class="ln">400</span>
+      suppression directive conforming to the preferred format is:
+      <code>RULE_SHELL_EXEC #expires:2026-06-30 #reason:PENDING_REMEDIATION</code>.
+      This directive suppresses all findings matching rule identifier RULE_SHELL_EXEC
+      until June 30, 2026, with the approved justification code PENDING_REMEDIATION.
+      After June 30, 2026, the finding reactivator (520) will reactivate any matching
+    </p>
+    <p class="body-para">
+      <span class="ln">405</span>
+      RULE_SHELL_EXEC findings and annotate them with <code>suppressionExpired</code>
+      fields referencing this directive.
+    </p>
+    <p class="body-para">
+      <span class="ln">410</span>
+      The .ferretignore format is designed to be parsed correctly by any existing tooling
+      that reads plain-text ignore files, because the <code>#expires:</code> and
+      <code>#reason:</code> tokens appear syntactically as comments in such tooling while
+      being recognized as structured metadata exclusively by the ferret-scan engine. This
+      design ensures that adopting the structured format does not break existing workflows
+    </p>
+    <p class="body-para">
+      <span class="ln">415</span>
+      or introduce compatibility issues with other tools that may read the same file. The
+      backward-compatible metadata embedding approach is a deliberate design choice that
+      enables gradual adoption of temporal validity enforcement within existing security
+      workflows without requiring migration or tooling changes beyond the ferret-scan engine.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — Detailed Description (Part 5): Additional Features  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 7</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">VII. Audit Mode Reporter (522)</h2>
+
+    <p class="body-para">
+      <span class="ln">420</span>
+      The audit mode reporter (522) operates as a post-processing pass over the complete set
+      of active suppression directives at the conclusion of each scan execution in which
+      audit mode has been enabled. The audit mode reporter (522) iterates over all directives
+      whose expiration dates are present and whose expiration dates have not yet been reached
+      by the current scan date. For each such active directive, the audit mode reporter (522)
+    </p>
+    <p class="body-para">
+      <span class="ln">425</span>
+      computes the number of days remaining until expiration by subtracting the current scan
+      date from the expiration date. If the number of days remaining is less than or equal
+      to LOOKAHEAD_DAYS, the directive falls within the warn zone (578), and the audit mode
+      reporter (522) emits an informational finding to the findings output (524). The
+      informational finding is of severity INFORMATIONAL and type
+    </p>
+    <p class="body-para">
+      <span class="ln">430</span>
+      SUPPRESSION_NEAR_EXPIRY. It comprises the matched directive identifier, the expiration
+      date, the number of days remaining, a human-readable description indicating that a
+      suppression is approaching its expiration date and that action may be required, and
+      the full list of security findings currently being suppressed by the directive that
+      will be reactivated upon expiration.
+    </p>
+    <p class="body-para">
+      <span class="ln">435</span>
+      Separately, the audit mode reporter (522) also processes permanent suppressions —
+      directives with no expiration date — when the scanner is configured in strict audit
+      mode. In strict audit mode, each permanent suppression directive generates an
+      informational finding of type SUPPRESSION_NO_EXPIRY, indicating that the suppression
+      has no defined temporal boundary and may represent accumulated security debt. The
+    </p>
+    <p class="body-para">
+      <span class="ln">440</span>
+      SUPPRESSION_NO_EXPIRY finding identifies the directive, the date it was first detected
+      in the configuration file (if timestamp information is available from the version
+      control system), and the security findings it is currently suppressing. This feature
+      enables security teams to systematically identify and remediate permanent suppressions
+      that should be given explicit expiration dates.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VIII. Integration with AI Agent Scan Workflows</h2>
+
+    <p class="body-para">
+      <span class="ln">445</span>
+      The temporal validity enforcement system integrates with the security scanner engine
+      (500) as a post-processing filter layer inserted between the raw findings stream and
+      the findings output (524). This architectural placement ensures that the temporal
+      validity enforcement logic is applied uniformly to all findings produced by the
+      scanner, regardless of the detection rules that generated them, and that the
+    </p>
+    <p class="body-para">
+      <span class="ln">450</span>
+      enforcement logic can be updated independently of the detection rule library. The
+      integration is implemented as a function <code>applySuppressionWithExpiry(findings,
+      directives, currentDate, auditMode, lookaheadDays)</code> that accepts the raw
+      findings array, the parsed directives map, and configuration parameters, and returns
+      a filtered findings array with all applicable suppressions and reactivations applied.
+    </p>
+    <p class="body-para">
+      <span class="ln">455</span>
+      The <code>applySuppressionWithExpiry()</code> function is designed to be stateless
+      and referentially transparent: for identical input arguments, it always produces
+      identical output. This property enables deterministic testing of suppression behavior
+      using fixed current date values supplied through the current date source (512) override
+      mechanism, and ensures reproducibility of scan results within continuous integration
+    </p>
+    <p class="body-para">
+      <span class="ln">460</span>
+      pipelines where auditability and reproducibility are essential requirements.
+    </p>
+    <p class="body-para">
+      <span class="ln">465</span>
+      In a preferred embodiment, the findings output (524) produced by a scan execution
+      that invokes temporal validity enforcement includes a suppression summary section
+      distinct from the primary findings list. The suppression summary enumerates: the
+      total number of findings suppressed during the scan, the total number of findings
+      reactivated due to expired suppressions, the total number of INVALID_SUPPRESSION_JUSTIFICATION
+    </p>
+    <p class="body-para">
+      <span class="ln">470</span>
+      findings emitted, the total number of SUPPRESSION_NEAR_EXPIRY informational findings
+      emitted (when audit mode is enabled), and the total number of SUPPRESSION_NO_EXPIRY
+      informational findings emitted (when strict audit mode is enabled). This suppression
+      summary provides security teams with a concise operational overview of the suppression
+      posture of the scanned configuration set at the time of the scan execution.
+    </p>
+    <p class="body-para">
+      <span class="ln">475</span>
+      The temporal validity enforcement system is operable in conjunction with version
+      control systems that maintain historical records of configuration file changes. When
+      version control integration is enabled, the system may query the version control
+      history to determine when each suppression directive was originally added to the
+      configuration file, enabling the suppression summary to report the age of each active
+    </p>
+    <p class="body-para">
+      <span class="ln">480</span>
+      suppression directive in addition to its remaining time until expiration. Aged
+      suppressions — those added more than a configurable number of days before the current
+      scan — that lack expiration dates may be automatically elevated to a higher-severity
+      SUPPRESSION_NO_EXPIRY_AGED finding type, signaling to security teams that these
+      long-standing suppressions represent elevated security debt warranting priority review.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 8 — Claims                                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 8</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Claims</h2>
+
+    <p class="no-indent" style="margin-bottom:12px; font-weight:bold;">What is claimed is:</p>
+
+    <!-- Claim 1 -->
+    <p class="claim-item main-claim">
+      <span class="ln">485</span>
+      <strong>1.</strong> A computer-implemented method for temporal validity enforcement of security finding
+      suppression directives in AI agent configuration files, the method comprising:
+    </p>
+    <p class="claim-sub">
+      parsing, by one or more processors, a plurality of suppression directives from at least
+      one AI agent configuration file, each suppression directive comprising a finding
+      identifier or file path pattern and optionally comprising an expiration date field
+      encoded in ISO 8601 format;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">490</span>
+      for each security finding in a stream of security findings produced by a security scanner
+      engine operating on the AI agent configuration file, determining, by the one or more
+      processors, whether a matching suppression directive exists in the parsed plurality of
+      suppression directives;
+    </p>
+    <p class="claim-sub">
+      when a matching suppression directive is found and the matching directive contains an
+      expiration date field, comparing, by the one or more processors, the expiration date to
+      a current scan date obtained from a current date source;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">495</span>
+      suppressing the security finding from a findings output when the current scan date is
+      strictly before the expiration date, indicating that the suppression directive is
+      temporally valid; and
+    </p>
+    <p class="claim-sub">
+      reactivating the security finding and delivering it to the findings output with a
+      suppressionExpired annotation when the current scan date equals or exceeds the
+      expiration date, indicating that the suppression directive has expired, wherein the
+      suppressionExpired annotation identifies the matching directive and the original
+      expiration date.
+    </p>
+
+    <!-- Claim 2 -->
+    <p class="claim-item main-claim" style="margin-top:14px;">
+      <span class="ln">500</span>
+      <strong>2.</strong> A system for temporal validity enforcement of security finding suppression directives
+      in AI agent configuration files, the system comprising:
+    </p>
+    <p class="claim-sub">
+      one or more processors; and
+    </p>
+    <p class="claim-sub">
+      one or more non-transitory computer-readable media storing instructions that, when
+      executed by the one or more processors, cause the system to perform operations
+      comprising:
+    </p>
+    <p class="claim-sub">
+      <span class="ln">505</span>
+      a suppression directive parser configured to extract suppression directives from an
+      AI agent configuration file and to populate an expiration date store mapping directive
+      identifiers to expiration dates and a justification code store mapping directive
+      identifiers to justification codes;
+    </p>
+    <p class="claim-sub">
+      a date comparator configured to implement a shouldIgnoreFinding() function that returns
+      true when a current scan date is strictly before an expiration date and false otherwise;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">510</span>
+      a finding suppressor configured to omit security findings from a findings output when
+      the date comparator returns true for the matching directive's expiration date; and
+    </p>
+    <p class="claim-sub">
+      a finding reactivator configured to deliver security findings to the findings output
+      with a suppressionExpired annotation when the date comparator returns false for the
+      matching directive's expiration date.
+    </p>
+
+    <!-- Claim 3 -->
+    <p class="claim-item main-claim" style="margin-top:14px;">
+      <span class="ln">515</span>
+      <strong>3.</strong> A non-transitory computer-readable medium storing instructions that, when executed
+      by one or more processors, cause the one or more processors to perform operations
+      comprising:
+    </p>
+    <p class="claim-sub">
+      parsing a set of suppression directives from an AI agent configuration file, each
+      directive comprising a finding pattern and an optional expiration date;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">520</span>
+      for each security finding produced by a security scanner engine, determining whether
+      a matching suppression directive exists; and
+    </p>
+    <p class="claim-sub">
+      when a matching directive exists, evaluating temporal validity by comparing the
+      directive's expiration date to the current date, suppressing the finding when the
+      expiration date is in the future, and reactivating the finding with a suppressionExpired
+      annotation when the expiration date is in the past or present.
+    </p>
+
+    <!-- Claim 4 -->
+    <p class="claim-item" style="margin-top:14px;">
+      <span class="ln">525</span>
+      <strong>4.</strong> The method of claim 1, further comprising, when audit mode is enabled:
+    </p>
+    <p class="claim-sub">
+      after processing all security findings, identifying, by an audit mode reporter, all
+      active suppression directives whose expiration dates fall within a configurable
+      lookahead window defined by a LOOKAHEAD_DAYS parameter; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">530</span>
+      emitting an informational SUPPRESSION_NEAR_EXPIRY finding for each identified
+      near-expiry directive, the informational finding comprising the directive identifier,
+      the expiration date, and the number of days remaining until expiration.
+    </p>
+
+    <!-- Claim 5 -->
+    <p class="claim-item" style="margin-top:14px;">
+      <span class="ln">535</span>
+      <strong>5.</strong> The method of claim 1, further comprising:
+    </p>
+    <p class="claim-sub">
+      extracting, by the suppression directive parser, a justification code field from each
+      suppression directive when present;
+    </p>
+    <p class="claim-sub">
+      determining, by a justification validator, whether the extracted justification code
+      appears in a configurable approved codes list; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">540</span>
+      when the justification code is absent from the approved codes list, emitting an
+      INVALID_SUPPRESSION_JUSTIFICATION finding to the findings output and declining to
+      suppress the associated security finding.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 9 — Claims (continued)                                  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 9</div>
+
+  <div class="lined-content">
+
+    <!-- Claim 6 -->
+    <p class="claim-item" style="margin-top:0;">
+      <span class="ln">545</span>
+      <strong>6.</strong> The method of claim 4, wherein the LOOKAHEAD_DAYS parameter is a non-negative
+      integer that is configurable at runtime, with a default value of fourteen days, such
+      that the audit warning threshold is computed as the expiration date minus LOOKAHEAD_DAYS
+      calendar days, and the warn zone is the interval between the audit warning threshold
+      and the expiration date.
+    </p>
+
+    <!-- Claim 7 -->
+    <p class="claim-item">
+      <span class="ln">550</span>
+      <strong>7.</strong> The method of claim 1, wherein the suppressionExpired annotation appended to each
+      reactivated finding is a structured object comprising: the identifier of the suppression
+      directive that was matched; the expiration date originally specified in the suppression
+      directive; the current scan date at which the expiration was detected; and the
+      justification code if one was present in the original directive.
+    </p>
+
+    <!-- Claim 8 -->
+    <p class="claim-item">
+      <span class="ln">555</span>
+      <strong>8.</strong> The method of claim 1, wherein a security finding reactivated upon expiration of
+      its matching suppression directive has its severity level elevated relative to the
+      severity that would have been assigned to the finding absent any suppression directive,
+      wherein a finding originally of LOW severity is elevated to MEDIUM severity upon
+      reactivation, and a finding originally of MEDIUM severity is elevated to HIGH severity
+      upon reactivation.
+    </p>
+
+    <!-- Claim 9 -->
+    <p class="claim-item">
+      <span class="ln">560</span>
+      <strong>9.</strong> The method of claim 1, wherein suppression directives are stored in a line-oriented
+      configuration file in which each directive comprises a finding identifier or glob-style
+      file path pattern followed by optional metadata fields, the metadata fields comprising
+      an expiration date prefixed by a token #expires: and a justification code prefixed by
+      a token #reason:, such that the metadata fields are syntactically compatible with
+      comment syntax of conventional ignore-file parsers while being parsed as structured
+      metadata by the security scanner engine.
+    </p>
+
+    <!-- Claim 10 -->
+    <p class="claim-item">
+      <span class="ln">565</span>
+      <strong>10.</strong> The system of claim 2, wherein the current date source is overridable with a
+      configurable fixed date value to enable deterministic testing of temporal validity
+      logic independent of the system clock, such that the shouldIgnoreFinding() function
+      produces reproducible outputs when invoked with fixed date values in automated test
+      environments and continuous integration pipelines.
+    </p>
+
+    <!-- Claim 11 -->
+    <p class="claim-item">
+      <span class="ln">570</span>
+      <strong>11.</strong> The method of claim 1, wherein when audit mode is enabled and a suppression
+      directive has no expiration date field, the audit mode reporter emits a
+      SUPPRESSION_NO_EXPIRY informational finding identifying the directive and the security
+      findings it is currently suppressing, thereby surfacing permanent suppressions as
+      accumulated security debt requiring review.
+    </p>
+
+    <!-- Claim 12 -->
+    <p class="claim-item">
+      <span class="ln">575</span>
+      <strong>12.</strong> The method of claim 1, wherein the applySuppressionWithExpiry() function is
+      stateless and referentially transparent, returning identical output for identical input
+      arguments comprising a findings array, a directives map, a current date value, an audit
+      mode flag, and a lookahead days parameter, thereby ensuring reproducibility of scan
+      results across successive scan executions performed on identical inputs.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 10 — Abstract                                           -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-005 &nbsp;&nbsp;|&nbsp;&nbsp; Page 10</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Abstract</h2>
+
+    <div class="abstract-box">
+      <p class="no-indent">
+        <span class="ln">580</span>
+        A system and method enforce temporal validity of security finding suppression
+        directives in AI agent configuration files. A suppression directive parser extracts
+        expiration dates and justification codes from structured ignore-file entries. A date
+        comparator implements a shouldIgnoreFinding() predicate that returns true when the
+        current scan date is before the expiration date and false otherwise. A finding
+        suppressor omits valid-suppression findings from output; a finding reactivator
+        delivers expired-suppression findings with a suppressionExpired annotation. A
+        justification validator checks justification codes against a configurable approved
+        codes list, emitting INVALID_SUPPRESSION_JUSTIFICATION findings for unrecognized
+        codes. When audit mode is enabled, an audit mode reporter emits informational
+        SUPPRESSION_NEAR_EXPIRY findings for directives expiring within a configurable
+        LOOKAHEAD_DAYS window. The method operates as a stateless post-processing filter
+        and is entirely backward compatible with conventional ignore-file tooling.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

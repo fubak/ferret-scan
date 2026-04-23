@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Drawings — FS-2026-001: AI Agent Capability Profile Generation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #ccc;
+    font-family: Arial, sans-serif;
+    padding: 20px;
+  }
+  .page-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    margin-bottom: 10px;
+    color: #000;
+  }
+  .drawing-sheet {
+    width: 720px;
+    background: #fff;
+    border: 2px solid #000;
+    margin: 30px auto;
+    padding: 30px 30px 20px 30px;
+    page-break-after: always;
+  }
+  .sheet-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 20px;
+  }
+  .sheet-footer {
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 9pt;
+    border-top: 1px solid #000;
+    padding-top: 6px;
+    margin-top: 16px;
+  }
+  .fig-label {
+    display: block;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 12pt;
+    font-weight: bold;
+    margin-top: 16px;
+    letter-spacing: 0.05em;
+  }
+  svg text {
+    fill: #000;
+    font-family: Arial, sans-serif;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">Application No.: [To Be Assigned] &nbsp;&nbsp;&nbsp; Patent Drawings — FS-2026-001</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 1 — FIG. 1: System Architecture Block Diagram         -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">Application No.: [To Be Assigned] &nbsp;|&nbsp; Sheet 1 of 3</div>
+
+  <svg width="660" height="420" viewBox="0 0 660 420" xmlns="http://www.w3.org/2000/svg">
+    <!-- ===== MAIN PIPELINE BOXES (y=60) ===== -->
+
+    <!-- 100 Config File Input -->
+    <rect x="10" y="50" width="90" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="55" y="68" text-anchor="middle" font-size="9">Config File</text>
+    <text fill="#000" x="55" y="80" text-anchor="middle" font-size="9">Input</text>
+    <text fill="#000" x="55" y="91" text-anchor="middle" font-size="11" font-weight="bold">100</text>
+
+    <!-- 102 Agent Detection Module -->
+    <rect x="130" y="50" width="90" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="175" y="65" text-anchor="middle" font-size="9">Agent</text>
+    <text fill="#000" x="175" y="77" text-anchor="middle" font-size="9">Detection</text>
+    <text fill="#000" x="175" y="89" text-anchor="middle" font-size="9">Module</text>
+    <text fill="#000" x="175" y="100" text-anchor="middle" font-size="11" font-weight="bold" dy="-4">102</text>
+
+    <!-- 104 Configuration Parser -->
+    <rect x="250" y="50" width="90" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="295" y="68" text-anchor="middle" font-size="9">Configuration</text>
+    <text fill="#000" x="295" y="80" text-anchor="middle" font-size="9">Parser</text>
+    <text fill="#000" x="295" y="91" text-anchor="middle" font-size="11" font-weight="bold">104</text>
+
+    <!-- 106 Capability Extractor -->
+    <rect x="370" y="50" width="90" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="415" y="65" text-anchor="middle" font-size="9">Capability</text>
+    <text fill="#000" x="415" y="77" text-anchor="middle" font-size="9">Extractor</text>
+    <text fill="#000" x="415" y="91" text-anchor="middle" font-size="11" font-weight="bold">106</text>
+
+    <!-- 108 Risk Assessment Engine -->
+    <rect x="480" y="50" width="90" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="525" y="65" text-anchor="middle" font-size="9">Risk</text>
+    <text fill="#000" x="525" y="77" text-anchor="middle" font-size="9">Assessment</text>
+    <text fill="#000" x="525" y="89" text-anchor="middle" font-size="9">Engine</text>
+    <text fill="#000" x="525" y="92" text-anchor="middle" font-size="11" font-weight="bold">108</text>
+
+    <!-- Main pipeline arrows (left to right) -->
+    <line x1="100" y1="73" x2="128" y2="73" stroke="#000" stroke-width="1.5"/>
+    <polygon points="128,69 136,73 128,77" fill="#000"/>
+
+    <line x1="220" y1="73" x2="248" y2="73" stroke="#000" stroke-width="1.5"/>
+    <polygon points="248,69 256,73 248,77" fill="#000"/>
+
+    <line x1="340" y1="73" x2="368" y2="73" stroke="#000" stroke-width="1.5"/>
+    <polygon points="368,69 376,73 368,77" fill="#000"/>
+
+    <line x1="460" y1="73" x2="478" y2="73" stroke="#000" stroke-width="1.5"/>
+    <polygon points="478,69 486,73 478,77" fill="#000"/>
+
+    <!-- Capability Profile (114) — 10px gap after box 108 (ends x=570) -->
+    <rect x="582" y="50" width="72" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="618" y="65" text-anchor="middle" font-size="9">Capability</text>
+    <text fill="#000" x="618" y="77" text-anchor="middle" font-size="9">Profile</text>
+    <text fill="#000" x="618" y="91" text-anchor="middle" font-size="11" font-weight="bold">114</text>
+
+    <line x1="570" y1="73" x2="580" y2="73" stroke="#000" stroke-width="1.5"/>
+    <polygon points="580,69 588,73 580,77" fill="#000"/>
+
+    <!-- Report Generator (116) — below 114 -->
+    <rect x="580" y="150" width="78" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="619" y="164" text-anchor="middle" font-size="9">Report</text>
+    <text fill="#000" x="619" y="176" text-anchor="middle" font-size="9">Generator</text>
+    <text fill="#000" x="619" y="186" text-anchor="middle" font-size="11" font-weight="bold">116</text>
+
+    <line x1="619" y1="96" x2="619" y2="148" stroke="#000" stroke-width="1.5"/>
+    <polygon points="615,148 619,156 623,148" fill="#000"/>
+
+    <!-- ===== AUXILIARY INPUTS FROM BELOW ===== -->
+
+    <!-- AI CLI Registry (110) — below pipeline, between 102 and 106 -->
+    <rect x="170" y="240" width="100" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="220" y="257" text-anchor="middle" font-size="9">AI CLI</text>
+    <text fill="#000" x="220" y="269" text-anchor="middle" font-size="9">Registry</text>
+    <text fill="#000" x="220" y="282" text-anchor="middle" font-size="11" font-weight="bold">110</text>
+
+    <!-- Vertical line from 110 up, then split to 102 and 106 -->
+    <!-- Up to branch point -->
+    <line x1="220" y1="240" x2="220" y2="160" stroke="#000" stroke-width="0.75"/>
+    <!-- Branch left to 102 -->
+    <line x1="175" y1="160" x2="220" y2="160" stroke="#000" stroke-width="0.75"/>
+    <line x1="175" y1="96" x2="175" y2="160" stroke="#000" stroke-width="0.75"/>
+    <polygon points="171,96 175,88 179,96" fill="#000"/>
+
+    <!-- Branch right to 106 -->
+    <line x1="220" y1="160" x2="415" y2="160" stroke="#000" stroke-width="0.75"/>
+    <line x1="415" y1="96" x2="415" y2="160" stroke="#000" stroke-width="0.75"/>
+    <polygon points="411,96 415,88 419,96" fill="#000"/>
+
+    <!-- Capability Taxonomy (112) — below pipeline, near 108 -->
+    <rect x="410" y="240" width="110" height="46" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="465" y="257" text-anchor="middle" font-size="9">Capability</text>
+    <text fill="#000" x="465" y="269" text-anchor="middle" font-size="9">Taxonomy</text>
+    <text fill="#000" x="465" y="282" text-anchor="middle" font-size="11" font-weight="bold">112</text>
+
+    <!-- Up from 112 to 108 -->
+    <line x1="465" y1="240" x2="465" y2="200" stroke="#000" stroke-width="0.75"/>
+    <line x1="465" y1="200" x2="525" y2="200" stroke="#000" stroke-width="0.75"/>
+    <line x1="525" y1="200" x2="525" y2="96" stroke="#000" stroke-width="0.75"/>
+    <polygon points="521,96 525,88 529,96" fill="#000"/>
+
+    <!-- Leader lines for numerals in aux section -->
+    <!-- 110 leader -->
+    <line x1="220" y1="284" x2="232" y2="298" stroke="#000" stroke-width="0.75"/>
+    <!-- 112 leader already visible via box label -->
+  </svg>
+
+  <span class="fig-label">FIG. 1</span>
+  <div class="sheet-footer">1 of 3</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 2 — FIG. 2: Method Flowchart                          -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">Application No.: [To Be Assigned] &nbsp;|&nbsp; Sheet 2 of 3</div>
+
+  <svg width="660" height="820" viewBox="0 0 660 820" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- Center x = 330 -->
+
+    <!-- 202 START oval -->
+    <ellipse cx="330" cy="40" rx="60" ry="22" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="37" text-anchor="middle" font-size="9">START</text>
+    <text fill="#000" x="330" y="50" text-anchor="middle" font-size="11" font-weight="bold">202</text>
+
+    <line x1="330" y1="62" x2="330" y2="80" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,80 330,88 334,80" fill="#000"/>
+
+    <!-- 204 RECEIVE AI CLI CONFIG FILE -->
+    <rect x="220" y="88" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="105" text-anchor="middle" font-size="9">RECEIVE AI CLI</text>
+    <text fill="#000" x="330" y="118" text-anchor="middle" font-size="9">CONFIG FILE</text>
+    <text fill="#000" x="450" y="108" text-anchor="middle" font-size="11" font-weight="bold">204</text>
+
+    <line x1="330" y1="128" x2="330" y2="146" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,146 330,154 334,146" fill="#000"/>
+
+    <!-- 206 DETECT AI CLI PLATFORM TYPE -->
+    <rect x="220" y="154" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="171" text-anchor="middle" font-size="9">DETECT AI CLI</text>
+    <text fill="#000" x="330" y="184" text-anchor="middle" font-size="9">PLATFORM TYPE</text>
+    <text fill="#000" x="450" y="174" text-anchor="middle" font-size="11" font-weight="bold">206</text>
+
+    <line x1="330" y1="194" x2="330" y2="212" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,212 330,220 334,212" fill="#000"/>
+
+    <!-- 208 Decision: PLATFORM RECOGNIZED? (diamond) -->
+    <!-- diamond: top (330,220), right (420,262), bottom (330,304), left (240,262) -->
+    <polygon points="330,220 420,262 330,304 240,262" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="256" text-anchor="middle" font-size="9">PLATFORM</text>
+    <text fill="#000" x="330" y="268" text-anchor="middle" font-size="9">RECOGNIZED?</text>
+    <text fill="#000" x="430" y="268" text-anchor="middle" font-size="11" font-weight="bold">208</text>
+
+    <!-- YES label -->
+    <text fill="#000" x="343" y="318" text-anchor="start" font-size="9" font-style="italic">YES</text>
+    <!-- NO branch right -->
+    <text fill="#000" x="426" y="258" text-anchor="start" font-size="9" font-style="italic">NO</text>
+
+    <!-- YES: arrow down from diamond -->
+    <line x1="330" y1="304" x2="330" y2="350" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,350 330,358 334,350" fill="#000"/>
+
+    <!-- NO: arrow right from diamond, down to 210, then rejoin -->
+    <line x1="420" y1="262" x2="500" y2="262" stroke="#000" stroke-width="1.5"/>
+    <line x1="500" y1="262" x2="500" y2="380" stroke="#000" stroke-width="1.5"/>
+
+    <!-- 210 APPLY GENERIC RULES -->
+    <rect x="450" y="340" width="130" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="515" y="357" text-anchor="middle" font-size="9">APPLY GENERIC</text>
+    <text fill="#000" x="515" y="370" text-anchor="middle" font-size="9">RULES</text>
+    <text fill="#000" x="450" y="357" text-anchor="start" font-size="11" font-weight="bold">210</text>
+
+    <!-- 500 down from 210, rejoin left to main pipeline at y=380 -->
+    <line x1="500" y1="380" x2="450" y2="380" stroke="#000" stroke-width="1.5"/>
+
+    <!-- rejoin arrow points left, hits x=440 then down to main path -->
+    <!-- actually connect to 212 level -->
+    <line x1="450" y1="380" x2="330" y2="380" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,376 330,384 334,376" fill="#000"/>
+
+    <!-- 212 PARSE CONFIGURATION FILE -->
+    <rect x="220" y="358" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="375" text-anchor="middle" font-size="9">PARSE</text>
+    <text fill="#000" x="330" y="388" text-anchor="middle" font-size="9">CONFIGURATION FILE</text>
+    <text fill="#000" x="450" y="378" text-anchor="middle" font-size="11" font-weight="bold">212</text>
+
+    <line x1="330" y1="398" x2="330" y2="416" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,416 330,424 334,416" fill="#000"/>
+
+    <!-- 214 EXTRACT CAPABILITY DECLARATIONS -->
+    <rect x="220" y="424" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="441" text-anchor="middle" font-size="9">EXTRACT CAPABILITY</text>
+    <text fill="#000" x="330" y="454" text-anchor="middle" font-size="9">DECLARATIONS</text>
+    <text fill="#000" x="450" y="444" text-anchor="middle" font-size="11" font-weight="bold">214</text>
+
+    <line x1="330" y1="464" x2="330" y2="482" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,482 330,490 334,482" fill="#000"/>
+
+    <!-- 216 MAP TO CANONICAL CAPABILITY TYPE -->
+    <rect x="200" y="490" width="260" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="507" text-anchor="middle" font-size="9">MAP TO CANONICAL</text>
+    <text fill="#000" x="330" y="520" text-anchor="middle" font-size="9">CAPABILITY TYPE</text>
+    <text fill="#000" x="468" y="510" text-anchor="middle" font-size="11" font-weight="bold">216</text>
+
+    <line x1="330" y1="530" x2="330" y2="548" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,548 330,556 334,548" fill="#000"/>
+
+    <!-- 218 ASSIGN BASE RISK LEVEL -->
+    <rect x="220" y="556" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="573" text-anchor="middle" font-size="9">ASSIGN BASE</text>
+    <text fill="#000" x="330" y="586" text-anchor="middle" font-size="9">RISK LEVEL</text>
+    <text fill="#000" x="450" y="576" text-anchor="middle" font-size="11" font-weight="bold">218</text>
+
+    <line x1="330" y1="596" x2="330" y2="614" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,614 330,622 334,614" fill="#000"/>
+
+    <!-- 220 COMPUTE AGGREGATE RISK SCORE -->
+    <rect x="200" y="622" width="260" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="639" text-anchor="middle" font-size="9">COMPUTE AGGREGATE</text>
+    <text fill="#000" x="330" y="652" text-anchor="middle" font-size="9">RISK SCORE</text>
+    <text fill="#000" x="468" y="642" text-anchor="middle" font-size="11" font-weight="bold">220</text>
+
+    <line x1="330" y1="662" x2="330" y2="680" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,680 330,688 334,680" fill="#000"/>
+
+    <!-- 222 GENERATE CAPABILITY PROFILE -->
+    <rect x="200" y="688" width="260" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="705" text-anchor="middle" font-size="9">GENERATE CAPABILITY</text>
+    <text fill="#000" x="330" y="718" text-anchor="middle" font-size="9">PROFILE</text>
+    <text fill="#000" x="468" y="708" text-anchor="middle" font-size="11" font-weight="bold">222</text>
+
+    <line x1="330" y1="728" x2="330" y2="746" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,746 330,754 334,746" fill="#000"/>
+
+    <!-- 224 OUTPUT STRUCTURED REPORT -->
+    <rect x="220" y="754" width="220" height="40" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="771" text-anchor="middle" font-size="9">OUTPUT STRUCTURED</text>
+    <text fill="#000" x="330" y="784" text-anchor="middle" font-size="9">REPORT</text>
+    <text fill="#000" x="450" y="774" text-anchor="middle" font-size="11" font-weight="bold">224</text>
+
+    <line x1="330" y1="794" x2="330" y2="782" stroke="#000" stroke-width="1.5"/>
+    <line x1="330" y1="794" x2="330" y2="800" stroke="#000" stroke-width="1.5"/>
+    <polygon points="326,800 330,808 334,800" fill="#000"/>
+
+    <!-- 226 END oval -->
+    <ellipse cx="330" cy="808" rx="60" ry="22" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="805" text-anchor="middle" font-size="9">END</text>
+    <text fill="#000" x="330" y="818" text-anchor="middle" font-size="11" font-weight="bold">226</text>
+
+  </svg>
+
+  <span class="fig-label">FIG. 2</span>
+  <div class="sheet-footer">2 of 3</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- SHEET 3 — FIG. 3: Capability Taxonomy Hierarchy             -->
+<!-- ============================================================ -->
+<div class="drawing-sheet">
+  <div class="sheet-header">Application No.: [To Be Assigned] &nbsp;|&nbsp; Sheet 3 of 3</div>
+
+  <svg width="660" height="560" viewBox="0 0 660 560" xmlns="http://www.w3.org/2000/svg">
+
+    <!-- Root node: CAPABILITY TAXONOMY (300) -->
+    <rect x="210" y="10" width="240" height="42" fill="none" stroke="#000" stroke-width="1.5"/>
+    <text fill="#000" x="330" y="27" text-anchor="middle" font-size="9" font-weight="bold">CAPABILITY TAXONOMY</text>
+    <text fill="#000" x="330" y="42" text-anchor="middle" font-size="11" font-weight="bold">300</text>
+
+    <!-- Trunk line down -->
+    <line x1="330" y1="52" x2="330" y2="90" stroke="#000" stroke-width="1.5"/>
+    <!-- Horizontal branch line -->
+    <line x1="80" y1="90" x2="580" y2="90" stroke="#000" stroke-width="1.5"/>
+
+    <!-- ---- CRITICAL (302) ---- x=60 -->
+    <line x1="80" y1="90" x2="80" y2="110" stroke="#000" stroke-width="1.5"/>
+    <rect x="30" y="110" width="100" height="38" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="80" y="125" text-anchor="middle" font-size="9" font-weight="bold">CRITICAL</text>
+    <text fill="#000" x="80" y="140" text-anchor="middle" font-size="11" font-weight="bold">302</text>
+
+    <!-- CRITICAL children vertical line down -->
+    <line x1="80" y1="148" x2="80" y2="185" stroke="#000" stroke-width="1.5"/>
+    <!-- Horizontal for children -->
+    <line x1="20" y1="185" x2="140" y2="185" stroke="#000" stroke-width="1.5"/>
+
+    <!-- FILE_DELETE (310) -->
+    <line x1="20" y1="185" x2="20" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="2" y="205" width="76" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="40" y="219" text-anchor="middle" font-size="9">FILE_DELETE</text>
+    <text fill="#000" x="40" y="231" text-anchor="middle" font-size="10" font-weight="bold">310</text>
+
+    <!-- CODE_EXECUTION (312) -->
+    <line x1="55" y1="185" x2="55" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="84" y="205" width="80" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="124" y="219" text-anchor="middle" font-size="9">CODE_EXECUTION</text>
+    <text fill="#000" x="124" y="231" text-anchor="middle" font-size="10" font-weight="bold">312</text>
+    <line x1="124" y1="185" x2="124" y2="205" stroke="#000" stroke-width="0.75"/>
+
+    <!-- SHELL_ACCESS (314) -->
+    <line x1="80" y1="260" x2="80" y2="270" stroke="#000" stroke-width="0.75"/>
+    <rect x="2" y="252" width="76" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="40" y="266" text-anchor="middle" font-size="9">SHELL_ACCESS</text>
+    <text fill="#000" x="40" y="278" text-anchor="middle" font-size="10" font-weight="bold">314</text>
+    <!-- second row of children: second horizontal -->
+    <line x1="20" y1="248" x2="140" y2="248" stroke="#000" stroke-width="0.75"/>
+    <line x1="80" y1="240" x2="80" y2="248" stroke="#000" stroke-width="0.75"/>
+
+    <!-- CREDENTIAL_ACCESS (316) -->
+    <rect x="84" y="252" width="80" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="124" y="263" text-anchor="middle" font-size="9">CREDENTIAL</text>
+    <text fill="#000" x="124" y="274" text-anchor="middle" font-size="9">ACCESS</text>
+    <text fill="#000" x="124" y="283" text-anchor="middle" font-size="10" font-weight="bold">316</text>
+    <line x1="124" y1="248" x2="124" y2="252" stroke="#000" stroke-width="0.75"/>
+
+    <!-- ---- HIGH (304) ---- x=260 (shifted +40 from original to clear CRITICAL children) -->
+    <line x1="260" y1="90" x2="260" y2="110" stroke="#000" stroke-width="1.5"/>
+    <rect x="210" y="110" width="100" height="38" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="260" y="125" text-anchor="middle" font-size="9" font-weight="bold">HIGH</text>
+    <text fill="#000" x="260" y="140" text-anchor="middle" font-size="11" font-weight="bold">304</text>
+
+    <line x1="260" y1="148" x2="260" y2="185" stroke="#000" stroke-width="1.5"/>
+    <line x1="202" y1="185" x2="322" y2="185" stroke="#000" stroke-width="1.5"/>
+
+    <!-- FILE_WRITE (320) -->
+    <line x1="202" y1="185" x2="202" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="170" y="205" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="204" y="219" text-anchor="middle" font-size="9">FILE_WRITE</text>
+    <text fill="#000" x="204" y="231" text-anchor="middle" font-size="10" font-weight="bold">320</text>
+
+    <!-- NETWORK_ACCESS (322) -->
+    <line x1="242" y1="185" x2="242" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="240" y="205" width="78" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="279" y="219" text-anchor="middle" font-size="9">NETWORK</text>
+    <text fill="#000" x="279" y="228" text-anchor="middle" font-size="9">ACCESS</text>
+    <text fill="#000" x="279" y="238" text-anchor="middle" font-size="10" font-weight="bold">322</text>
+    <line x1="279" y1="185" x2="279" y2="205" stroke="#000" stroke-width="0.75"/>
+
+    <!-- second row HIGH -->
+    <line x1="202" y1="248" x2="322" y2="248" stroke="#000" stroke-width="0.75"/>
+    <line x1="260" y1="240" x2="260" y2="248" stroke="#000" stroke-width="0.75"/>
+
+    <!-- BROWSER_AUTOMATION (324) -->
+    <rect x="170" y="252" width="78" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="209" y="263" text-anchor="middle" font-size="9">BROWSER</text>
+    <text fill="#000" x="209" y="274" text-anchor="middle" font-size="9">AUTOMATION</text>
+    <text fill="#000" x="209" y="283" text-anchor="middle" font-size="10" font-weight="bold">324</text>
+    <line x1="209" y1="248" x2="209" y2="252" stroke="#000" stroke-width="0.75"/>
+
+    <!-- PROCESS_MANAGEMENT (326) -->
+    <rect x="253" y="252" width="78" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="292" y="263" text-anchor="middle" font-size="9">PROCESS</text>
+    <text fill="#000" x="292" y="274" text-anchor="middle" font-size="9">MANAGEMENT</text>
+    <text fill="#000" x="292" y="283" text-anchor="middle" font-size="10" font-weight="bold">326</text>
+    <line x1="292" y1="248" x2="292" y2="252" stroke="#000" stroke-width="0.75"/>
+
+    <!-- ---- MEDIUM (306) ---- x=440 -->
+    <line x1="440" y1="90" x2="440" y2="110" stroke="#000" stroke-width="1.5"/>
+    <rect x="390" y="110" width="100" height="38" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="440" y="125" text-anchor="middle" font-size="9" font-weight="bold">MEDIUM</text>
+    <text fill="#000" x="440" y="140" text-anchor="middle" font-size="11" font-weight="bold">306</text>
+
+    <line x1="440" y1="148" x2="440" y2="185" stroke="#000" stroke-width="1.5"/>
+    <line x1="380" y1="185" x2="500" y2="185" stroke="#000" stroke-width="1.5"/>
+
+    <!-- MCP_TOOLS (330) -->
+    <line x1="380" y1="185" x2="380" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="350" y="205" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="384" y="219" text-anchor="middle" font-size="9">MCP_TOOLS</text>
+    <text fill="#000" x="384" y="231" text-anchor="middle" font-size="10" font-weight="bold">330</text>
+
+    <!-- API_ACCESS (332) -->
+    <line x1="420" y1="185" x2="420" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="422" y="205" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="456" y="219" text-anchor="middle" font-size="9">API_ACCESS</text>
+    <text fill="#000" x="456" y="231" text-anchor="middle" font-size="10" font-weight="bold">332</text>
+    <line x1="456" y1="185" x2="456" y2="205" stroke="#000" stroke-width="0.75"/>
+
+    <!-- second row MEDIUM -->
+    <line x1="380" y1="248" x2="500" y2="248" stroke="#000" stroke-width="0.75"/>
+    <line x1="440" y1="240" x2="440" y2="248" stroke="#000" stroke-width="0.75"/>
+
+    <!-- GIT_OPERATIONS (334) -->
+    <rect x="350" y="252" width="78" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="389" y="263" text-anchor="middle" font-size="9">GIT</text>
+    <text fill="#000" x="389" y="274" text-anchor="middle" font-size="9">OPERATIONS</text>
+    <text fill="#000" x="389" y="283" text-anchor="middle" font-size="10" font-weight="bold">334</text>
+    <line x1="389" y1="248" x2="389" y2="252" stroke="#000" stroke-width="0.75"/>
+
+    <!-- ENV_VARIABLES (336) -->
+    <rect x="432" y="252" width="78" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="471" y="263" text-anchor="middle" font-size="9">ENV</text>
+    <text fill="#000" x="471" y="274" text-anchor="middle" font-size="9">VARIABLES</text>
+    <text fill="#000" x="471" y="283" text-anchor="middle" font-size="10" font-weight="bold">336</text>
+    <line x1="471" y1="248" x2="471" y2="252" stroke="#000" stroke-width="0.75"/>
+
+    <!-- ---- LOW (308) ---- x=580 -->
+    <line x1="580" y1="90" x2="580" y2="110" stroke="#000" stroke-width="1.5"/>
+    <rect x="530" y="110" width="100" height="38" fill="none" stroke="#000" stroke-width="2"/>
+    <text fill="#000" x="580" y="125" text-anchor="middle" font-size="9" font-weight="bold">LOW</text>
+    <text fill="#000" x="580" y="140" text-anchor="middle" font-size="11" font-weight="bold">308</text>
+
+    <line x1="580" y1="148" x2="580" y2="185" stroke="#000" stroke-width="1.5"/>
+    <line x1="530" y1="185" x2="636" y2="185" stroke="#000" stroke-width="1.5"/>
+
+    <!-- FILE_READ (340) -->
+    <line x1="530" y1="185" x2="530" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="502" y="205" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="536" y="219" text-anchor="middle" font-size="9">FILE_READ</text>
+    <text fill="#000" x="536" y="231" text-anchor="middle" font-size="10" font-weight="bold">340</text>
+
+    <!-- SYSTEM_INFO (342) -->
+    <line x1="580" y1="185" x2="580" y2="205" stroke="#000" stroke-width="0.75"/>
+    <rect x="573" y="205" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="607" y="219" text-anchor="middle" font-size="9">SYSTEM_INFO</text>
+    <text fill="#000" x="607" y="231" text-anchor="middle" font-size="10" font-weight="bold">342</text>
+
+    <!-- NOTIFICATION (344) -->
+    <line x1="636" y1="185" x2="636" y2="252" stroke="#000" stroke-width="0.75"/>
+    <rect x="590" y="252" width="68" height="34" fill="none" stroke="#000" stroke-width="1"/>
+    <text fill="#000" x="624" y="266" text-anchor="middle" font-size="9">NOTIFICATION</text>
+    <text fill="#000" x="624" y="278" text-anchor="middle" font-size="10" font-weight="bold">344</text>
+
+    <!-- Risk level labels on left -->
+    <text fill="#000" x="8" y="340" font-size="9" font-style="italic">* Double-border = risk tier node</text>
+  </svg>
+
+  <span class="fig-label">FIG. 3</span>
+  <div class="sheet-footer">3 of 3</div>
+</div>
+
+</body>
+</html>

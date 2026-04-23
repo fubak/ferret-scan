@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Patent Specification — FS-2026-001: AI Agent Capability Profile Generation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #d0d0d0;
+    font-family: Arial, sans-serif;
+    padding: 24px;
+  }
+
+  .page {
+    width: 760px;
+    min-height: 1000px;
+    background: #fff;
+    margin: 24px auto;
+    padding: 72px 80px 72px 100px;
+    border: 1px solid #888;
+    position: relative;
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 12pt;
+    line-height: 1.65;
+    color: #000;
+  }
+
+  .page-top-header {
+    text-align: center;
+    font-family: Arial, sans-serif;
+    font-size: 10pt;
+    border-bottom: 1px solid #000;
+    padding-bottom: 6px;
+    margin-bottom: 24px;
+    letter-spacing: 0.03em;
+  }
+
+  /* Line numbers */
+  .lined-content {
+    position: relative;
+  }
+
+  .line-block {
+    display: block;
+    position: relative;
+    min-height: 1.65em;
+  }
+
+  .ln {
+    position: absolute;
+    left: -52px;
+    width: 36px;
+    text-align: right;
+    font-family: Arial, sans-serif;
+    font-size: 8.5pt;
+    color: #000;
+    top: 0.1em;
+  }
+
+  h1.doc-title {
+    font-family: Arial, sans-serif;
+    font-size: 14pt;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 28px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  h2.section-head {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 28px;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+  }
+
+  p.body-para {
+    text-indent: 2em;
+    margin-bottom: 10px;
+  }
+
+  p.no-indent {
+    margin-bottom: 10px;
+  }
+
+  .claim-item {
+    margin-bottom: 8px;
+    padding-left: 2em;
+    text-indent: -2em;
+  }
+
+  .claim-item.main-claim {
+    font-weight: normal;
+  }
+
+  .claim-sub {
+    padding-left: 4em;
+    text-indent: -2em;
+    margin-bottom: 6px;
+  }
+
+  .abstract-box {
+    border: 1px solid #000;
+    padding: 16px 20px;
+    margin-top: 16px;
+  }
+
+  .drawings-ref {
+    font-style: italic;
+  }
+
+  sup { font-size: 8pt; }
+
+  .formula {
+    font-family: 'Courier New', monospace;
+    display: block;
+    margin: 10px 0 10px 3em;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<!-- PAGE 1 — Title, Cross-Reference, Technical Field, Background -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 1</div>
+
+  <h1 class="doc-title">AI Agent Capability Profile Generation<br>from AI CLI Configuration Files</h1>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Cross-Reference to Related Applications</h2>
+
+    <p class="body-para">
+      <span class="ln">5</span>
+      This application is related to co-pending U.S. Patent Application FS-2026-002, entitled
+      "Cross-File Attack Chain Correlation in AI CLI Configuration Environments"; co-pending
+      Application FS-2026-003, entitled "AST-Based Markdown Parsing for AI CLI Security
+      Analysis"; co-pending Application FS-2026-004, entitled "MCP Tool Declaration Validation
+      and Risk Scoring"; and co-pending Application FS-2026-005, entitled "Ignore-File Expiration
+    </p>
+    <p class="body-para">
+      <span class="ln">10</span>
+      and Hygiene Enforcement for AI CLI Environments." All of the foregoing applications are
+      incorporated herein by reference in their entirety.
+    </p>
+
+    <h2 class="section-head">Technical Field</h2>
+
+    <p class="body-para">
+      <span class="ln">15</span>
+      The present invention relates generally to artificial intelligence security and software
+      composition analysis, and more particularly to automated static analysis systems and methods
+      that generate structured capability profiles from configuration files associated with AI
+      coding assistant command-line interface (CLI) tools.
+    </p>
+    <p class="body-para">
+      <span class="ln">20</span>
+      More specifically, the invention concerns the detection, classification, and risk assessment
+      of AI agent capabilities declared in configuration files such as CLAUDE.md, .mcp.json,
+      settings.json, and equivalent platform-specific formats, enabling enterprise security teams
+      to systematically audit the capability footprint of AI CLI deployments within software
+      development environments.
+    </p>
+
+    <h2 class="section-head">Background of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">25</span>
+      AI coding assistants have become pervasive in modern software development workflows. Tools
+      such as Claude Code (Anthropic), Cursor, Windsurf, Continue, Aider, Cline, and related
+      platforms allow individual developers to delegate complex coding, file manipulation, shell
+      execution, network access, and third-party tool invocation to AI agents operating within
+      the developer's local environment or cloud-connected infrastructure.
+    </p>
+    <p class="body-para">
+      <span class="ln">30</span>
+      Each of these platforms exposes its permitted capabilities through one or more configuration
+      files stored in the project directory or user home directory. For example, Claude Code reads
+      CLAUDE.md files to determine behavioral rules and tool allowances; Model Context Protocol
+      (MCP) servers are declared in .mcp.json files that specify the external processes an agent
+      may invoke; agent behavioral rules, allowed tools, and permission overrides are stored in
+    </p>
+    <p class="body-para">
+      <span class="ln">35</span>
+      settings.json files. Despite the proliferation of these capability-defining configuration
+      files, no prior art system has systematically and automatically classified the capabilities
+      declared across multiple AI CLI platforms using a unified canonical taxonomy.
+    </p>
+    <p class="body-para">
+      <span class="ln">40</span>
+      Traditional software composition analysis (SCA) tools operate on dependency manifests such
+      as package.json, requirements.txt, or go.mod, identifying known vulnerable library versions
+      through comparison against vulnerability databases. These tools are not designed to parse
+      free-form configuration files, interpret semantic content within Markdown-formatted
+      behavioral instructions, or reason about capability declarations that are expressed through
+    </p>
+    <p class="body-para">
+      <span class="ln">45</span>
+      tool names and natural-language permission grants rather than formal import statements or
+      API call graphs. Consequently, organizations deploying AI CLI tools in enterprise
+      environments currently lack automated mechanisms to understand, audit, or enforce
+      capability boundaries for those tools.
+    </p>
+    <p class="body-para">
+      <span class="ln">50</span>
+      There is therefore a need for a system and method capable of detecting which AI CLI
+      platform is in use from the presence and structure of configuration files, parsing those
+      files according to their platform-specific schemas, extracting and normalizing capability
+      declarations into a platform-independent canonical representation, assigning risk levels to
+      individual capabilities and aggregating those levels into an overall risk score, and
+      producing structured reports in formats compatible with existing security toolchains.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 2 — Summary, Brief Description of Drawings             -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 2</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Summary of the Invention</h2>
+
+    <p class="body-para">
+      <span class="ln">55</span>
+      The present invention provides a system and method for automatically generating a structured
+      AI agent capability profile from one or more AI CLI configuration files. The system
+      comprises an agent detection module that identifies the AI CLI platform from the presence,
+      naming, and structural characteristics of configuration files found in a target directory;
+      a configuration parser that reads and interprets the contents of those files according to
+    </p>
+    <p class="body-para">
+      <span class="ln">60</span>
+      platform-specific schemas; a capability extractor that maps parsed declarations to a
+      canonical set of eighteen capability types organized in a four-tier risk taxonomy; a risk
+      assessment engine that assigns base risk levels to individual capabilities and computes an
+      aggregate risk score through a monotonically escalating combination function; and a report
+      generator that produces output in SARIF, HTML, and JSON formats.
+    </p>
+    <p class="body-para">
+      <span class="ln">65</span>
+      In a preferred embodiment, the invention operates without executing any of the AI CLI tools
+      being analyzed, relying entirely on static inspection of configuration file content. The
+      method is platform-agnostic at its core, supporting at least seven distinct AI CLI platforms
+      through a registry mechanism that may be extended to accommodate future platforms without
+      modification of the core capability extraction or risk assessment logic.
+    </p>
+
+    <h2 class="section-head">Brief Description of the Drawings</h2>
+
+    <p class="body-para">
+      <span class="ln">70</span>
+      The accompanying drawings, which are incorporated in and constitute a part of this
+      specification, illustrate preferred embodiments of the invention and, together with the
+      description, serve to explain the principles of the invention.
+    </p>
+    <p class="body-para">
+      <span class="ln">75</span>
+      <span class="drawings-ref">FIG. 1</span> is a block diagram illustrating the overall system architecture of the AI agent
+      capability profile generation system according to a preferred embodiment of the present
+      invention, showing the principal components including the configuration file input, agent
+      detection module (102), configuration parser (104), capability extractor (106), risk
+      assessment engine (108), AI CLI registry (110), capability taxonomy (112), capability
+      profile (114), and report generator (116).
+    </p>
+    <p class="body-para">
+      <span class="ln">80</span>
+      <span class="drawings-ref">FIG. 2</span> is a flowchart illustrating the method steps performed by the system of FIG. 1,
+      beginning with receipt of an AI CLI configuration file (204), proceeding through platform
+      detection (206), a platform recognition decision (208), configuration parsing (212),
+      capability extraction (214), canonical type mapping (216), risk level assignment (218),
+      aggregate risk computation (220), capability profile generation (222), structured report
+      output (224), and concluding at an END state (226).
+    </p>
+    <p class="body-para">
+      <span class="ln">85</span>
+      <span class="drawings-ref">FIG. 3</span> is a hierarchical tree diagram illustrating the capability taxonomy (300) employed
+      by the risk assessment engine, showing four risk tiers — CRITICAL (302), HIGH (304),
+      MEDIUM (306), and LOW (308) — and the fourteen specific canonical capability types
+      associated with those tiers, including FILE_DELETE (310), CODE_EXECUTION (312),
+      SHELL_ACCESS (314), CREDENTIAL_ACCESS (316), FILE_WRITE (320), NETWORK_ACCESS (322),
+      BROWSER_AUTOMATION (324), PROCESS_MANAGEMENT (326), MCP_TOOLS (330), API_ACCESS (332),
+      GIT_OPERATIONS (334), ENV_VARIABLES (336), FILE_READ (340), SYSTEM_INFO (342), and
+      NOTIFICATION (344).
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 3 — Detailed Description (Part 1)                      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 3</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Detailed Description of the Preferred Embodiments</h2>
+
+    <p class="body-para">
+      <span class="ln">90</span>
+      Reference will now be made in detail to the presently preferred embodiments of the
+      invention, examples of which are illustrated in the accompanying drawings. Wherever
+      possible, the same reference numbers will be used throughout the drawings to refer to the
+      same or like parts.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">I. System Architecture Overview (FIG. 1)</h2>
+
+    <p class="body-para">
+      <span class="ln">95</span>
+      Referring now to FIG. 1, the AI agent capability profile generation system comprises a
+      horizontal processing pipeline that accepts a configuration file input (100) at its left
+      terminus and produces a capability profile (114) at its right terminus, with auxiliary
+      inputs feeding into the pipeline from a supporting subsystem layer positioned below the
+      main pipeline. The pipeline components are, from left to right: agent detection module
+    </p>
+    <p class="body-para">
+      <span class="ln">100</span>
+      (102), configuration parser (104), capability extractor (106), and risk assessment engine
+      (108). The capability profile (114) produced by the risk assessment engine (108) is
+      subsequently consumed by a report generator (116) that produces human-readable and
+      machine-readable output artifacts.
+    </p>
+    <p class="body-para">
+      <span class="ln">105</span>
+      Two auxiliary inputs feed into the pipeline from the supporting subsystem layer. The AI
+      CLI registry (110) provides platform identification data and tool-name mappings to both the
+      agent detection module (102) and the capability extractor (106). The capability taxonomy
+      (112) provides the authoritative mapping from capability types to risk tiers and is
+      consumed exclusively by the risk assessment engine (108).
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">II. Agent Detection Module (102)</h2>
+
+    <p class="body-para">
+      <span class="ln">110</span>
+      The agent detection module (102) receives the configuration file input (100), which may
+      comprise a file path, a directory path, or a set of file paths provided by a caller. The
+      module queries the AI CLI registry (110) to obtain a list of known platform entries, each
+      of which specifies one or more file-name glob patterns characteristic of that platform's
+      configuration files. For example, the Claude Code platform entry specifies the patterns
+    </p>
+    <p class="body-para">
+      <span class="ln">115</span>
+      "CLAUDE.md", "claude.json", and ".claude/settings.json"; the MCP platform entry specifies
+      ".mcp.json"; the Cursor platform entry specifies ".cursorrules" and ".cursor/rules/*.mdc";
+      the Windsurf platform entry specifies ".windsurfrules"; the Continue platform entry
+      specifies ".continuerc.json" and "config.yaml"; the Aider platform entry specifies
+      ".aider.conf.yml" and "aider.conf.yml"; and the Cline platform entry specifies
+    </p>
+    <p class="body-para">
+      <span class="ln">120</span>
+      ".clinerules". The agent detection module (102) tests the received input path or paths
+      against each platform's file patterns using case-insensitive glob matching. When a match
+      is found, the corresponding platform identifier is returned along with a confidence score
+      derived from the number of matching patterns. When no platform is recognized, the agent
+      detection module (102) signals to the configuration parser (104) that generic parsing
+      rules should be applied.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">III. Configuration Parser (104)</h2>
+
+    <p class="body-para">
+      <span class="ln">125</span>
+      The configuration parser (104) accepts the identified platform type from the agent
+      detection module (102) and the raw file content, and produces a normalized in-memory
+      representation of the configuration suitable for consumption by the capability extractor
+      (106). The parser applies platform-specific parsing logic selected from the AI CLI registry
+      (110) entry corresponding to the detected platform.
+    </p>
+    <p class="body-para">
+      <span class="ln">130</span>
+      For JSON-formatted configuration files, the parser performs standard JSON deserialization
+      followed by a recursive nested value extraction procedure. In a preferred embodiment, this
+      procedure is implemented as a function <code>findNestedValue(obj, key)</code> that accepts
+      an arbitrary JavaScript object and a target key string, traverses the object tree
+      depth-first, and returns the first value associated with the specified key regardless of
+    </p>
+    <p class="body-para">
+      <span class="ln">135</span>
+      nesting depth. This recursive approach is necessary because AI CLI configuration files
+      frequently embed capability declarations at variable and non-standardized nesting depths.
+      For example, the MCP server list in a .mcp.json file may be located at the top-level
+      property "mcpServers", or may appear at a nested path such as
+      "configuration.mcp.servers", depending on the tool version and user customization.
+    </p>
+    <p class="body-para">
+      <span class="ln">140</span>
+      For YAML-formatted configuration files, the parser employs a YAML parsing library as a
+      fallback deserialization strategy. The resulting parsed object is thereafter processed
+      identically to a JSON-parsed object, enabling the capability extractor (106) to operate
+      on a unified object representation regardless of the source serialization format. The
+      YAML fallback also handles plain-text Markdown files by treating each non-empty line as
+      a string token subject to pattern matching.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 4 — Detailed Description (Part 2)                      -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 4</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">IV. Capability Extractor (106)</h2>
+
+    <p class="body-para">
+      <span class="ln">145</span>
+      The capability extractor (106) receives the normalized configuration representation from
+      the configuration parser (104) and produces a set of extracted capability declarations,
+      each associated with a canonical capability type. In a preferred embodiment, the system
+      recognizes eighteen canonical capability types: FILE_READ, FILE_WRITE, FILE_DELETE,
+      CODE_EXECUTION, SHELL_ACCESS, NETWORK_ACCESS, BROWSER_AUTOMATION, PROCESS_MANAGEMENT,
+    </p>
+    <p class="body-para">
+      <span class="ln">150</span>
+      MCP_TOOLS, API_ACCESS, GIT_OPERATIONS, ENV_VARIABLES, CREDENTIAL_ACCESS,
+      SYSTEM_INFO, NOTIFICATION, DATA_EXFILTRATION, PROMPT_INJECTION, and PRIVILEGE_ESCALATION.
+      These canonical types form the leaf-level and intermediate vocabulary of the capability
+      taxonomy (112) depicted in FIG. 3.
+    </p>
+    <p class="body-para">
+      <span class="ln">155</span>
+      The central operation of the capability extractor (106) is performed by a function
+      <code>mapToolToCapability(toolName)</code>, which accepts a string representing a tool
+      name as declared in a configuration file and returns the corresponding canonical
+      capability type. The mapping is implemented as a decision procedure that applies, in
+      order: exact string matching against a lookup table of known tool names; prefix matching
+    </p>
+    <p class="body-para">
+      <span class="ln">160</span>
+      against common tool-name prefixes such as "bash", "shell", "exec", "run", "file",
+      "read", "write", "delete", "web", "browser", "git", "network", and "credential";
+      and, when neither exact nor prefix matching succeeds, a substring search for
+      semantically significant terms within the tool name. For example, a tool named
+      "mcp__playwright__browser_navigate" is mapped to BROWSER_AUTOMATION through prefix
+    </p>
+    <p class="body-para">
+      <span class="ln">165</span>
+      matching on "browser", whereas a tool named "computer_use_tool" is mapped to
+      SHELL_ACCESS through substring detection of "computer". A tool name not matched by
+      any rule is classified as MCP_TOOLS, the default catch-all canonical type for
+      unrecognized external tool invocations.
+    </p>
+    <p class="body-para">
+      <span class="ln">170</span>
+      For Markdown-formatted configuration files such as CLAUDE.md, the capability extractor
+      (106) applies a pattern-matching procedure against the textual content of the file.
+      A library of regular-expression patterns corresponding to each canonical capability type
+      detects phrases such as "allowed to execute bash commands" (matching SHELL_ACCESS),
+      "can read and write files" (matching FILE_WRITE and FILE_READ), "may access the
+    </p>
+    <p class="body-para">
+      <span class="ln">175</span>
+      internet" (matching NETWORK_ACCESS), and similar natural-language capability grants
+      commonly found in AI agent instruction files. Each pattern match produces one capability
+      declaration associated with the matched canonical type and annotated with the source
+      file path and line number within the configuration file.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">V. Risk Assessment Engine (108)</h2>
+
+    <p class="body-para">
+      <span class="ln">180</span>
+      The risk assessment engine (108) accepts the set of capability declarations produced by
+      the capability extractor (106) and the capability taxonomy (112), and produces a
+      risk-annotated capability profile (114). For each capability declaration, the engine
+      looks up the canonical capability type in the capability taxonomy (112) and retrieves
+      the associated base risk level, which is one of CRITICAL, HIGH, MEDIUM, or LOW.
+    </p>
+    <p class="body-para">
+      <span class="ln">185</span>
+      The assignment of base risk levels to canonical capability types is as follows. Capabilities
+      in the CRITICAL tier (302) include FILE_DELETE (310), CODE_EXECUTION (312),
+      SHELL_ACCESS (314), CREDENTIAL_ACCESS (316), DATA_EXFILTRATION, PROMPT_INJECTION,
+      and PRIVILEGE_ESCALATION. Capabilities in the HIGH tier (304) include FILE_WRITE (320),
+      NETWORK_ACCESS (322), BROWSER_AUTOMATION (324), and PROCESS_MANAGEMENT (326).
+    </p>
+    <p class="body-para">
+      <span class="ln">190</span>
+      Capabilities in the MEDIUM tier (306) include MCP_TOOLS (330), API_ACCESS (332),
+      GIT_OPERATIONS (334), and ENV_VARIABLES (336). Capabilities in the LOW tier (308)
+      include FILE_READ (340), SYSTEM_INFO (342), and NOTIFICATION (344). This taxonomy
+      structure is depicted graphically in FIG. 3, which shows the CAPABILITY TAXONOMY (300)
+      root node branching to the four risk tier nodes and thence to their associated capability
+      type leaf nodes.
+    </p>
+    <p class="body-para">
+      <span class="ln">195</span>
+      The aggregate risk score is computed by the function <code>calculateOverallRisk(capabilities)</code>,
+      which implements a monotonically escalating combination rule. The function assigns numeric
+      weights to each risk tier: CRITICAL maps to weight 4, HIGH to weight 3, MEDIUM to weight 2,
+      and LOW to weight 1. The aggregate risk score is determined by the maximum tier weight
+      present among all detected capabilities, escalated by a logarithmic factor proportional to
+    </p>
+    <p class="body-para">
+      <span class="ln">200</span>
+      the count of capabilities at or above that tier. This escalation function ensures that a
+      configuration file declaring many high-risk capabilities receives a higher aggregate score
+      than one declaring a single high-risk capability, while preventing the aggregate score from
+      being dominated by a large count of low-risk capabilities when higher-risk capabilities are
+      also present.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 5 — Detailed Description (Part 3) + Method + Taxonomy  -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 5</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head" style="font-size:10pt;">VI. Report Generator (116)</h2>
+
+    <p class="body-para">
+      <span class="ln">205</span>
+      The report generator (116) accepts the capability profile (114) produced by the risk
+      assessment engine (108) and produces output artifacts in one or more of three formats:
+      SARIF (Static Analysis Results Interchange Format), HTML, and JSON. The SARIF output
+      conforms to the SARIF 2.1.0 specification and encodes each capability finding as a
+      SARIF Result object, with the capability type as the rule identifier, the source file
+    </p>
+    <p class="body-para">
+      <span class="ln">210</span>
+      path and line number as the location, and the risk level mapped to the SARIF severity
+      enumeration (error for CRITICAL, warning for HIGH, note for MEDIUM, none for LOW).
+      The HTML output provides a human-readable capability summary organized by risk tier,
+      with a summary table showing total counts per tier and detailed per-capability findings
+      including the source file, matched pattern, and remediation guidance.
+    </p>
+    <p class="body-para">
+      <span class="ln">215</span>
+      The JSON output provides the complete capability profile as a machine-readable data
+      structure suitable for ingestion by downstream security tooling, CI/CD pipeline gates,
+      and policy enforcement systems. All three output formats include the aggregate risk
+      score, the list of detected capabilities with their canonical types and base risk
+      levels, and the source configuration file metadata.
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VII. Method Description (FIG. 2)</h2>
+
+    <p class="body-para">
+      <span class="ln">220</span>
+      Referring now to FIG. 2, the method of AI agent capability profile generation begins at
+      START (202). At step 204, the system receives an AI CLI configuration file, which may be
+      specified as a file path, a directory to scan recursively, or a set of file paths provided
+      programmatically by a calling process. The system proceeds to step 206, where it applies
+      the AI CLI registry (110) platform detection logic to identify the platform type associated
+    </p>
+    <p class="body-para">
+      <span class="ln">225</span>
+      with the received file or files. At decision point 208, the system determines whether the
+      detected file name and structure match any of the seven known platforms in the registry.
+      If the platform is not recognized (NO branch from 208), the system proceeds to step 210,
+      where generic parsing rules are applied. These rules treat the file as plain text if it
+      lacks a recognized extension, as JSON if it has a .json extension, and as YAML if it has
+    </p>
+    <p class="body-para">
+      <span class="ln">230</span>
+      a .yaml or .yml extension. After applying generic rules at step 210, or after a positive
+      platform recognition (YES branch from 208), the method converges at step 212, where
+      the configuration file is parsed according to the applicable parsing strategy.
+    </p>
+    <p class="body-para">
+      <span class="ln">235</span>
+      At step 214, the parsed representation is analyzed to extract all capability declarations.
+      For structured formats, this involves iterating over tool lists, permission arrays, and
+      configuration keys. For Markdown-formatted files, this involves applying the regular
+      expression pattern library. At step 216, each extracted declaration is mapped to its
+      canonical capability type using the <code>mapToolToCapability()</code> function. At step 218,
+    </p>
+    <p class="body-para">
+      <span class="ln">240</span>
+      each canonical capability type is assigned its base risk level from the capability taxonomy
+      (112). At step 220, the aggregate risk score is computed using the
+      <code>calculateOverallRisk()</code> function. At step 222, the complete capability profile
+      (114) is assembled, comprising the list of capabilities, their risk levels, and the
+      aggregate score. At step 224, the capability profile (114) is passed to the report generator
+    </p>
+    <p class="body-para">
+      <span class="ln">245</span>
+      (116), which produces the output report in the requested format or formats. The method
+      concludes at END (226).
+    </p>
+
+    <h2 class="section-head" style="font-size:10pt;">VIII. Capability Taxonomy Structure (FIG. 3)</h2>
+
+    <p class="body-para">
+      <span class="ln">250</span>
+      Referring now to FIG. 3, the capability taxonomy (300) is organized as a four-level
+      hierarchy. The root node CAPABILITY TAXONOMY (300) branches to four risk tier nodes,
+      each represented with a double-bordered box in the drawing to indicate its status as a
+      classifier node rather than a leaf capability. The CRITICAL tier (302) subsumes
+      FILE_DELETE (310), CODE_EXECUTION (312), SHELL_ACCESS (314), and CREDENTIAL_ACCESS (316).
+    </p>
+    <p class="body-para">
+      <span class="ln">255</span>
+      The HIGH tier (304) subsumes FILE_WRITE (320), NETWORK_ACCESS (322),
+      BROWSER_AUTOMATION (324), and PROCESS_MANAGEMENT (326). The MEDIUM tier (306) subsumes
+      MCP_TOOLS (330), API_ACCESS (332), GIT_OPERATIONS (334), and ENV_VARIABLES (336). The
+      LOW tier (308) subsumes FILE_READ (340), SYSTEM_INFO (342), and NOTIFICATION (344).
+    </p>
+    <p class="body-para">
+      <span class="ln">260</span>
+      The taxonomy is designed to be extensible; additional capability types may be introduced
+      as leaf nodes under any existing tier node without modification of the risk assessment
+      engine (108). Similarly, additional tier nodes may be introduced between existing tiers to
+      accommodate future refinements in risk classification granularity.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 6 — Claims                                              -->
+<!-- ============================================================ -->
+<div class="page page-break">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 6</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Claims</h2>
+
+    <p class="no-indent" style="margin-bottom:12px; font-weight:bold;">What is claimed is:</p>
+
+    <!-- Claim 1 -->
+    <p class="claim-item main-claim">
+      <span class="ln">265</span>
+      <strong>1.</strong> A computer-implemented method for generating an AI agent capability profile from
+      an AI CLI configuration file, the method comprising:
+    </p>
+    <p class="claim-sub">
+      receiving, by one or more processors, at least one configuration file associated with an
+      AI coding assistant command-line interface (CLI) tool, wherein the configuration file
+      specifies one or more capabilities permitted to an AI agent operating under the AI CLI tool;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">270</span>
+      detecting, by the one or more processors, a platform type of the AI CLI tool by comparing
+      a filename and structural characteristics of the configuration file against a registry of
+      known AI CLI platform entries, each platform entry comprising one or more file-name
+      patterns characteristic of that platform;
+    </p>
+    <p class="claim-sub">
+      parsing, by the one or more processors, the configuration file according to a parsing
+      strategy selected based on the detected platform type, to produce a normalized
+      configuration representation;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">275</span>
+      mapping, by the one or more processors, one or more capability declarations extracted
+      from the normalized configuration representation to corresponding canonical capability
+      types selected from a predefined capability taxonomy comprising at least two risk tiers,
+      each risk tier comprising one or more canonical capability types associated with a
+      respective base risk level;
+    </p>
+    <p class="claim-sub">
+      assigning, by the one or more processors, a base risk level to each mapped canonical
+      capability type according to the capability taxonomy;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">280</span>
+      computing, by the one or more processors, an aggregate risk score for the configuration
+      file based on the base risk levels of the mapped canonical capability types using a
+      monotonically escalating combination function; and
+    </p>
+    <p class="claim-sub">
+      outputting, by the one or more processors, a structured capability profile comprising
+      the mapped canonical capability types, their respective base risk levels, and the
+      aggregate risk score.
+    </p>
+
+    <!-- Claim 2 -->
+    <p class="claim-item main-claim" style="margin-top:14px;">
+      <span class="ln">285</span>
+      <strong>2.</strong> A system for generating an AI agent capability profile from AI CLI configuration
+      files, the system comprising:
+    </p>
+    <p class="claim-sub">
+      one or more processors; and
+    </p>
+    <p class="claim-sub">
+      one or more non-transitory computer-readable media storing instructions that, when executed
+      by the one or more processors, cause the system to perform operations comprising:
+    </p>
+    <p class="claim-sub">
+      <span class="ln">290</span>
+      an agent detection module configured to identify a platform type associated with a received
+      configuration file by matching file-name patterns against a registry of known AI CLI
+      platforms;
+    </p>
+    <p class="claim-sub">
+      a configuration parser configured to parse the configuration file according to a
+      platform-specific parsing strategy to produce a normalized configuration representation;
+    </p>
+    <p class="claim-sub">
+      <span class="ln">295</span>
+      a capability extractor configured to map capability declarations found in the normalized
+      configuration representation to canonical capability types in a predefined capability
+      taxonomy;
+    </p>
+    <p class="claim-sub">
+      a risk assessment engine configured to assign base risk levels to the canonical capability
+      types and compute an aggregate risk score; and
+    </p>
+    <p class="claim-sub">
+      <span class="ln">300</span>
+      a report generator configured to produce a structured capability profile report in at
+      least one of SARIF, HTML, or JSON format.
+    </p>
+
+    <!-- Claim 3 -->
+    <p class="claim-item" style="margin-top:14px;">
+      <span class="ln">305</span>
+      <strong>3.</strong> The method of claim 1, wherein parsing the configuration file comprises:
+      attempting to deserialize the configuration file as JSON; and upon failure of JSON
+      deserialization, deserializing the configuration file using a YAML parser as a fallback
+      parsing strategy.
+    </p>
+
+    <!-- Claim 4 -->
+    <p class="claim-item">
+      <span class="ln">310</span>
+      <strong>4.</strong> The method of claim 1, wherein mapping capability declarations to canonical capability
+      types comprises applying a function that accepts a tool name string and returns a canonical
+      capability type by: first attempting exact string matching against a lookup table of known
+      tool names; second, applying prefix matching against a set of semantically significant
+      prefixes; and third, performing substring search within the tool name string.
+    </p>
+
+    <!-- Claim 5 -->
+    <p class="claim-item">
+      <span class="ln">315</span>
+      <strong>5.</strong> The method of claim 1, wherein outputting the structured capability profile
+      comprises generating a SARIF 2.1.0 conformant output in which each capability finding is
+      encoded as a SARIF Result object with a severity level mapped from the base risk level
+      of the corresponding canonical capability type.
+    </p>
+
+    <!-- Claim 6 -->
+    <p class="claim-item">
+      <span class="ln">320</span>
+      <strong>6.</strong> The method of claim 1, wherein the registry of known AI CLI platform entries
+      comprises entries for at least seven distinct AI CLI platforms including Claude Code,
+      Cursor, Windsurf, Continue, Aider, Cline, and Model Context Protocol (MCP), each entry
+      comprising at least one file-name glob pattern specific to that platform.
+    </p>
+
+    <!-- Claim 7 -->
+    <p class="claim-item">
+      <span class="ln">325</span>
+      <strong>7.</strong> The method of claim 1, wherein parsing the configuration file further comprises
+      applying a recursive nested value extraction procedure that traverses an object tree
+      depth-first and returns a value associated with a specified key regardless of the nesting
+      depth at which that key appears within the object tree.
+    </p>
+
+    <!-- Claim 8 -->
+    <p class="claim-item">
+      <span class="ln">330</span>
+      <strong>8.</strong> The method of claim 1, further comprising generating, by the report generator, an
+      HTML report comprising a summary table organized by risk tier showing counts of detected
+      capabilities per tier, and a detailed per-capability section showing, for each detected
+      capability, the canonical capability type, the base risk level, the source configuration
+      file path, and associated remediation guidance.
+    </p>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE 7 — Abstract                                            -->
+<!-- ============================================================ -->
+<div class="page">
+  <div class="page-top-header">Application No.: [To Be Assigned] &nbsp;&nbsp;|&nbsp;&nbsp; FS-2026-001 &nbsp;&nbsp;|&nbsp;&nbsp; Page 7</div>
+
+  <div class="lined-content">
+
+    <h2 class="section-head">Abstract</h2>
+
+    <div class="abstract-box">
+      <p class="no-indent">
+        <span class="ln">335</span>
+        A system and method automatically generate a structured AI agent capability profile from
+        configuration files associated with AI coding assistant CLI tools. An agent detection
+        module identifies the AI CLI platform type by matching file names against a registry of
+        known platforms including Claude Code, Cursor, Windsurf, Continue, Aider, Cline, and MCP.
+        A configuration parser deserializes the configuration file using JSON parsing with YAML
+        fallback, applying recursive nested value extraction. A capability extractor maps tool
+        names and permission declarations to canonical capability types using a three-stage
+        matching procedure. A risk assessment engine assigns base risk levels from a four-tier
+        capability taxonomy comprising CRITICAL, HIGH, MEDIUM, and LOW tiers, and computes an
+        aggregate risk score using a monotonically escalating combination function. A report
+        generator produces output in SARIF, HTML, and JSON formats. The method operates entirely
+        through static analysis without executing any AI CLI tooling.
+      </p>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

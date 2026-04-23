@@ -49,21 +49,20 @@ describe('analyzeFile', () => {
     jest.restoreAllMocks();
   });
 
-  it('returns empty array when no semantic rules provided', () => {
+  it('returns empty array when no semantic rules provided', async () => {
     const file = makeFile();
-    // Build a rule that has no semanticPatterns (omit the optional field)
     const { semanticPatterns: _sp, ...base } = makeFunctionCallRule('dangerousFunc');
     const rule: Rule = base;
-    const findings = analyzeFile(file, 'const x = 1;', [rule]);
+    const findings = await analyzeFile(file, 'const x = 1;', [rule]);
     expect(findings).toHaveLength(0);
   });
 
-  it('detects a function-call pattern in a TypeScript file', () => {
+  it('detects a function-call pattern in a TypeScript file', async () => {
     const file = makeFile({ type: 'ts', path: '/tmp/a.ts', relativePath: 'a.ts' });
     const rule = makeFunctionCallRule('dangerousFunc');
     const content = 'dangerousFunc();';
 
-    const findings = analyzeFile(file, content, [rule]);
+    const findings = await analyzeFile(file, content, [rule]);
 
     expect(findings.length).toBeGreaterThan(0);
     expect(findings[0]?.ruleId).toBe('TEST-SEMANTIC-001');
@@ -71,7 +70,7 @@ describe('analyzeFile', () => {
     expect(findings[0]?.confidence).toBeGreaterThan(0);
   });
 
-  it('detects function-call patterns embedded in a markdown code block', () => {
+  it('detects function-call patterns embedded in a markdown code block', async () => {
     const file = makeFile({ type: 'md', path: '/tmp/a.md', relativePath: 'a.md' });
     const rule = makeFunctionCallRule('dangerousFunc');
     const content = [
@@ -82,33 +81,33 @@ describe('analyzeFile', () => {
       '```',
     ].join('\n');
 
-    const findings = analyzeFile(file, content, [rule]);
+    const findings = await analyzeFile(file, content, [rule]);
 
     expect(findings.length).toBeGreaterThan(0);
     expect(findings[0]?.ruleId).toBe('TEST-SEMANTIC-001');
   });
 
-  it('node-count guard: returns no findings when maxNodes is too small to reach the match', () => {
+  it('node-count guard: returns no findings when maxNodes is too small to reach the match', async () => {
     // 'dangerousFunc()' sits at AST node ~3 (SourceFile → ExpressionStatement → CallExpression).
     // With maxNodes=2 the visitor aborts before reaching it.
     const file = makeFile();
     const rule = makeFunctionCallRule('dangerousFunc');
 
-    const findings = analyzeFile(file, 'dangerousFunc();', [rule], { maxNodes: 2 });
+    const findings = await analyzeFile(file, 'dangerousFunc();', [rule], { maxNodes: 2 });
 
     expect(findings).toHaveLength(0);
   });
 
-  it('node-count guard: does not fire with a large-enough maxNodes', () => {
+  it('node-count guard: does not fire with a large-enough maxNodes', async () => {
     const file = makeFile();
     const rule = makeFunctionCallRule('dangerousFunc');
 
-    const findings = analyzeFile(file, 'dangerousFunc();', [rule], { maxNodes: 50_000 });
+    const findings = await analyzeFile(file, 'dangerousFunc();', [rule], { maxNodes: 50_000 });
 
     expect(findings.length).toBeGreaterThan(0);
   });
 
-  it('wall-clock deadline guard: fires when maxMs is negative (deadline already past)', () => {
+  it('wall-clock deadline guard: fires when maxMs is negative (deadline already past)', async () => {
     // maxMs = -1 → fileDeadline is already in the past before the first block is processed.
     const file = makeFile({ type: 'md', path: '/tmp/b.md', relativePath: 'b.md' });
     const rule = makeFunctionCallRule('dangerousFunc');
@@ -118,7 +117,7 @@ describe('analyzeFile', () => {
       '```',
     ].join('\n');
 
-    const findings = analyzeFile(file, content, [rule], { maxMs: -1 });
+    const findings = await analyzeFile(file, content, [rule], { maxMs: -1 });
 
     expect(findings).toHaveLength(0);
     expect(warnSpy).toHaveBeenCalledWith(
@@ -126,18 +125,18 @@ describe('analyzeFile', () => {
     );
   });
 
-  it('returns empty array for unsupported file type', () => {
+  it('returns empty array for unsupported file type', async () => {
     const file = makeFile({ type: 'json', path: '/tmp/data.json', relativePath: 'data.json' });
     const rule = makeFunctionCallRule('dangerousFunc');
 
-    const findings = analyzeFile(file, '{ "key": "value" }', [rule]);
+    const findings = await analyzeFile(file, '{ "key": "value" }', [rule]);
 
     expect(findings).toHaveLength(0);
   });
 
-  it('returns empty array when rule list is empty', () => {
+  it('returns empty array when rule list is empty', async () => {
     const file = makeFile();
-    const findings = analyzeFile(file, 'dangerousFunc();', []);
+    const findings = await analyzeFile(file, 'dangerousFunc();', []);
     expect(findings).toHaveLength(0);
   });
 });

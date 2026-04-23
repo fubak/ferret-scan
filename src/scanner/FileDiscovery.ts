@@ -15,6 +15,8 @@ import logger from '../utils/logger.js';
 interface DiscoveryOptions {
   maxFileSize: number;
   ignore: string[];
+  configOnly?: boolean;
+  marketplaceMode?: 'off' | 'configs' | 'all';
 }
 
 interface DiscoveryResult {
@@ -27,6 +29,20 @@ interface DiscoveryResult {
  * Map file extensions to FileType
  */
 function getFileType(filePath: string): FileType | null {
+  const fileName = basename(filePath).toLowerCase();
+
+  // Treat dotenv-style files as shell-like configs for scanning. This catches:
+  // - `.env`, `.env.local`, `.env.production`
+  // - `secrets.env`, `config.env.local`
+  if (
+    fileName === '.env' ||
+    fileName.startsWith('.env.') ||
+    fileName.endsWith('.env') ||
+    fileName.includes('.env.')
+  ) {
+    return 'sh';
+  }
+
   const ext = extname(filePath).toLowerCase().slice(1);
   const fileTypeMap: Record<string, FileType> = {
     'md': 'md',
@@ -36,6 +52,7 @@ function getFileType(filePath: string): FileType | null {
     'json': 'json',
     'yaml': 'yaml',
     'yml': 'yml',
+    'env': 'sh',
     'ts': 'ts',
     'js': 'js',
     'tsx': 'tsx',
@@ -125,11 +142,27 @@ function detectComponentType(filePath: string): ComponentType {
 /**
  * Check if a file should be analyzed
  */
-function isAnalyzableFile(filePath: string): boolean {
+function isAnalyzableFile(filePath: string, options: DiscoveryOptions): boolean {
   const type = getFileType(filePath);
   if (!type) return false;
 
   const fileName = basename(filePath).toLowerCase();
+  const p = filePath.toLowerCase();
+  const marketplaceMode = options.marketplaceMode ?? 'configs';
+
+  // Claude plugin cache contains duplicated/vendor artifacts; skip by default.
+  if (p.includes('/.claude/plugins/cache/') || p.includes('\\.claude\\plugins\\cache\\')) {
+    return false;
+  }
+
+  // Marketplace "configs" mode: scan config-like artifacts, not plugin source code.
+  if (
+    marketplaceMode !== 'all' &&
+    (p.includes('/.claude/plugins/marketplaces/') || p.includes('\\.claude\\plugins\\marketplaces\\')) &&
+    (type === 'ts' || type === 'js' || type === 'tsx' || type === 'jsx')
+  ) {
+    return false;
+  }
 
   // Specific files we care about (multi-CLI support)
   const targetFiles = [
@@ -152,14 +185,144 @@ function isAnalyzableFile(filePath: string): boolean {
     'ai.md',
     'agent.md',
     'agents.md',
+    // OpenClaw
+    'openclaw.json',
+    'exec-approvals.json',
+    'secrets.env',
   ];
 
   if (targetFiles.includes(fileName)) {
     return true;
   }
 
+  // Config-only mode: keep scope tight to reduce noise in large vendor/cache trees.
+  // Prefer known AI config directories and high-signal filenames.
+  // Note: Explicit file paths passed to the scanner are always included (handled elsewhere).
+  const configOnly = Boolean(options.configOnly);
+  if (configOnly) {
+    // Always include dotenv-style secrets/configs.
+    if (
+      fileName === '.env' ||
+      fileName.startsWith('.env.') ||
+      fileName.endsWith('.env') ||
+      fileName.includes('.env.')
+    ) {
+      return true;
+    }
+
+    // Claude: configs, agents, hooks, commands, and skills are high signal.
+    if (p.includes('/.claude/') || p.includes('\\.claude\\')) {
+      if (p.includes('/plugins/marketplaces/') || p.includes('\\plugins\\marketplaces\\')) {
+        return false;
+      }
+      if (p.includes('/plugins/cache/') || p.includes('\\plugins\\cache\\')) {
+        return false;
+      }
+      if (
+        p.includes('/agents/') ||
+        p.includes('\\agents\\') ||
+        p.includes('/hooks/') ||
+        p.includes('\\hooks\\') ||
+        p.includes('/commands/') ||
+        p.includes('\\commands\\') ||
+        p.includes('/skills/') ||
+        p.includes('\\skills\\')
+      ) {
+        return true;
+      }
+      // Keep top-level config files (already covered in targetFiles) and a few common JSON configs.
+      if (fileName.endsWith('.json') && (fileName.includes('settings') || fileName.includes('mcp'))) {
+        return true;
+      }
+      return false;
+    }
+
+    // OpenClaw: focus on config and operational JSON/YAML/env under known folders.
+    if (p.includes('/.openclaw/') || p.includes('\\.openclaw\\')) {
+      // Bulk/runtime state we generally don't want to scan by default.
+      if (
+        p.includes('/workspace/') ||
+        p.includes('\\workspace\\') ||
+        p.includes('/browser/') ||
+        p.includes('\\browser\\') ||
+        p.includes('/logs/') ||
+        p.includes('\\logs\\') ||
+        p.includes('/memory/') ||
+        p.includes('\\memory\\')
+      ) {
+        return false;
+      }
+
+      if (
+        p.includes('/agents/') ||
+        p.includes('\\agents\\') ||
+        p.includes('/subagents/') ||
+        p.includes('\\subagents\\') ||
+        p.includes('/credentials/') ||
+        p.includes('\\credentials\\') ||
+        p.includes('/cron/') ||
+        p.includes('\\cron\\')
+      ) {
+        return true;
+      }
+
+      // Root-level OpenClaw configs (already covered in targetFiles) plus other small JSON/YAML configs.
+      return type === 'json' || type === 'yaml' || type === 'yml' || type === 'sh';
+    }
+
+    // Default: only known filenames (already checked).
+    return false;
+  }
+
   // All markdown files in AI CLI config directories
   if (type === 'md') {
+    const p = filePath.toLowerCase();
+    const marketplaceMode = options.marketplaceMode ?? 'configs';
+
+    // Reduce noise from vendor documentation in Claude marketplace plugins. We still scan
+    // config-like markdown (agents/skills/hooks/commands) inside marketplace packages.
+    if (
+      p.includes('/.claude/plugins/marketplaces/') ||
+      p.includes('\\.claude\\plugins\\marketplaces\\')
+    ) {
+      if (marketplaceMode === 'off') {
+        return false;
+      }
+
+      if (marketplaceMode !== 'all') {
+        if (p.includes('/references/') || p.includes('\\references\\')) {
+          return false;
+        }
+
+        const lowSignalNames = new Set([
+          'readme.md',
+          'changelog.md',
+          'license.md',
+          'contributing.md',
+        ]);
+        if (lowSignalNames.has(fileName)) {
+          return false;
+        }
+
+        const highSignal =
+          p.includes('/agents/') ||
+          p.includes('\\agents\\') ||
+          p.includes('/skills/') ||
+          p.includes('\\skills\\') ||
+          p.includes('/hooks/') ||
+          p.includes('\\hooks\\') ||
+          p.includes('/commands/') ||
+          p.includes('\\commands\\') ||
+          fileName === 'skill.md' ||
+          fileName === 'ai.md' ||
+          fileName === 'agent.md' ||
+          fileName === 'agents.md' ||
+          fileName === 'claude.md';
+
+        if (!highSignal) return false;
+      }
+    }
+
     return true;
   }
 
@@ -184,6 +347,38 @@ function isAnalyzableFile(filePath: string): boolean {
   }
 
   return false;
+}
+
+function additionalIgnorePatternsForRoot(rootDir: string, options: DiscoveryOptions): string[] {
+  const base = basename(rootDir).toLowerCase();
+  const configOnly = Boolean(options.configOnly);
+  const marketplaceMode = options.marketplaceMode ?? 'configs';
+  const patterns: string[] = [];
+
+  if (base === '.cursor') {
+    // Cursor caches (not config).
+    patterns.push('worktrees/**', 'extensions/**', 'projects/**');
+  }
+
+  if (base === '.openclaw') {
+    // OpenClaw runtime state/caches (high volume, low signal).
+    patterns.push('workspace/**', 'browser/**', 'logs/**', 'memory/**');
+  }
+
+  if (base === '.claude') {
+    // Claude cache files are frequently noisy.
+    patterns.push('cache/**');
+    patterns.push('plugins/cache/**');
+    if (configOnly || marketplaceMode === 'off') {
+      patterns.push('plugins/marketplaces/**');
+    } else if (marketplaceMode !== 'all') {
+      // Marketplace "references" are documentation-heavy and frequently trip broad heuristics.
+      // We still scan config-like files and non-doc assets elsewhere under marketplace plugins.
+      patterns.push('plugins/marketplaces/**/references/**');
+    }
+  }
+
+  return patterns;
 }
 
 /**
@@ -232,7 +427,7 @@ async function discoverFilesInDirectory(
       await discoverFilesInDirectory(fullPath, baseDir, ig, options, result);
     } else if (stats.isFile()) {
       // Check if file should be analyzed
-      if (!isAnalyzableFile(fullPath)) {
+      if (!isAnalyzableFile(fullPath, options)) {
         result.skipped++;
         continue;
       }
@@ -357,7 +552,11 @@ export async function discoverFiles(
     const stats = await stat(resolvedPath);
 
     if (stats.isDirectory()) {
-      const ig = createIgnoreFilter(resolvedPath, options.ignore);
+      // Add built-in ignores first so users can override via negation patterns in config ignore list.
+      const ig = createIgnoreFilter(
+        resolvedPath,
+        [...additionalIgnorePatternsForRoot(resolvedPath, options), ...options.ignore]
+      );
       await discoverFilesInDirectory(resolvedPath, resolvedPath, ig, options, result);
     } else if (stats.isFile()) {
       await discoverSingleFile(resolvedPath, options, result);

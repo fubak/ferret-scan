@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import type { ScannerConfig } from '../../src/types.js';
+import { DEFAULT_CONFIG } from '../../src/types.js';
 
 // ── Module mocks ───────────────────────────────────────────────────────────
 // Must be declared before any imports that transitively load these modules.
@@ -77,22 +78,9 @@ import { startWatchMode, createChangeNotifier } from '../../src/scanner/WatchMod
 
 function makeConfig(overrides: Partial<ScannerConfig> = {}): ScannerConfig {
   return {
+    ...DEFAULT_CONFIG,
     paths: ['/tmp/test-watch'],
-    severities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'],
-    categories: ['exfiltration', 'credentials', 'injection', 'backdoors', 'supply-chain',
-      'permissions', 'persistence', 'obfuscation', 'ai-specific', 'advanced-hiding', 'behavioral'],
-    ignore: [],
-    failOn: 'CRITICAL',
     watch: true,
-    threatIntel: false,
-    semanticAnalysis: false,
-    correlationAnalysis: false,
-    autoRemediation: false,
-    contextLines: 3,
-    maxFileSize: 10_000_000,
-    format: 'console',
-    verbose: false,
-    ci: false,
     ...overrides,
   };
 }
