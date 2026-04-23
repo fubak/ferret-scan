@@ -16,6 +16,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - REST API for third-party integrations
 - SIEM/SOAR integrations
 
+## [2.2.0] - 2026-04-23
+
+### Security
+- **Bounded content cache**: Replaced unbounded `Map` with `BoundedContentCache` (256 MB aggregate cap, 10,000 entry limit, 1 MB per-file cap with LRU eviction) to prevent OOM on large repos
+- **Quarantine hardening**: Quarantine directory created with mode `0700` (owner-only) on POSIX; permissions verified after creation with a warning if loose; disk-space pre-checked via `statfsSync` before any quarantine operation
+- **BUILTIN_FIXES startup validation**: All 9 built-in remediation patterns validated by `compileSafePattern` at module load time — a bad pattern fails fast at startup rather than at first use
+- **Hybrid AST deadline**: `analyzeFile` now enforces both a per-code-block cap (default 500 ms, `maxBlockMs`) and a file-scoped total cap (default 2 s, `maxMs`). A single hostile markdown block can no longer starve all subsequent blocks of their analysis budget
+- **ReDoS prevention hardened**: `compileSafePattern` updated to screen alternation-inside-quantified-groups patterns; `globToRegex` escapes all regex metacharacters and anchors patterns; all correlation and AST pattern execution runs through `runBounded`
+- **`statfsSync` bigint safety**: Explicit `Number()` coercion in `hasSufficientDiskSpace` guards against future `{ bigint: true }` call-sites
+- **`ignoreComments` regex fix**: Alternation order corrected (longest-first: `ignore-next-line`, `ignore-line`, `ignore`) so `ferret-ignore-next-line` is no longer mis-parsed as `ferret-ignore`
+
+### Added
+- **JSON schema sync**: `src/schemas/ferret-config.schema.json` now generated from the runtime zod schema via `npm run schema:generate`; CI enforces drift detection with `npm run schema:check`
+- **Coverage thresholds**: Per-module Jest coverage thresholds for `safeRegex`, `glob`, `contentCache`, `Fixer`, `Quarantine`, `AstAnalyzer`, all four reporters, `WatchMode`, and `policyEnforcement` — silent regressions now fail CI
+- **CI benchmark regression detection**: `scripts/bench-compare.mjs` compares benchmark results against the cached main-branch baseline and fails PRs that regress by >20%
+
+### Tests
+- **673 tests** across 39 test suites (was 244 tests)
+- New unit tests: `AstAnalyzer`, `ConsoleReporter`, `HtmlReporter`, `SarifReporter`, `WatchMode`, `contentCache`, `safeRegex`, `glob`, `Fixer`, `Quarantine`, `ignoreComments`, `mcpValidator`, `policyEnforcement`, `cliOptions`
+- New integration tests: `remediation` (scan→fix→rescan, quarantine→restore, dry-run, backup round-trip) and `cli` (subprocess exit-code contract for `--version`, `--help`, scan, SARIF output)
+- HtmlReporter XSS escape verified: `<script>` in finding values renders as `&lt;script&gt;`
+- SarifReporter validates SARIF 2.1.0 shape, severity mapping, rule deduplication, and location encoding
+
 ## [2.1.0] - 2026-02-16
 
 ### Added
