@@ -68,6 +68,8 @@ export function getEnabledRules(): Rule[] {
   return ALL_RULES.filter(rule => rule.enabled);
 }
 
+const scanRuleCache = new Map<string, Rule[]>();
+
 /**
  * Get rules for scanning with filters applied
  */
@@ -75,6 +77,10 @@ export function getRulesForScan(
   categories: ThreatCategory[],
   severities: Severity[]
 ): Rule[] {
+  const key = `${[...categories].sort().join(',')}::${[...severities].sort().join(',')}`;
+  const cached = scanRuleCache.get(key);
+  if (cached) return cached;
+
   const rules = ALL_RULES.filter(rule => {
     if (!rule.enabled) return false;
     if (!categories.includes(rule.category)) return false;
@@ -82,7 +88,8 @@ export function getRulesForScan(
     return true;
   });
 
-  logger.debug(`Loaded ${rules.length} rules for scan`);
+  scanRuleCache.set(key, rules);
+  logger.debug(`Loaded ${rules.length} rules for scan (cached)`);
   return rules;
 }
 
