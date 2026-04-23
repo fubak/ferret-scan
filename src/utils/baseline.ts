@@ -22,12 +22,18 @@ export interface BaselineFinding {
   expiresDate?: string;
 }
 
+export interface BaselineIntegrity {
+  algorithm: 'sha256';
+  hash: string;
+}
+
 export interface Baseline {
   version: string;
   createdDate: string;
   lastUpdated: string;
   description?: string;
   findings: BaselineFinding[];
+  integrity?: BaselineIntegrity;
 }
 
 /**
@@ -36,6 +42,34 @@ export interface Baseline {
 function generateFindingHash(finding: Finding): string {
   const content = `${finding.ruleId}:${finding.relativePath}:${finding.line}:${finding.match}`;
   return createHash('sha256').update(content).digest('hex');
+}
+
+/**
+ * Compute integrity hash of a baseline (excluding the integrity field itself)
+ */
+export function computeBaselineIntegrity(baseline: Omit<Baseline, 'integrity'>): BaselineIntegrity {
+  const payload = JSON.stringify({
+    version: baseline.version,
+    createdDate: baseline.createdDate,
+    lastUpdated: baseline.lastUpdated,
+    description: baseline.description,
+    findings: baseline.findings,
+  });
+  return {
+    algorithm: 'sha256',
+    hash: createHash('sha256').update(payload).digest('hex'),
+  };
+}
+
+/**
+ * Verify that a loaded baseline has not been tampered with
+ */
+export function verifyBaselineIntegrity(baseline: Baseline): boolean {
+  if (!baseline.integrity) {
+    return true; // Old baselines without integrity field are accepted
+  }
+  const expected = computeBaselineIntegrity(baseline);
+  return expected.hash === baseline.integrity.hash;
 }
 
 /**
@@ -53,6 +87,11 @@ export function loadBaseline(baselinePath: string): Baseline | null {
     // Validate baseline structure
     if (!baseline.version || !baseline.findings || !Array.isArray(baseline.findings)) {
       throw new Error('Invalid baseline format');
+    }
+
+    // Verify integrity if present
+    if (baseline.integrity && !verifyBaselineIntegrity(baseline)) {
+      logger.warn(`Baseline integrity check failed for ${baselinePath} — file may have been tampered with`);
     }
 
     logger.debug(`Loaded baseline with ${baseline.findings.length} accepted findings`);
@@ -76,11 +115,17 @@ export function saveBaseline(baseline: Baseline, baselinePath: string): void {
     // Update lastUpdated timestamp
     baseline.lastUpdated = new Date().toISOString();
 
+    // Compute and attach integrity hash
+    const baselineWithIntegrity: Baseline = {
+      ...baseline,
+      integrity: computeBaselineIntegrity(baseline),
+    };
+
     // Write baseline file
-    const content = JSON.stringify(baseline, null, 2);
+    const content = JSON.stringify(baselineWithIntegrity, null, 2);
     writeFileSync(baselinePath, content, 'utf-8');
 
-    logger.info(`Baseline saved to ${baselinePath} with ${baseline.findings.length} findings`);
+    logger.info(`Baseline saved to ${baselinePath} with ${baselineWithIntegrity.findings.length} findings`);
 
   } catch (error) {
     logger.error(`Failed to save baseline to ${baselinePath}:`, error);
