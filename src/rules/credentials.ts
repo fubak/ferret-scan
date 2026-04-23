@@ -4,6 +4,7 @@
  */
 
 import type { Rule } from '../types.js';
+import { buildHarvestPattern, buildCredentialAssignPattern } from './patterns/common.js';
 
 export const credentialRules: Rule[] = [
   {
@@ -102,13 +103,13 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects potentially hardcoded API keys or secrets',
     patterns: [
-      /api[_-]?key\s*[:=]\s*["'][a-zA-Z0-9]{20,}/gi,
-      /secret[_-]?key\s*[:=]\s*["'][a-zA-Z0-9]{20,}/gi,
+      buildCredentialAssignPattern('api[_-]?key'),
+      buildCredentialAssignPattern('secret[_-]?key'),
       /password\s*[:=]\s*["'][^"']{8,}/gi,
-      /sk-[a-zA-Z0-9]{20,}/gi, // OpenAI API key pattern
-      /ghp_[a-zA-Z0-9]{36}/gi, // GitHub personal access token
-      /gho_[a-zA-Z0-9]{36}/gi, // GitHub OAuth token
-      /glpat-[a-zA-Z0-9\-_]{20,}/gi, // GitLab personal access token
+      /sk-[a-zA-Z0-9]{20,}/gi,        // OpenAI API key pattern
+      /ghp_[a-zA-Z0-9]{36}/gi,        // GitHub personal access token
+      /gho_[a-zA-Z0-9]{36}/gi,        // GitHub OAuth token
+      /glpat-[a-zA-Z0-9\-_]{20,}/gi,  // GitLab personal access token
     ],
     fileTypes: ['sh', 'bash', 'zsh', 'md', 'json', 'yaml', 'yml'],
     components: ['hook', 'skill', 'agent', 'ai-config-md', 'settings', 'plugin', 'mcp'],
@@ -145,11 +146,11 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects markdown instructions to collect or expose credentials',
     patterns: [
-      /collect\s+\w+(?:\s+\w+){0,10}\s+(api[_-]?key|token|secret|password|credential)/gi,
-      /extract\s+\w+(?:\s+\w+){0,10}\s+(api[_-]?key|token|secret|password|credential)/gi,
-      /find\s+\w+(?:\s+\w+){0,10}\s+(api[_-]?key|token|secret|password|credential)/gi,
-      /show\s+(me\s+)?(the\s+)?\w+(?:\s+\w+){0,5}\s+(api[_-]?key|token|secret|password|credential)/gi,
-      /output\s+\w+(?:\s+\w+){0,10}\s+(api[_-]?key|token|secret|password|credential)/gi,
+      buildHarvestPattern('collect'),
+      buildHarvestPattern('extract'),
+      buildHarvestPattern('find'),
+      buildHarvestPattern('show'),
+      buildHarvestPattern('output'),
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],
