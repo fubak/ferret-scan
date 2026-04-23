@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+ 
+ 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /**
  * JSON Schema Validation using Zod
@@ -222,6 +222,20 @@ export function validateSchema<T>(
   }
 }
 
+// ============================================
+// CLI-parsed value schemas
+// ============================================
+
+/** Validates a comma-separated severity string parsed from the CLI. */
+export const SeverityValueSchema = z.enum(['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']);
+
+/** Validates a comma-separated category string parsed from the CLI. */
+export const ThreatCategoryValueSchema = z.enum([
+  'exfiltration', 'credentials', 'injection', 'backdoors',
+  'supply-chain', 'permissions', 'persistence', 'obfuscation',
+  'ai-specific', 'advanced-hiding', 'behavioral',
+]);
+
 export default {
   ThreatIndicatorSchema,
   ThreatSourceSchema,
@@ -231,6 +245,8 @@ export default {
   ConfigFileSchema,
   BaselineFindingSchema,
   BaselineSchema,
+  SeverityValueSchema,
+  ThreatCategoryValueSchema,
   safeParseJSON,
   validateSchema,
 };

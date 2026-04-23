@@ -3,10 +3,10 @@
  * Allows users to create baselines of known/accepted security findings
  */
 
-import { writeFileSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { statSync } from 'node:fs';
+import { writeFile, readFile, mkdir, access } from 'node:fs/promises';
 import { resolve, dirname, extname } from 'node:path';
 import { createHash } from 'node:crypto';
-import { mkdirSync } from 'node:fs';
 import type { Finding, ScanResult, Severity } from '../types.js';
 import logger from './logger.js';
 
@@ -75,21 +75,21 @@ export function verifyBaselineIntegrity(baseline: Baseline): boolean {
 /**
  * Load baseline from file
  */
-export function loadBaseline(baselinePath: string): Baseline | null {
+export async function loadBaseline(baselinePath: string): Promise<Baseline | null> {
   try {
-    if (!existsSync(baselinePath)) {
-      return null;
-    }
+    await access(baselinePath);
+  } catch {
+    return null;
+  }
 
-    const content = readFileSync(baselinePath, 'utf-8');
+  try {
+    const content = await readFile(baselinePath, 'utf-8');
     const baseline = JSON.parse(content) as Baseline;
 
-    // Validate baseline structure
     if (!baseline.version || !baseline.findings || !Array.isArray(baseline.findings)) {
       throw new Error('Invalid baseline format');
     }
 
-    // Verify integrity if present
     if (baseline.integrity && !verifyBaselineIntegrity(baseline)) {
       logger.warn(`Baseline integrity check failed for ${baselinePath} — file may have been tampered with`);
     }
@@ -106,24 +106,18 @@ export function loadBaseline(baselinePath: string): Baseline | null {
 /**
  * Save baseline to file
  */
-export function saveBaseline(baseline: Baseline, baselinePath: string): void {
+export async function saveBaseline(baseline: Baseline, baselinePath: string): Promise<void> {
   try {
-    // Ensure directory exists
-    const dir = dirname(baselinePath);
-    mkdirSync(dir, { recursive: true });
+    await mkdir(dirname(baselinePath), { recursive: true });
 
-    // Update lastUpdated timestamp
-    baseline.lastUpdated = new Date().toISOString();
-
-    // Compute and attach integrity hash
+    const updated = { ...baseline, lastUpdated: new Date().toISOString() };
     const baselineWithIntegrity: Baseline = {
-      ...baseline,
-      integrity: computeBaselineIntegrity(baseline),
+      ...updated,
+      integrity: computeBaselineIntegrity(updated),
     };
 
-    // Write baseline file
     const content = JSON.stringify(baselineWithIntegrity, null, 2);
-    writeFileSync(baselinePath, content, 'utf-8');
+    await writeFile(baselinePath, content, 'utf-8');
 
     logger.info(`Baseline saved to ${baselinePath} with ${baselineWithIntegrity.findings.length} findings`);
 
@@ -338,7 +332,7 @@ export function getDefaultBaselinePath(scanPaths: string[]): string {
   // Try to find a good location for baseline file
   const firstPath = scanPaths[0] ?? process.cwd();
   try {
-    if (existsSync(firstPath) && statSync(firstPath).isFile()) {
+    if (statSync(firstPath).isFile()) {
       return resolve(dirname(firstPath), '.ferret-baseline.json');
     }
   } catch {

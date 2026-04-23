@@ -42,15 +42,17 @@ export interface FileIgnoreState {
  */
 const COMMENT_PATTERNS: Record<string, RegExp[]> = {
   default: [
-    /\/\/\s*ferret-(ignore|disable|enable|ignore-line|ignore-next-line)(?:\s+([^\n]+))?/gi,
-    /\/\*\s*ferret-(ignore|disable|enable|ignore-line|ignore-next-line)(?:\s+([^*]+))?\s*\*\//gi,
-    /#\s*ferret-(ignore|disable|enable|ignore-line|ignore-next-line)(?:\s+([^\n]+))?/gi,
+    // Longer alternatives must come before shorter ones to avoid premature matching
+    /\/\/\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
+    /\/\*\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^*]+))?\s*\*\//gi,
+    /#\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
   ],
   html: [
-    /<!--\s*ferret-(ignore|disable|enable|ignore-line|ignore-next-line)(?:\s+([^-]+))?\s*-->/gi,
+    // Use [^\n]+ instead of [^-]+ so rule IDs containing hyphens (e.g. CRED-001) are captured
+    /<!--\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]*?))?\s*-->/gi,
   ],
   sql: [
-    /--\s*ferret-(ignore|disable|enable|ignore-line|ignore-next-line)(?:\s+([^\n]+))?/gi,
+    /--\s*ferret-(ignore-next-line|ignore-line|ignore|disable|enable)(?:\s+([^\n]+))?/gi,
   ],
 };
 

@@ -12,6 +12,7 @@ import type {
 } from '../types.js';
 import logger from '../utils/logger.js';
 import { validatePathWithinBase, sanitizeFilename, isPathWithinBase } from '../utils/pathSecurity.js';
+import { compileSafePattern, safeMatch, safeTest } from '../utils/safeRegex.js';
 
 /**
  * Remediation result
@@ -147,6 +148,16 @@ const BUILTIN_FIXES: RemediationFix[] = [
   }
 ];
 
+// Fail fast at module load if any built-in pattern is rejected by the safe-regex gate.
+// This catches contributor mistakes at startup rather than silently at fix-application time.
+for (const fix of BUILTIN_FIXES) {
+  if (!compileSafePattern(fix.pattern)) {
+    throw new Error(
+      `Fixer startup: BUILTIN_FIXES pattern rejected by compileSafePattern: ${fix.description} (${fix.pattern})`
+    );
+  }
+}
+
 /**
  * Create backup of file before modification
  */
@@ -183,27 +194,49 @@ function applyFix(
   try {
     switch (fix.type) {
       case 'replace': {
-        const regex = new RegExp(fix.pattern, 'gi');
-        const originalLineCount = content.split('\n').length;
-
-        const replacement = fix.replacement ?? '';
-        newContent = content.replace(regex, replacement);
-
-        const newLineCount = newContent.split('\n').length;
-        linesModified = Math.abs(newLineCount - originalLineCount);
-
-        // Count actual replacements
-        const matches = content.match(regex);
-        if (matches) {
-          linesModified = Math.max(linesModified, matches.length);
+        const regex = compileSafePattern(fix.pattern, 'gi');
+        if (!regex) {
+          logger.warn(`Unsafe fix pattern rejected: ${fix.pattern}`);
+          return { success: false, newContent: content, linesModified: 0 };
         }
+
+        const originalLineCount = content.split('\n').length;
+        const replacement = fix.replacement ?? '';
+
+        // Use safe bounded matching to find replacements
+        const matchResult = safeMatch(fix.pattern, content, 'gi');
+        if (!matchResult) {
+          logger.warn(`Safe match failed for pattern: ${fix.pattern}`);
+          return { success: false, newContent: content, linesModified: 0 };
+        }
+
+        if (matchResult.truncated) {
+          logger.warn(`Fix pattern execution truncated for safety: ${fix.pattern}`);
+          return { success: false, newContent: content, linesModified: 0 };
+        }
+
+        // Apply replacement safely
+        newContent = content.replace(regex, replacement);
+        const newLineCount = newContent.split('\n').length;
+        linesModified = Math.max(
+          Math.abs(newLineCount - originalLineCount),
+          matchResult.matches.length
+        );
         break;
       }
 
       case 'remove': {
-        const regex = new RegExp(fix.pattern, 'gi');
+        const regex = compileSafePattern(fix.pattern, 'gi');
+        if (!regex) {
+          logger.warn(`Unsafe fix pattern rejected: ${fix.pattern}`);
+          return { success: false, newContent: content, linesModified: 0 };
+        }
+
         const lines = content.split('\n');
-        const filteredLines = lines.filter(line => !regex.test(line));
+        const filteredLines = lines.filter(line => {
+          const isMatch = safeTest(fix.pattern, line, 'i');
+          return !isMatch;
+        });
 
         newContent = filteredLines.join('\n');
         linesModified = lines.length - filteredLines.length;
@@ -211,13 +244,17 @@ function applyFix(
       }
 
       case 'quarantine': {
-        // For quarantine, we comment out the problematic lines
-        const regex = new RegExp(fix.pattern, 'gi');
-        const lines = content.split('\n');
+        const regex = compileSafePattern(fix.pattern, 'gi');
+        if (!regex) {
+          logger.warn(`Unsafe fix pattern rejected: ${fix.pattern}`);
+          return { success: false, newContent: content, linesModified: 0 };
+        }
 
+        const lines = content.split('\n');
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i] ?? '';
-          if (regex.test(line)) {
+          const isMatch = safeTest(fix.pattern, line, 'i');
+          if (isMatch) {
             lines[i] = `# QUARANTINED: ${line}`;
             linesModified++;
           }
@@ -262,27 +299,24 @@ function findApplicableFixes(finding: Finding): RemediationFix[] {
 
   // Check built-in fixes
   for (const fix of BUILTIN_FIXES) {
-    try {
-      const regex = new RegExp(fix.pattern, 'i');
+    // Use safe pattern matching
+    const matchesDirectly = safeTest(fix.pattern, finding.match, 'i');
+    const contextText = finding.context.map(c => c.content).join('\n');
+    const matchesContext = safeTest(fix.pattern, contextText, 'i');
 
-      // Check if fix pattern matches the finding
-      if (regex.test(finding.match) || regex.test(finding.context.map(c => c.content).join('\n'))) {
-        applicableFixes.push(fix);
-      }
+    if (matchesDirectly || matchesContext) {
+      applicableFixes.push(fix);
+    }
 
-      // Check by rule category
-      if (finding.category === 'credentials' && fix.description.includes('credential')) {
-        applicableFixes.push(fix);
-      }
-      if (finding.category === 'injection' && fix.description.includes('jailbreak')) {
-        applicableFixes.push(fix);
-      }
-      if (finding.category === 'permissions' && fix.description.includes('permission')) {
-        applicableFixes.push(fix);
-      }
-
-    } catch {
-      logger.warn(`Invalid fix pattern: ${fix.pattern}`);
+    // Check by rule category
+    if (finding.category === 'credentials' && fix.description.includes('credential')) {
+      applicableFixes.push(fix);
+    }
+    if (finding.category === 'injection' && fix.description.includes('jailbreak')) {
+      applicableFixes.push(fix);
+    }
+    if (finding.category === 'permissions' && fix.description.includes('permission')) {
+      applicableFixes.push(fix);
     }
   }
 

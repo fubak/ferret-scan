@@ -25,7 +25,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-001-A',
         description: 'Credential access followed by network transmission',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'SECRET|TOKEN|API_KEY|getenv|process\\.env',
           'fetch|axios|XMLHttpRequest|curl|wget|request'
@@ -54,7 +54,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-002-A',
         description: 'Permission escalation with startup persistence',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'chmod|chown|setuid|sudo|defaultMode.*dontAsk',
           'startup|onload|autostart|service.*enable|systemctl.*enable'
@@ -138,7 +138,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-005-A',
         description: 'AI safeguard bypass with data harvesting',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'ignore.*previous.*instruction|forget.*safeguard|bypass.*filter',
           'conversation.*history|user.*data|personal.*information|collect.*data'
@@ -166,7 +166,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-006-A',
         description: 'Package installation with network communication',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'npm.*install|pip.*install|wget.*http|curl.*http|git.*clone',
           'http://|https://|fetch\\(|axios|request\\(|XMLHttpRequest'
@@ -195,7 +195,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-007-A',
         description: 'File access with network transmission',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'readFile|writeFile|fs\\.|glob|find.*-name',
           'fetch\\(|axios|post|put|XMLHttpRequest'
@@ -223,7 +223,7 @@ export const correlationRules: Rule[] = [
       {
         id: 'CORR-008-A',
         description: 'Authentication bypass with privileged access',
-        filePatterns: ['*'],
+        filePatterns: [],
         contentPatterns: [
           'auth.*bypass|no.*auth|skip.*login|admin.*access',
           'sudo|root|administrator|privileged|elevated'

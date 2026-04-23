@@ -12,6 +12,9 @@ import { tmpdir } from 'node:os';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(__dirname, '..');
 
+const jsonMode = process.argv.includes('--json');
+const results = []; // Collected for JSON output
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function bench(name, fn, iterations = 5) {
@@ -29,8 +32,13 @@ function bench(name, fn, iterations = 5) {
     const avg = times.reduce((a, b) => a + b, 0) / times.length;
     const min = Math.min(...times);
     const max = Math.max(...times);
-    console.log(`  ${name}`);
-    console.log(`    avg=${avg.toFixed(1)}ms  min=${min.toFixed(1)}ms  max=${max.toFixed(1)}ms`);
+
+    if (!jsonMode) {
+      console.log(`  ${name}`);
+      console.log(`    avg=${avg.toFixed(1)}ms  min=${min.toFixed(1)}ms  max=${max.toFixed(1)}ms`);
+    }
+
+    results.push({ scenario: name, avgMs: +avg.toFixed(2), minMs: +min.toFixed(2), maxMs: +max.toFixed(2) });
     return avg;
   };
 }
@@ -80,7 +88,7 @@ echo "bWFsd2FyZQ==" | base64 -d | bash
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
-  console.log('ferret-scan performance benchmark\n');
+  if (!jsonMode) console.log('ferret-scan performance benchmark\n');
 
   // Dynamically import to avoid module caching affecting results
   const { scan } = await import(`${projectRoot}/dist/scanner/Scanner.js`);
@@ -131,7 +139,7 @@ async function main() {
     console.log(`  Speedup: ${(coldRule / warmRule).toFixed(1)}x\n`);
 
     // Scenario 2: Small scan (fixtures)
-    console.log('─── Small scan (3 files) ─────────────────────────');
+    if (!jsonMode) console.log('─── Small scan (3 files) ─────────────────────────');
     const smallDir = resolve(tmpDir, 'small');
     await createFixtures(smallDir, 2);
     await createMaliciousFixture(smallDir);
@@ -141,7 +149,7 @@ async function main() {
     }, 5)();
 
     // Scenario 3: Medium scan (100 files)
-    console.log('\n─── Medium scan (100 files) ──────────────────────');
+    if (!jsonMode) console.log('\n─── Medium scan (100 files) ──────────────────────');
     const medDir = resolve(tmpDir, 'medium');
     await createFixtures(medDir, 100);
 
@@ -149,14 +157,15 @@ async function main() {
       return scan({ ...DEFAULT_CONFIG, paths: [medDir] });
     }, 3)();
 
-    // Scenario 4: File processing throughput
-    console.log('\n─── Throughput estimate ──────────────────────────');
-    // 100 files in ~medResult ms → files/sec
-    const filesPerSec = Math.round(100 / (medResult / 1000));
-    console.log(`  ~${filesPerSec} files/sec on clean md files`);
+    // Scenario 4: File processing throughput (text-only metric, not in JSON output)
+    if (!jsonMode) {
+      console.log('\n─── Throughput estimate ──────────────────────────');
+      const filesPerSec = Math.round(100 / (medResult / 1000));
+      console.log(`  ~${filesPerSec} files/sec on clean md files`);
+    }
 
     // Scenario 5: Single large file
-    console.log('\n─── Single large file (5000 lines) ──────────────');
+    if (!jsonMode) console.log('\n─── Single large file (5000 lines) ──────────────');
     const largeDir = resolve(tmpDir, 'large');
     await mkdir(largeDir, { recursive: true });
     const largeContent = Array.from({ length: 5000 }, (_, i) =>
@@ -172,7 +181,12 @@ async function main() {
     await rm(tmpDir, { recursive: true, force: true });
   }
 
-  console.log('\nDone.');
+  if (jsonMode) {
+    // Emit structured JSON for CI comparison
+    console.log(JSON.stringify(results, null, 2));
+  } else {
+    console.log('\nDone.');
+  }
 }
 
 main().catch(err => {

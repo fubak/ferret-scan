@@ -15,7 +15,7 @@ import type {
 } from '../types.js';
 import { DEFAULT_CONFIG } from '../types.js';
 import logger from './logger.js';
-import { ConfigFileSchema, safeParseJSON } from './schemas.js';
+import { ConfigFileSchema, SeverityValueSchema, ThreatCategoryValueSchema, safeParseJSON } from './schemas.js';
 
 const CONFIG_FILE_NAMES = [
   '.ferretrc.json',
@@ -75,31 +75,39 @@ function loadConfigFile(configPath: string): ConfigFile {
 }
 
 /**
- * Parse severity string to array
+ * Parse severity string to array, warning on unrecognised values.
  */
 function parseSeverities(severityStr: string | undefined): Severity[] | undefined {
   if (!severityStr) return undefined;
 
-  const severities = severityStr.split(',').map(s => s.trim().toUpperCase()) as Severity[];
-  const validSeverities: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
-
-  return severities.filter(s => validSeverities.includes(s));
+  const result: Severity[] = [];
+  for (const raw of severityStr.split(',').map(s => s.trim().toUpperCase())) {
+    const parsed = SeverityValueSchema.safeParse(raw);
+    if (parsed.success) {
+      result.push(parsed.data as Severity);
+    } else {
+      logger.warn(`Unrecognised severity value "${raw}" — valid values: CRITICAL, HIGH, MEDIUM, LOW, INFO`);
+    }
+  }
+  return result.length > 0 ? result : undefined;
 }
 
 /**
- * Parse categories string to array
+ * Parse categories string to array, warning on unrecognised values.
  */
 function parseCategories(categoriesStr: string | undefined): ThreatCategory[] | undefined {
   if (!categoriesStr) return undefined;
 
-  const categories = categoriesStr.split(',').map(c => c.trim().toLowerCase()) as ThreatCategory[];
-  const validCategories: ThreatCategory[] = [
-    'exfiltration', 'credentials', 'injection', 'backdoors',
-    'supply-chain', 'permissions', 'persistence', 'obfuscation',
-    'ai-specific', 'advanced-hiding', 'behavioral'
-  ];
-
-  return categories.filter(c => validCategories.includes(c));
+  const result: ThreatCategory[] = [];
+  for (const raw of categoriesStr.split(',').map(c => c.trim().toLowerCase())) {
+    const parsed = ThreatCategoryValueSchema.safeParse(raw);
+    if (parsed.success) {
+      result.push(parsed.data as ThreatCategory);
+    } else {
+      logger.warn(`Unrecognised category value "${raw}" — valid values: exfiltration, credentials, injection, backdoors, supply-chain, permissions, persistence, obfuscation, ai-specific, advanced-hiding, behavioral`);
+    }
+  }
+  return result.length > 0 ? result : undefined;
 }
 
 /**

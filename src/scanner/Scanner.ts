@@ -19,14 +19,15 @@ import { matchRules } from './PatternMatcher.js';
 import { getRulesForScan } from '../rules/index.js';
 import { analyzeFile as analyzeFileSemantics, shouldAnalyze as shouldAnalyzeSemantics, getMemoryUsage } from '../analyzers/AstAnalyzer.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
-import { loadThreatDatabase } from '../intelligence/ThreatFeed.js';
+import { loadThreatDatabase, type ThreatDatabase } from '../intelligence/ThreatFeed.js';
 import { matchIndicators, shouldMatchIndicators } from '../intelligence/IndicatorMatcher.js';
 import logger from '../utils/logger.js';
+import { BoundedContentCache } from '../utils/contentCache.js';
 import ora from 'ora';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type ScanError = { file?: string; message: string; code?: string; fatal: boolean };
+interface ScanError { file?: string; message: string; code?: string; fatal: boolean }
 
 interface DiscoveryResult {
   files: DiscoveredFile[];
@@ -140,10 +141,14 @@ async function discoverFilesWithProgress(
  */
 async function scanFile(
   file: DiscoveredFile,
-  config: ScannerConfig
+  config: ScannerConfig,
+  threatDB?: ThreatDatabase | null,
+  contentCache?: BoundedContentCache
 ): Promise<{ findings: Finding[]; error?: string }> {
   try {
     const content = await readFile(file.path, 'utf-8');
+    // BoundedContentCache enforces per-file and aggregate caps internally.
+    contentCache?.set(file.path, content);
     const rules = getRulesForScan(config.categories, config.severities);
     const allFindings: Finding[] = [];
 
@@ -156,7 +161,10 @@ async function scanFile(
       } else {
         try {
           logger.debug(`Running semantic analysis on ${file.relativePath}`);
-          allFindings.push(...analyzeFileSemantics(file, content, rules));
+          allFindings.push(...analyzeFileSemantics(file, content, rules, {
+            ...(config.maxSemanticAnalysisMs !== undefined && { maxMs: config.maxSemanticAnalysisMs }),
+            ...(config.maxAstNodes !== undefined && { maxNodes: config.maxAstNodes }),
+          }));
           const memAfter = getMemoryUsage();
           logger.debug(`Semantic analysis memory: ${memAfter.used - memBefore.used}MB delta`);
         } catch (err) {
@@ -165,9 +173,8 @@ async function scanFile(
       }
     }
 
-    if (config.threatIntel && shouldMatchIndicators(file, config)) {
+    if (config.threatIntel && threatDB && shouldMatchIndicators(file, config)) {
       try {
-        const threatDB = loadThreatDatabase();
         logger.debug(`Running threat intelligence matching on ${file.relativePath}`);
         const threatFindings = matchIndicators(threatDB, file, content, {
           minConfidence: 50,
@@ -191,26 +198,31 @@ async function scanFile(
 
 /**
  * Scan all discovered files with bounded concurrency, with optional progress spinner
+ *
+ * Returns both findings and a content cache (file path → content) for reuse
+ * in the correlation phase, avoiding redundant disk reads.
  */
 async function scanAllFiles(
   files: DiscoveredFile[],
   config: ScannerConfig,
-  showProgress: boolean
-): Promise<ScanPhaseResult> {
+  showProgress: boolean,
+  threatDB?: ThreatDatabase | null
+): Promise<ScanPhaseResult & { contentCache: BoundedContentCache }> {
   const concurrency = Math.min(cpus().length, 8);
-  const allFindings: Array<{ index: number; findings: Finding[] }> = [];
+  const allFindings: { index: number; findings: Finding[] }[] = [];
   const errors: ScanError[] = [];
+  const contentCache = new BoundedContentCache();
 
   let spinner: ReturnType<typeof ora> | null = null;
   if (showProgress && files.length > 0) {
     spinner = ora(`Scanning files... 0/${files.length}`).start();
   }
 
-  let scannedCount = 0;
-  let lastYield = Date.now();
   const queue = files.map((file, i) => ({ file, index: i }));
 
   async function worker(): Promise<void> {
+    let lastYield = Date.now();
+
     while (queue.length > 0) {
       const item = queue.shift();
       if (!item) return;
@@ -219,21 +231,21 @@ async function scanAllFiles(
       logger.debug(`Scanning: ${file.relativePath}`);
 
       if (spinner) {
-        spinner.text = `Scanning ${scannedCount + 1}/${files.length}: ${file.relativePath.slice(-50)}${allFindings.length > 0 ? ` (${allFindings.reduce((n, f) => n + f.findings.length, 0)} findings)` : ''}`;
+        const scannedSoFar = allFindings.length + 1;
+        spinner.text = `Scanning ${scannedSoFar}/${files.length}: ${file.relativePath.slice(-50)}${allFindings.length > 0 ? ` (${allFindings.reduce((n, f) => n + f.findings.length, 0)} findings)` : ''}`;
         const now = Date.now();
         if (now - lastYield >= 100) {
           await yieldToEventLoop();
-          lastYield = Date.now();
+          lastYield = now;
         }
       }
 
-      const result = await scanFile(file, config);
+      const result = await scanFile(file, config, threatDB, contentCache);
 
       if (result.error) {
         errors.push({ file: file.path, message: result.error, fatal: false });
       }
       allFindings.push({ index, findings: result.findings });
-      scannedCount++;
     }
   }
 
@@ -247,7 +259,7 @@ async function scanAllFiles(
     spinner.succeed(`Scanned ${files.length} files${findings.length > 0 ? ` - found ${findings.length} issues` : ' - no issues found'}`);
   }
 
-  return { findings, errors };
+  return { findings, errors, contentCache };
 }
 
 /**
@@ -255,7 +267,8 @@ async function scanAllFiles(
  */
 async function runCorrelationPhase(
   files: DiscoveredFile[],
-  config: ScannerConfig
+  config: ScannerConfig,
+  contentCache?: BoundedContentCache
 ): Promise<ScanPhaseResult> {
   if (!shouldAnalyzeCorrelations(files, config)) {
     return { findings: [], errors: [] };
@@ -265,7 +278,8 @@ async function runCorrelationPhase(
     logger.debug('Running cross-file correlation analysis');
     const findings = analyzeCorrelations(
       files,
-      getRulesForScan(config.categories, config.severities)
+      getRulesForScan(config.categories, config.severities),
+      contentCache
     );
     logger.debug(`Found ${findings.length} correlation findings`);
     return { findings, errors: [] };
@@ -330,11 +344,14 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const startTime = new Date();
   const showProgress = !config.ci && process.stdout.isTTY;
 
+  // Load threat database once if threat intel is enabled
+  const threatDB = config.threatIntel ? loadThreatDatabase() : null;
+
   logger.info(`Starting scan of ${config.paths.length} path(s)`);
 
   const discovery = await discoverFilesWithProgress(config, showProgress);
-  const scanPhase = await scanAllFiles(discovery.files, config, showProgress);
-  const correlationPhase = await runCorrelationPhase(discovery.files, config);
+  const scanPhase = await scanAllFiles(discovery.files, config, showProgress, threatDB);
+  const correlationPhase = await runCorrelationPhase(discovery.files, config, scanPhase.contentCache);
 
   return buildScanResult({ startTime, config, discovery, scanPhase, correlationPhase });
 }

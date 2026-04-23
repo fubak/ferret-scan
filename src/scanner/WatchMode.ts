@@ -119,7 +119,7 @@ export async function startWatchMode(
       /* eslint-enable no-console */
 
     } catch (error) {
-      // eslint-disable-next-line no-console
+       
       console.error('❌ Scan failed:', error instanceof Error ? error.message : String(error));
     } finally {
       isScanning = false;
@@ -172,7 +172,7 @@ export async function startWatchMode(
   });
 
   watcher.on('error', (error) => {
-    // eslint-disable-next-line no-console
+     
     console.error('❌ Watch error:', error);
   });
 

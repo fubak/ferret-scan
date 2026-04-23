@@ -70,6 +70,10 @@ export function getEnabledRules(): Rule[] {
 
 const scanRuleCache = new Map<string, Rule[]>();
 
+export function clearRuleCache(): void {
+  scanRuleCache.clear();
+}
+
 /**
  * Get rules for scanning with filters applied
  */

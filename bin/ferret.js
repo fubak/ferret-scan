@@ -154,7 +154,7 @@ program
       // Apply baseline filtering if enabled
       if (!options.ignoreBaseline) {
         const baselinePath = options.baseline || getDefaultBaselinePath(config.paths);
-        const baseline = loadBaseline(baselinePath);
+        const baseline = await loadBaseline(baselinePath);
         if (baseline) {
           console.log(`📋 Applying baseline from: ${baselinePath}`);
           result = filterAgainstBaseline(result, baseline);
@@ -390,7 +390,7 @@ baselineCmd
       const baselinePath = options.output || getDefaultBaselinePath(config.paths);
       const baseline = createBaseline(result, options.description);
 
-      saveBaseline(baseline, baselinePath);
+      await saveBaseline(baseline, baselinePath);
       console.log(`✅ Created baseline with ${baseline.findings.length} findings`);
       console.log(`📋 Baseline saved to: ${baselinePath}`);
 
@@ -404,10 +404,10 @@ baselineCmd
   .command('show')
   .description('Show baseline information')
   .argument('[file]', 'Baseline file path (defaults to .ferret-baseline.json)')
-  .action((file) => {
+  .action(async (file) => {
     try {
       const baselinePath = file || getDefaultBaselinePath([process.cwd()]);
-      const baseline = loadBaseline(baselinePath);
+      const baseline = await loadBaseline(baselinePath);
 
       if (!baseline) {
         console.error(`No baseline found at: ${baselinePath}`);
@@ -454,7 +454,7 @@ baselineCmd
   .action(async (file, options) => {
     try {
       const baselinePath = file || getDefaultBaselinePath([process.cwd()]);
-      const baseline = loadBaseline(baselinePath);
+      const baseline = await loadBaseline(baselinePath);
 
       if (!baseline) {
         console.error(`No baseline found at: ${baselinePath}`);

@@ -13,6 +13,7 @@ import type {
   ContextLine,
 } from '../types.js';
 import logger from '../utils/logger.js';
+import { compileSafePattern, runBounded } from '../utils/safeRegex.js';
 
 /**
  * File relationship map
@@ -117,7 +118,8 @@ function areFilesRelatedByNaming(file1: DiscoveredFile, file2: DiscoveredFile): 
  */
 function findCrossFilePatterns(
   relationships: FileRelationship[],
-  correlationRules: CorrelationRule[]
+  correlationRules: CorrelationRule[],
+  contentCache?: { get(key: string): string | undefined }
 ): CrossFileMatch[] {
   const matches: CrossFileMatch[] = [];
 
@@ -128,16 +130,18 @@ function findCrossFilePatterns(
       const allFiles = [relationship.file, ...relationship.relatedFiles];
 
       // Check if rule file patterns match
-      const matchingFiles = allFiles.filter(file =>
-        rule.filePatterns.some(pattern =>
-          file.relativePath.toLowerCase().includes(pattern.toLowerCase())
-        )
-      );
+      // Empty filePatterns means match-all (no regex needed)
+      const matchingFiles = allFiles.filter(file => {
+        if (rule.filePatterns.length === 0) return true;
+        return rule.filePatterns.some(pattern =>
+          pattern === '*' || file.relativePath.toLowerCase().includes(pattern.toLowerCase())
+        );
+      });
 
       if (matchingFiles.length < 2) continue; // Need at least 2 files for correlation
 
       // Find content patterns across files
-      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns);
+      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns, contentCache);
 
       if (contentMatches.length >= rule.contentPatterns.length) {
         const strength = calculateCorrelationStrength(contentMatches, rule);
@@ -157,39 +161,50 @@ function findCrossFilePatterns(
 
 /**
  * Find content patterns across multiple files
+ *
+ * Accepts an optional content cache to avoid redundant disk reads.
+ * Files larger than 1MB are not cached to control memory usage.
  */
 function findContentPatternsAcrossFiles(
   files: DiscoveredFile[],
-  patterns: string[]
+  patterns: string[],
+  contentCache?: { get(key: string): string | undefined }
 ): { file: DiscoveredFile; pattern: string; line: number; match: string }[] {
   const matches: { file: DiscoveredFile; pattern: string; line: number; match: string }[] = [];
 
   for (const file of files) {
+    let content: string;
     try {
-      const content = readFileSync(file.path, 'utf-8');
-      const lines = content.split('\n');
-
-      for (const pattern of patterns) {
-        const regex = new RegExp(pattern, 'gi');
-
-        for (let i = 0; i < lines.length; i++) {
-          const line = lines[i] ?? '';
-          const match = regex.exec(line);
-
-          if (match) {
-            matches.push({
-              file,
-              pattern,
-              line: i + 1,
-              match: match[0]
-            });
-            regex.lastIndex = 0; // Reset regex for next iteration
-            break; // One match per pattern per file is enough
-          }
-        }
-      }
+      // Prefer cache over disk; fall back to sync read when cache is absent
+      content = contentCache?.get(file.path) ?? readFileSync(file.path, 'utf-8');
     } catch (error) {
       logger.warn(`Error reading file ${file.relativePath} for correlation analysis: ${error instanceof Error ? error.message : String(error)}`);
+      continue;
+    }
+
+    const lines = content.split('\n');
+
+    for (const pattern of patterns) {
+      const regex = compileSafePattern(pattern, 'gi');
+      if (!regex) {
+        logger.debug(`Skipping unsafe correlation pattern: ${pattern}`);
+        continue;
+      }
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i] ?? '';
+        const result = runBounded(regex, line, { maxMatches: 1, maxMs: 100 });
+
+        if (result.matches.length > 0) {
+          matches.push({
+            file,
+            pattern,
+            line: i + 1,
+            match: result.matches[0]![0]
+          });
+          break; // One match per pattern per file is enough
+        }
+      }
     }
   }
 
@@ -337,7 +352,8 @@ function generateRiskVectors(match: CrossFileMatch): string[] {
  */
 export function analyzeCorrelations(
   files: DiscoveredFile[],
-  rules: Rule[]
+  rules: Rule[],
+  contentCache?: { get(key: string): string | undefined }
 ): CorrelationFinding[] {
   const findings: CorrelationFinding[] = [];
 
@@ -361,7 +377,8 @@ export function analyzeCorrelations(
     // Find cross-file patterns
     const matches = findCrossFilePatterns(
       relationships,
-      correlationRules.map(r => ({ ...r, parentRule: undefined }))
+      correlationRules.map(r => ({ ...r, parentRule: undefined })),
+      contentCache
     );
 
     // Convert to findings

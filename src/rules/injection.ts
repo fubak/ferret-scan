@@ -106,7 +106,7 @@ export const injectionRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects hidden instructions using HTML comments or special formatting',
     patterns: [
-      /<!--.*?(ignore|override|disregard|bypass).*?-->/gis,
+      /<!--[\s\S]{0,500}?(ignore|override|disregard|bypass)[\s\S]{0,500}?-->/gi,
       /\[hidden\][^\n]{0,100}(ignore|override|disregard)/gi,
       /\[SYSTEM\][^\n]{0,100}instruction/gi,
     ],

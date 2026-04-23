@@ -92,7 +92,7 @@ export const obfuscationRules: Rule[] = [
     description: 'Detects potentially malicious content hidden in HTML comments',
     patterns: [
       /<!--[\s\S]{100,}?-->/g,
-      /<!--.*?(script|eval|function).*?-->/gis,
+      /<!--[\s\S]{0,500}?(script|eval|function)[\s\S]{0,500}?-->/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],

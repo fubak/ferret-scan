@@ -4,15 +4,16 @@
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/restrict-plus-operands */
-/* eslint-disable @typescript-eslint/no-redundant-type-constituents */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+ 
+ 
+ 
+ 
 
 import { readFileSync, existsSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
+import { globToRegex } from '../utils/glob.js';
 import type { Finding, ScanResult, Severity } from '../types.js';
 import logger from '../utils/logger.js';
 
@@ -217,7 +218,7 @@ function findingMatchesConditions(
   if (conditions.ruleIds && conditions.ruleIds.length > 0) {
     const matchesRule = conditions.ruleIds.some(id => {
       if (id.includes('*')) {
-        const pattern = new RegExp('^' + id.replace(/\*/g, '.*') + '$');
+        const pattern = globToRegex(id, { pathLike: false });
         return pattern.test(finding.ruleId);
       }
       return finding.ruleId === id;
@@ -242,7 +243,7 @@ function findingMatchesConditions(
   // Check file patterns
   if (conditions.filePatterns && conditions.filePatterns.length > 0) {
     const matchesFile = conditions.filePatterns.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      const regex = globToRegex(pattern, { pathLike: true });
       return regex.test(finding.file) || regex.test(finding.relativePath);
     });
     if (!matchesFile) return false;

@@ -20,8 +20,17 @@ export const HIGH_ENTROPY_SUFFIX = '[a-zA-Z0-9]{20,}';
  *
  * Matches:  `<verb>  [up to 100 chars]  (credential keyword)`
  * Avoids catastrophic backtracking via bounded non-newline character class.
+ *
+ * @param verb A plain literal verb string — e.g. "send", "transmit", "upload".
+ *   Must NOT contain regex metacharacters. The following characters are rejected
+ *   at runtime: `* + { | \ $ ^ ( )`
+ *   Callers should pass a hard-coded string, never user-supplied input.
  */
 export function buildHarvestPattern(verb: string): RegExp {
+  // Reject dangerous patterns that could cause ReDoS or injection
+  if (/\*|\+|\{|\||\\|\$|\^|\(|\)/.test(verb)) {
+    throw new Error(`buildHarvestPattern: verb contains dangerous regex metacharacters, got: ${verb}`);
+  }
   return new RegExp(
     `${verb}\\s+\\w+(?:\\s+\\w+){0,10}\\s+(${CREDENTIAL_KEYWORDS})`,
     'gi'
@@ -32,8 +41,17 @@ export function buildHarvestPattern(verb: string): RegExp {
  * Build an assignment detection pattern for a given credential keyword.
  *
  * Matches:  `api_key = "abc123..."` or `secret-key: 'xyz...'`
+ *
+ * @param keyword A plain literal credential keyword — e.g. "api_key", "secret-token".
+ *   Must NOT contain regex metacharacters. The following characters are rejected
+ *   at runtime: `* + { | \ $ ^ ( )`
+ *   Callers should pass a hard-coded string, never user-supplied input.
  */
 export function buildCredentialAssignPattern(keyword: string): RegExp {
+  // Reject dangerous patterns that could cause ReDoS or injection
+  if (/\*|\+|\{|\||\\|\$|\^|\(|\)/.test(keyword)) {
+    throw new Error(`buildCredentialAssignPattern: keyword contains dangerous regex metacharacters, got: ${keyword}`);
+  }
   return new RegExp(
     `${keyword}\\s*[:=]\\s*["']${HIGH_ENTROPY_SUFFIX}`,
     'gi'

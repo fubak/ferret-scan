@@ -32,9 +32,9 @@ export const aiSpecificRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects attempts to make Claude impersonate other entities',
     patterns: [
-      /pretend\s+(to\s+be|you\s+are)\s+.*(anthropic|openai|google|microsoft)/gi,
+      /pretend\s+(to\s+be|you\s+are)\s+[^\n]{0,100}(anthropic|openai|google|microsoft)/gi,
       /you\s+are\s+(now\s+)?(an?\s+)?(anthropic|openai)\s+(employee|staff|system)/gi,
-      /impersonate\s+.*(admin|moderator|system|support)/gi,
+      /impersonate\s+[^\n]{0,100}(admin|moderator|system|support)/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],
@@ -85,8 +85,8 @@ export const aiSpecificRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects setup for multi-step attacks that unfold over time',
     patterns: [
-      /on\s+the\s+next\s+(message|turn|response)\s+.*(execute|attack|inject|exfiltrate)/gi,
-      /when\s+the\s+user\s+says\s+.*(trigger|activate|execute)\s+.*(attack|payload|exploit)/gi,
+      /on\s+the\s+next\s+(message|turn|response)\s+[^\n]{0,100}(execute|attack|inject|exfiltrate)/gi,
+      /when\s+the\s+user\s+says\s+[^\n]{0,100}(trigger|activate|execute)[^\n]{0,100}(attack|payload|exploit)/gi,
       /wait\s+for\s+(signal|trigger|command)\s+to\s+(attack|execute|inject)/gi,
       /phase\s+\d+\s*:\s*(attack|exploit|inject|exfiltrate|payload)/gi,
       /step\s+\d+\s*:\s*(gain|escalate|exfiltrate|compromise)/gi,
@@ -121,7 +121,7 @@ export const aiSpecificRules: Rule[] = [
     severity: 'MEDIUM',
     description: 'Detects attempts to manipulate output formatting for injection',
     patterns: [
-      /output\s+.*(json|xml|html)\s+without\s+(escaping|validation)/gi,
+      /output\s+[^\n]{0,100}(json|xml|html)\s+without\s+(escaping|validation)/gi,
       /include\s+(raw|unescaped)\s+(html|script|code)/gi,
       /respond\s+with\s+raw\s+/gi,
     ],
@@ -170,8 +170,8 @@ export const aiSpecificRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects patterns that set up indirect prompt injection',
     patterns: [
-      /when\s+you\s+(read|see|find)\s+.*(execute|run|follow)/gi,
-      /if\s+.*(file|url|content)\s+contains.*then\s+(do|execute|run)/gi,
+      /when\s+you\s+(read|see|find)\s+[^\n]{0,100}(execute|run|follow)/gi,
+      /if\s+[^\n]{0,100}(file|url|content)\s+contains[^\n]{0,100}then\s+(do|execute|run)/gi,
       /follow\s+instructions\s+(in|from)\s+(the|any)\s+(file|url|content)/gi,
     ],
     fileTypes: ['md'],
@@ -187,7 +187,7 @@ export const aiSpecificRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects instructions to abuse AI CLI tools',
     patterns: [
-      /use\s+(bash|write|edit)\s+tool\s+to.*(delete|remove|destroy)/gi,
+      /use\s+(bash|write|edit)\s+tool\s+to[^\n]{0,100}(delete|remove|destroy)/gi,
       /execute\s+(arbitrary|any)\s+(commands?|code)/gi,
       /bypass\s+tool\s+(restrictions|limits|permissions)/gi,
     ],

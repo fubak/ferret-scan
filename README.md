@@ -376,9 +376,10 @@ ferret scan . --threat-intel
 | Metric | Value |
 |--------|-------|
 | **Speed** | ~1,000 files/second |
-| **Memory** | ~100MB base |
+| **Memory** | ~100MB base; file cache capped at 256 MB aggregate (LRU eviction) |
 | **Rules** | 65+ detection patterns |
 | **Accuracy** | 99%+ detection, <1% false positives |
+| **Concurrency** | Worker pool capped at min(CPU count, 8) |
 
 ## Documentation
 
@@ -386,6 +387,22 @@ ferret scan . --threat-intel
 - `docs/README.md`
 - `docs/architecture.md`
 - `docs/deployment.md`
+
+## Security
+
+ferret-scan is a security scanner, so we take its own security seriously.
+
+- **Vulnerability reporting:** See [SECURITY.md](SECURITY.md) for the responsible disclosure policy and contact details.
+- **Threat model:** See [docs/THREAT_MODEL.md](docs/THREAT_MODEL.md) for an enumeration of adversaries, attack surfaces, and mitigations.
+
+Key security properties of the scanner itself:
+- All regex patterns run under time and match-count limits (ReDoS protection)
+- Glob-to-regex conversions escape metacharacters and are anchored
+- Config and database files validated through Zod schemas; the published `.ferretrc.json` IDE schema is regenerated from the runtime zod schema at build time (`npm run schema:generate`) and drift is CI-enforced (`npm run schema:check`)
+- File writes blocked outside allowed directories (path traversal prevention)
+- Quarantine directory created with mode `0700` on POSIX; disk-space pre-checked before quarantine operations
+- In-memory file cache capped at 256 MB aggregate with LRU eviction (`BoundedContentCache`)
+- AST analysis guarded by a hybrid deadline: per-code-block cap (default 500 ms) nested inside a file-scoped cap (default 2 s), preventing a single hostile block from starving later blocks
 
 ## Contributing
 
@@ -399,9 +416,14 @@ npm install
 
 # Development
 npm run dev          # Watch mode
-npm test             # Run tests
+npm run test:coverage  # Run tests + enforce per-module coverage thresholds
 npm run lint         # Lint check
+npm run typecheck    # TypeScript check
 npm run build        # Build
+
+# JSON schema sync (run after editing src/utils/schemas.ts)
+npm run schema:generate  # Regenerate src/schemas/ferret-config.schema.json
+npm run schema:check     # Verify schema is in sync (used in CI)
 
 # Add a rule
 # See docs/RULES.md for the rule development guide
