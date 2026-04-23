@@ -1,0 +1,12 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "readme": "README.md",
+  "name": "ferret-scan",
+  "includeVersion": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/ferret-scan/ferret-scan"
+  }
+}
