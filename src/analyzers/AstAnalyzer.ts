@@ -124,15 +124,23 @@ function extractSemanticContext(sourceFile: ts.SourceFile): SemanticContext {
 }
 
 /**
- * Find security patterns in AST
+ * Find security patterns in AST, with optional time and node-count guards.
  */
 function findSecurityPatterns(
   sourceFile: ts.SourceFile,
-  patterns: SemanticPattern[]
+  patterns: SemanticPattern[],
+  opts?: { deadline?: number; maxNodes?: number }
 ): { pattern: SemanticPattern; node: ts.Node; confidence: number }[] {
   const matches: { pattern: SemanticPattern; node: ts.Node; confidence: number }[] = [];
+  let nodeCount = 0;
+  const deadline = opts?.deadline;
+  const maxNodes = opts?.maxNodes ?? 50_000;
 
   function visit(node: ts.Node): void {
+    nodeCount++;
+    if (nodeCount > maxNodes) return;
+    if (deadline !== undefined && Date.now() > deadline) return;
+
     for (const pattern of patterns) {
       const match = matchSemanticPattern(node, pattern, sourceFile);
       if (match) {
@@ -290,9 +298,13 @@ function createContextLines(
 export function analyzeFile(
   file: DiscoveredFile,
   content: string,
-  rules: Rule[]
+  rules: Rule[],
+  opts?: { maxMs?: number; maxNodes?: number; maxBlockMs?: number }
 ): SemanticFinding[] {
   const findings: SemanticFinding[] = [];
+  const maxMs = opts?.maxMs ?? 2000;
+  const maxNodes = opts?.maxNodes ?? 50_000;
+  const perBlockMs = Math.min(maxMs, opts?.maxBlockMs ?? 500);
 
   try {
     // Get rules with semantic patterns
@@ -314,17 +326,36 @@ export function analyzeFile(
       codeBlocksToAnalyze = [{ code: content, language: file.type, line: 1 }];
     }
 
+    const fileDeadline = Date.now() + maxMs;
+
     // Analyze each code block
     for (const codeBlock of codeBlocksToAnalyze) {
+      if (Date.now() > fileDeadline) {
+        logger.warn(`AST analysis file deadline (${maxMs}ms) reached for ${file.relativePath}; skipping remaining code blocks`);
+        break;
+      }
       try {
         const sourceFile = createAST(codeBlock.code, `${file.relativePath}_block_${codeBlock.line}.${codeBlock.language}`);
         const semanticContext = extractSemanticContext(sourceFile);
+
+        // Per-block deadline: min of (remaining file budget, per-block cap). This prevents
+        // a single hostile block from consuming the entire file budget, while the file-scoped
+        // check above prevents unbounded total analysis time.
+        const blockDeadline = Math.min(fileDeadline, Date.now() + perBlockMs);
+        const blockedByPerBlock = blockDeadline < fileDeadline;
 
         // Check each semantic rule
         for (const rule of semanticRules) {
           if (!rule.semanticPatterns) continue;
 
-          const patternMatches = findSecurityPatterns(sourceFile, rule.semanticPatterns);
+          const patternMatches = findSecurityPatterns(sourceFile, rule.semanticPatterns, {
+            deadline: blockDeadline,
+            maxNodes,
+          });
+
+          if (blockedByPerBlock && Date.now() >= blockDeadline) {
+            logger.warn(`AST analysis per-block deadline (${perBlockMs}ms) reached in ${file.relativePath} at block line ${codeBlock.line}`);
+          }
 
           for (const match of patternMatches) {
             const position = getPositionFromNode(match.node, sourceFile);

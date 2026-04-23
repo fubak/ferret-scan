@@ -308,6 +308,12 @@ export interface ScannerConfig {
   verbose: boolean;
   /** CI mode (simplified output) */
   ci: boolean;
+  /** Maximum wall-clock ms for semantic AST analysis of a single code block (default: 2000) */
+  maxSemanticAnalysisMs?: number;
+  /** Maximum AST node count before aborting semantic analysis of a single code block (default: 50000) */
+  maxAstNodes?: number;
+  /** Per-code-block deadline in ms within the file-scoped budget (default: 500) */
+  maxBlockMs?: number;
 }
 
 /** Supported output formats */

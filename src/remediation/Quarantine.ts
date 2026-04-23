@@ -3,12 +3,52 @@
  * Provides reversible quarantine operations with audit trails
  */
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, unlinkSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, copyFileSync, unlinkSync, statSync, statfsSync } from 'node:fs';
 import { resolve, dirname, basename } from 'node:path';
 import { createHash } from 'node:crypto';
 import type { Finding } from '../types.js';
 import logger from '../utils/logger.js';
 import { validatePathWithinBase, isPathWithinBase } from '../utils/pathSecurity.js';
+
+/**
+ * Create a quarantine-grade directory with restrictive permissions (0700 on POSIX).
+ * On Windows, Node silently ignores the mode argument — permissions are managed by
+ * the OS ACL instead.
+ */
+function ensureSecureDir(dir: string): void {
+  // 0o700 = owner-only rwx; harmlessly ignored on Windows
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+
+  // Verify no group/other bits leaked through (e.g. pre-existing dir with loose perms).
+  // stat().mode & 0o077 !== 0 means at least one g/o bit is set.
+  if (process.platform !== 'win32') {
+    const mode = statSync(dir).mode;
+    if ((mode & 0o077) !== 0) {
+      logger.warn(`Quarantine directory ${dir} has loose permissions (mode ${(mode & 0o777).toString(8)}); secrets may be readable by other users`);
+    }
+  }
+}
+
+/**
+ * Check whether the quarantine directory has sufficient free space for a file of the given size.
+ * Refuses if the file is ≥50% of remaining disk space to prevent filling the disk.
+ * Returns true (allow) when statfsSync is unavailable (older Node / Windows).
+ */
+function hasSufficientDiskSpace(dir: string, requiredBytes: number): boolean {
+  try {
+    // statfsSync is available in Node ≥18.15.0 on POSIX; falls through on Windows.
+    const stats = statfsSync(dir);
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion -- guards against a future { bigint: true } call-site; safe up to ~9 PB
+    const freeBytes = Number(stats.bavail) * Number(stats.bsize);
+    if (requiredBytes >= freeBytes * 0.5) {
+      logger.warn(`Insufficient disk space for quarantine: need ${requiredBytes} bytes, ${freeBytes} available`);
+      return false;
+    }
+  } catch {
+    // statfsSync unavailable — skip the check rather than failing the quarantine.
+  }
+  return true;
+}
 
 /**
  * Quarantine entry metadata
@@ -124,8 +164,8 @@ export function loadQuarantineDatabase(quarantineDir: string): QuarantineDatabas
  */
 export function saveQuarantineDatabase(db: QuarantineDatabase, quarantineDir: string): void {
   try {
-    // Ensure directory exists
-    mkdirSync(quarantineDir, { recursive: true });
+    // Ensure directory exists with secure permissions
+    ensureSecureDir(quarantineDir);
 
     // Update stats and metadata
     db.lastUpdated = new Date().toISOString();
@@ -215,8 +255,14 @@ export function quarantineFile(
     const quarantineFileName = `${id}_${fileName}`;
     const quarantinePath = resolve(config.quarantineDir, 'files', quarantineFileName);
 
-    // Ensure quarantine directory exists
-    mkdirSync(dirname(quarantinePath), { recursive: true });
+    // Ensure quarantine directory exists with secure permissions
+    ensureSecureDir(dirname(quarantinePath));
+
+    // Refuse quarantine if disk space is critically low
+    if (!hasSufficientDiskSpace(dirname(quarantinePath), stats.size)) {
+      logger.error(`Quarantine aborted for ${filePath}: insufficient disk space`);
+      return null;
+    }
 
     // Copy file to quarantine
     copyFileSync(filePath, quarantinePath);
@@ -441,6 +487,14 @@ export function checkQuarantineHealth(quarantineDir: string = DEFAULT_OPTIONS.qu
   const quarantineFilesDir = resolve(quarantineDir, 'files');
   if (!existsSync(quarantineFilesDir)) {
     issues.push('Quarantine files directory missing');
+  }
+
+  // Check directory permissions (POSIX only)
+  if (process.platform !== 'win32' && existsSync(quarantineDir)) {
+    const mode = statSync(quarantineDir).mode;
+    if ((mode & 0o077) !== 0) {
+      issues.push(`Quarantine directory has loose permissions (mode ${(mode & 0o777).toString(8)}); run chmod 700 ${quarantineDir}`);
+    }
   }
 
   return {
