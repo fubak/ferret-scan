@@ -155,8 +155,8 @@ describe('Quarantine', () => {
       unlinkSync(filePath);
       expect(existsSync(filePath)).toBe(false);
 
-      // Restore
-      const restored = restoreQuarantinedFile(entry!.id, quarantineDir);
+      // Restore — pass tmpDir as allowedRestoreBase since the test files live under /tmp
+      const restored = restoreQuarantinedFile(entry!.id, quarantineDir, tmpDir);
 
       expect(restored).toBe(true);
       expect(existsSync(filePath)).toBe(true);

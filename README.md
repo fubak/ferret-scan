@@ -19,7 +19,7 @@
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣟⣿⣿⠿⣿⡿⠟⠁
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠻⠯⠝⠋⠀⠀⠀⠀
 </pre>
-<strong>Security Scanner for AI CLI Configurations</strong>
+<strong>Static Security Scanner for AI CLI and MCP Configurations</strong>
 </p>
 
 <p align="center">
@@ -42,9 +42,9 @@
 
 ---
 
-**Ferret** is a security scanner purpose-built for AI assistant configurations. It detects prompt injections, credential leaks, jailbreak attempts, and malicious patterns in your AI CLI setup before they become problems.
+**Ferret** is a static security scanner purpose-built for AI assistant configurations. It detects prompt injections, credential leaks, jailbreak attempts, and malicious patterns in your AI CLI and MCP server configs before they become problems.
 
-Threat intelligence uses a local indicator database by default (no external feeds unless you add indicators).
+Scanning is **local and offline by default** — no data leaves your machine. Threat intelligence uses a local indicator database (no external feeds unless you opt in).
 
 ```
 $ ferret scan .
@@ -106,21 +106,23 @@ Ferret understands AI CLI structures and catches **AI-specific threats** that ge
 
 ## Advanced Features
 
-**IDE Integration**
-- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes
-
-**Analysis Engines**
+**Analysis Engines** (all implemented, local/offline)
 - **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
-- **LLM-assisted analysis**: Optional AI-powered threat detection (OpenAI-compatible APIs)
+- **LLM-assisted analysis**: Optional AI-powered threat detection via OpenAI-compatible APIs (opt-in, networked)
 - **Semantic analysis**: TypeScript AST-based code analysis
 - **Cross-file correlation**: Detect multi-file attack chains
 - **Entropy analysis**: Secret detection via Shannon entropy
 - **Threat intelligence**: Local indicator database matching
 
+**IDE Integration**
+- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes (build from source)
+
 **Planned Features**
 - Language Server Protocol (LSP) for universal IDE support
 - IntelliJ plugin
-- Runtime behavior monitoring
+- MCP server trust scoring and provenance verification
+- SBOM/AIBOM generation for AI configurations
+- Runtime behavior monitoring and anomaly detection (currently static analysis only)
 - Compliance framework assessments (SOC2, ISO 27001, GDPR)
 - Community rule sharing platform
 
@@ -850,14 +852,16 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 ## Planned Features
 
+- MCP server trust scoring and package provenance verification
+- SBOM/AIBOM generation for AI configurations
 - Language Server Protocol (LSP) for Neovim, Emacs, Sublime Text
 - IntelliJ plugin for JetBrains IDEs
-- Runtime behavior monitoring and anomaly detection
+- Runtime behavior monitoring and anomaly detection (tool is currently static analysis only)
 - Compliance framework assessments (SOC2, ISO 27001, GDPR)
 - Community rule sharing platform
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
-- Threat intel updates from external sources
+- Threat intel feeds from external sources (currently local DB only)
 - More LLM providers and local-first presets
 
 ## IDE Integration

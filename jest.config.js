@@ -30,14 +30,14 @@ const config = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  // Thresholds lock in Phase 2/3 coverage gains. Set at ~5% below current values
-  // so routine refactors don't trip the CI gate, but silent regressions will fail.
+  // Thresholds lock in Phase 2/3 coverage gains. Global floor raised Apr-2026.
+  // Target: 85% lines by end of 2026 via incremental test additions.
   coverageThreshold: {
     global: {
-      branches:   20,
-      functions:  29,
-      lines:      30,
-      statements: 30,
+      branches:   25,
+      functions:  35,
+      lines:      38,
+      statements: 38,
     },
     './src/remediation/Fixer.ts': {
       lines:     73,
