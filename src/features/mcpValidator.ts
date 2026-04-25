@@ -15,6 +15,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { resolve, basename } from 'node:path';
 import { z } from 'zod';
 import type { Finding, Severity } from '../types.js';
+import { scoreMcpServer, type McpTrustResult } from './mcpTrustScore.js';
 
 /**
  * MCP Server configuration schema
@@ -54,6 +55,7 @@ export interface McpRiskAssessment {
   capabilities: string[];
   command?: string | undefined;
   url?: string | undefined;
+  trustScore?: McpTrustResult | undefined;
 }
 
 /**
@@ -341,6 +343,18 @@ export function validateMcpConfigContent(content: string): {
     for (const [name, config] of Object.entries(servers)) {
       if (typeof config === 'object' && config !== null) {
         const assessment = analyzeServer(name, config as Record<string, unknown>);
+        // Augment with trust score; surface CRITICAL/LOW trust as issues
+        assessment.trustScore = scoreMcpServer({ ...config, name });
+        if (assessment.trustScore.trustLevel === 'CRITICAL' || assessment.trustScore.trustLevel === 'LOW') {
+          for (const flag of assessment.trustScore.flags) {
+            assessment.issues.push({
+              type: 'trust-score',
+              severity: assessment.trustScore.trustLevel === 'CRITICAL' ? 'CRITICAL' : 'HIGH',
+              description: `Trust score ${assessment.trustScore.score}/100: ${flag}`,
+              remediation: 'Review MCP server configuration and address the flagged concern.',
+            });
+          }
+        }
         assessments.push(assessment);
       }
     }

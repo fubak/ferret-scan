@@ -9,6 +9,7 @@ jest.mock('yaml');
 
 import * as fs from 'node:fs';
 import * as yaml from 'yaml';
+import { isRE2Active } from '../../src/utils/safeRegex.js';
 import {
   loadCustomRulesFile,
   loadCustomRules,
@@ -148,7 +149,7 @@ describe('loadCustomRulesFile', () => {
     expect(rule.minMatchLength).toBe(10);
   });
 
-  it('skips rules with invalid (ReDoS) patterns and tracks errors', () => {
+  it('skips rules with invalid (ReDoS) patterns and tracks errors (native) or loads them (RE2)', () => {
     const withReDoS = JSON.stringify({
       rules: [
         {
@@ -157,16 +158,21 @@ describe('loadCustomRulesFile', () => {
           category: 'injection',
           severity: 'HIGH',
           description: 'rule with unsafe pattern',
-          patterns: ['(a+)+b'], // ReDoS pattern
+          patterns: ['(a+)+b'], // ReDoS pattern — unsafe in native JS, safe in RE2
         },
       ],
     });
     mockFs.existsSync.mockReturnValue(true);
     mockFs.readFileSync.mockReturnValue(withReDoS as unknown as Buffer);
     const result = loadCustomRulesFile('/path/rules.json');
-    // The rule should fail because no valid patterns remain
-    expect(result.success).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
+    if (isRE2Active()) {
+      // RE2 compiles this safely — rule should load successfully
+      expect(result.success).toBe(true);
+    } else {
+      // Static screener rejects — rule should fail
+      expect(result.success).toBe(false);
+      expect(result.errors.length).toBeGreaterThan(0);
+    }
   });
 
   it('reports error for rule with missing required fields', () => {
@@ -214,7 +220,7 @@ describe('validateCustomRulesFile', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('rejects unsafe regex patterns', () => {
+  it('rejects unsafe regex patterns (native) or validates them (RE2)', () => {
     const withReDoS = JSON.stringify({
       rules: [
         {
@@ -230,8 +236,13 @@ describe('validateCustomRulesFile', () => {
     mockFs.existsSync.mockReturnValue(true);
     mockFs.readFileSync.mockReturnValue(withReDoS as unknown as Buffer);
     const result = validateCustomRulesFile('/path/rules.json');
-    expect(result.valid).toBe(false);
-    expect(result.errors.some(e => e.includes('Unsafe or invalid regex'))).toBe(true);
+    if (isRE2Active()) {
+      // RE2 handles this safely — should be valid
+      expect(result.valid).toBe(true);
+    } else {
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('Unsafe or invalid regex'))).toBe(true);
+    }
   });
 
   it('detects duplicate rule IDs', () => {

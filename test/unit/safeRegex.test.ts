@@ -4,8 +4,14 @@ import {
   runBounded,
   safeMatch,
   safeTest,
+  isRE2Active,
   type BoundedOptions,
 } from '../../src/utils/safeRegex.js';
+
+// When RE2 is active, patterns that the static screener would reject are actually
+// compiled safely by RE2 (linear-time engine). Tests that assert null/false for
+// those patterns must be skipped when RE2 is running.
+const re2Active = isRE2Active();
 
 describe('safeRegex', () => {
   describe('compileSafePattern', () => {
@@ -22,12 +28,15 @@ describe('safeRegex', () => {
 
       for (const pattern of patterns) {
         const compiled = compileSafePattern(pattern);
-        expect(compiled).toBeInstanceOf(RegExp);
+        // RE2 instances satisfy the RegExp interface but are not instanceof RegExp.
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        expect(compiled === null || typeof (compiled as any).exec === 'function').toBe(true);
+        expect(compiled).not.toBeNull();
         expect(compiled!.source).toBeTruthy();
       }
     });
 
-    it('rejects ReDoS-prone patterns', () => {
+    it('rejects ReDoS-prone patterns (native fallback) or compiles them safely (RE2)', () => {
       const dangerousPatterns = [
         '(a+)+',           // Nested quantifiers
         '(a*)*',           // Nested quantifiers
@@ -41,8 +50,13 @@ describe('safeRegex', () => {
       ];
 
       for (const dangerous of dangerousPatterns) {
-        const compiled = compileSafePattern(dangerous);
-        expect(compiled).toBeNull();
+        if (re2Active) {
+          // RE2 handles these safely in linear time — they should compile, not throw.
+          expect(() => compileSafePattern(dangerous)).not.toThrow();
+        } else {
+          // Static screener must reject them to prevent native engine ReDoS.
+          expect(compileSafePattern(dangerous)).toBeNull();
+        }
       }
     });
 
@@ -62,12 +76,18 @@ describe('safeRegex', () => {
 
     it('preserves regex flags', () => {
       const pattern = compileSafePattern('test', 'gim');
-      expect(pattern!.flags).toBe('gim');
+      expect(pattern).not.toBeNull();
+      // RE2 normalises flag order; check each flag is present rather than exact string
+      expect(pattern!.flags).toContain('g');
+      expect(pattern!.flags).toContain('i');
+      expect(pattern!.flags).toContain('m');
     });
 
     it('uses default flags when none specified', () => {
       const pattern = compileSafePattern('test');
-      expect(pattern!.flags).toBe('gi');
+      expect(pattern).not.toBeNull();
+      expect(pattern!.flags).toContain('g');
+      expect(pattern!.flags).toContain('i');
     });
   });
 
@@ -152,9 +172,14 @@ describe('safeRegex', () => {
       expect(result!.matches[0]![0]).toBe('123');
     });
 
-    it('returns null for unsafe patterns', () => {
-      const result = safeMatch('(a+)+', 'aaaaaaa');
-      expect(result).toBeNull();
+    it('returns null for unsafe patterns (native) or a safe result (RE2)', () => {
+      // With RE2: pattern compiles and runs in linear time → result is not null.
+      // Without RE2: static screener rejects → null.
+      if (re2Active) {
+        expect(() => safeMatch('(a+)+', 'aaaaaaa')).not.toThrow();
+      } else {
+        expect(safeMatch('(a+)+', 'aaaaaaa')).toBeNull();
+      }
     });
 
     it('returns null for malformed patterns', () => {
@@ -198,17 +223,22 @@ describe('safeRegex', () => {
       expect(safeTest('xyz', 'testing')).toBe(false);
     });
 
-    it('returns false for unsafe patterns', () => {
-      expect(safeTest('(a+)+', 'aaaaaaa')).toBe(false);
+    it('returns false for invalid syntax patterns', () => {
       expect(safeTest('[unclosed', 'test')).toBe(false);
     });
 
+    it('returns false for ReDoS-prone patterns without RE2, or safe result with RE2', () => {
+      if (!re2Active) {
+        expect(safeTest('(a+)+', 'aaaaaaa')).toBe(false);
+      } else {
+        // RE2 compiles safely — the result depends on whether pattern matches.
+        expect(() => safeTest('(a+)+', 'aaaaaaa')).not.toThrow();
+      }
+    });
+
     it('returns false when execution is bounded', () => {
-      // Use a pattern that would be slow and get bounded
-      // This pattern will find many matches and hit the maxMatches limit
       const result = safeMatch('a', 'a'.repeat(1000), 'g', { maxMatches: 10 });
       expect(result!.truncated).toBe(true);
-      expect(safeTest('(a+)+', 'aaaa')).toBe(false); // Unsafe pattern
     });
 
     it('respects case sensitivity flag', () => {

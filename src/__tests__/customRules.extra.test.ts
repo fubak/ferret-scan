@@ -78,7 +78,9 @@ describe('loadCustomRulesFile', () => {
     expect(result.success).toBe(true);
     expect(result.rules).toHaveLength(1);
     expect(result.rules[0]?.id).toBe('CUSTOM-001');
-    expect(result.rules[0]?.patterns[0]).toBeInstanceOf(RegExp);
+    // RE2 instances satisfy the RegExp interface but are not instanceof RegExp.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect(typeof (result.rules[0]?.patterns[0] as any)?.exec).toBe('function');
   });
 
   it('loads valid YAML rules file', () => {
