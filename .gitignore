@@ -3,6 +3,7 @@ node_modules/
 
 # Build output
 dist/
+*.tsbuildinfo
 
 # Coverage
 coverage/
@@ -82,7 +83,7 @@ service-account*.json
 .ferret-cache/
 .ferret-quarantine/
 .ferret-backups/
-.ferret-intel/
+.ferret-intel/**
 .ferret-data/
 .ferret-config/
 
