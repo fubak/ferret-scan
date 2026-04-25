@@ -89,14 +89,14 @@ program
   .option('-w, --watch', 'Watch mode - rescan on file changes')
   .option('--ci', 'CI mode - minimal output, suitable for pipelines')
   .option('-v, --verbose', 'Verbose output with context')
-  .option('--threat-intel', 'Enable threat intelligence feeds (experimental)')
-  .option('--semantic-analysis', 'Enable AST-based semantic analysis')
-  .option('--correlation-analysis', 'Enable cross-file correlation analysis')
-  .option('--entropy-analysis', 'Enable entropy-based secret detection')
+  .option('--threat-intel', '[EXPERIMENTAL] Enable local threat intelligence matching (built-in IoC database; add custom indicators via `ferret intel add`)')
+  .option('--semantic-analysis', 'Enable AST-based semantic analysis of code blocks in config files')
+  .option('--correlation-analysis', '[EXPERIMENTAL] Enable cross-file correlation analysis (detects multi-file attack chains; higher false-positive rate on large repos)')
+  .option('--entropy-analysis', 'Enable entropy-based secret detection (Shannon entropy scoring)')
   .option('--mcp-validation', 'Enable MCP server configuration validation')
   .option('--dependency-analysis', 'Enable dependency risk analysis (package.json)')
-  .option('--dependency-audit', 'Run npm audit as part of dependency analysis (slow, may require network)')
-  .option('--capability-mapping', 'Enable AI agent capability mapping')
+  .option('--dependency-audit', 'Run npm audit as part of dependency analysis (slow, requires network)')
+  .option('--capability-mapping', '[EXPERIMENTAL] Enable AI agent capability mapping (heuristic-based; expect false positives on complex configs)')
   .option('--config-only', 'Restrict scanning to high-signal AI config files (reduces noise)')
   .option('--marketplace <mode>', 'Marketplace scan mode: off, configs, all')
   .option('--no-doc-dampening', 'Disable documentation severity dampening (reduces false positives in docs)')
@@ -237,6 +237,17 @@ program
 
       // Apply auto-fix if enabled
       const shouldAutoFix = options.autoFix || options.autoRemediation;
+
+      // Warn when experimental features are enabled
+      const experimentalEnabled = [
+        options.threatIntel && 'threat-intel',
+        options.correlationAnalysis && 'correlation-analysis',
+        options.capabilityMapping && 'capability-mapping',
+      ].filter(Boolean);
+      if (experimentalEnabled.length > 0 && !options.ci) {
+        const names = experimentalEnabled.join(', ');
+        console.warn(`\n⚠  EXPERIMENTAL: ${names} — findings from these analyzers are heuristic-based and may have a higher false-positive rate. Review results carefully.\n`);
+      }
 
       // If no paths specified and no AI CLI configs found, show helpful message
       if (config.paths.length === 0) {

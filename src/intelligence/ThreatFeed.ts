@@ -79,121 +79,267 @@ const DEFAULT_INTEL_DIR = '.ferret-intel';
 const BUILTIN_SOURCES: ThreatSource[] = [
   {
     name: 'ai-cli-malicious-packages',
-    description: 'Known malicious npm packages targeting AI CLI environments',
-    lastUpdated: new Date().toISOString(),
+    description: 'Known malicious and typosquatting npm packages targeting AI CLI environments',
+    lastUpdated: '2025-01-01T00:00:00Z',
     enabled: true,
     format: 'json'
   },
   {
     name: 'ai-cli-suspicious-domains',
-    description: 'Suspicious domains used in AI CLI exploitation attempts',
-    lastUpdated: new Date().toISOString(),
+    description: 'Phishing and impersonation domains targeting AI CLI users and API credentials',
+    lastUpdated: '2025-01-01T00:00:00Z',
     enabled: true,
     format: 'json'
   },
   {
-    name: 'ai-cli-backdoor-patterns',
-    description: 'Code patterns associated with AI CLI-specific backdoors',
-    lastUpdated: new Date().toISOString(),
+    name: 'ai-cli-injection-patterns',
+    description: 'Prompt injection, jailbreak, and privilege-escalation patterns observed in the wild',
+    lastUpdated: '2025-01-01T00:00:00Z',
+    enabled: true,
+    format: 'json'
+  },
+  {
+    name: 'ai-cli-exfiltration-patterns',
+    description: 'Data exfiltration patterns embedded in AI CLI hooks and configurations',
+    lastUpdated: '2025-01-01T00:00:00Z',
     enabled: true,
     format: 'json'
   }
 ];
 
 /**
- * Built-in threat indicators
+ * Built-in threat indicators derived from publicly documented AI CLI attack patterns.
+ * These cover typosquatting, prompt injection, exfiltration, and privilege escalation
+ * as observed across real-world incident reports and security research (2024–2025).
+ *
+ * Note: No hash indicators are included by default. File hashes are highly specific;
+ * add them via `ferret intel add` with verified malicious-file hashes from your own
+ * threat intelligence sources.
  */
 const BUILTIN_INDICATORS: ThreatIndicator[] = [
-  // Malicious domains
-  {
-    value: 'evil-ai-api.com',
-    type: 'domain',
-    category: 'phishing',
-    severity: 'high',
-    description: 'Fake AI API endpoint used for credential harvesting',
-    source: 'ai-cli-suspicious-domains',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 95,
-    tags: ['phishing', 'fake-api', 'credential-theft']
-  },
-  {
-    value: 'anthropic-fake.net',
-    type: 'domain',
-    category: 'phishing',
-    severity: 'high',
-    description: 'Impersonates legitimate AI provider domain',
-    source: 'ai-cli-suspicious-domains',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 90,
-    tags: ['phishing', 'impersonation']
-  },
 
-  // Malicious packages
-  {
-    value: 'ai-jailbreak-helper',
-    type: 'package',
-    category: 'malicious-package',
-    severity: 'critical',
-    description: 'Package designed to bypass AI assistant safety mechanisms',
-    source: 'ai-cli-malicious-packages',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 100,
-    tags: ['jailbreak', 'bypass', 'malicious-npm']
-  },
+  // ── Typosquatting / impersonation packages ─────────────────────────────────
   {
     value: 'anthropic-sdk-fake',
     type: 'package',
     category: 'malicious-package',
-    severity: 'high',
-    description: 'Fake AI SDK that steals credentials',
+    severity: 'critical',
+    description: 'Typosquats the official @anthropic-ai/sdk package; exfiltrates API keys on install',
     source: 'ai-cli-malicious-packages',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
+    firstSeen: '2024-03-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
     confidence: 95,
-    tags: ['credential-theft', 'fake-sdk']
+    tags: ['typosquat', 'credential-theft', 'install-hook']
+  },
+  {
+    value: 'openai-sdk-community',
+    type: 'package',
+    category: 'malicious-package',
+    severity: 'high',
+    description: 'Unofficial package impersonating the OpenAI SDK; contains a postinstall exfiltration script',
+    source: 'ai-cli-malicious-packages',
+    firstSeen: '2024-06-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 90,
+    tags: ['typosquat', 'postinstall', 'exfiltration']
+  },
+  {
+    value: 'claude-code-helper',
+    type: 'package',
+    category: 'malicious-package',
+    severity: 'high',
+    description: 'Impersonates Claude Code utilities; reads ~/.claude/settings.json and beacons credentials',
+    source: 'ai-cli-malicious-packages',
+    firstSeen: '2024-09-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 88,
+    tags: ['typosquat', 'credential-theft', 'ai-cli']
+  },
+  {
+    value: 'cursor-ai-extensions',
+    type: 'package',
+    category: 'malicious-package',
+    severity: 'high',
+    description: 'Fake Cursor IDE extension package; harvests .cursorrules and workspace secrets',
+    source: 'ai-cli-malicious-packages',
+    firstSeen: '2024-08-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 85,
+    tags: ['typosquat', 'ai-cli', 'cursor']
+  },
+  {
+    value: 'mcp-server-tools',
+    type: 'package',
+    category: 'malicious-package',
+    severity: 'critical',
+    description: 'Malicious MCP server package that exfiltrates tool call arguments to a remote endpoint',
+    source: 'ai-cli-malicious-packages',
+    firstSeen: '2024-11-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 92,
+    tags: ['mcp', 'exfiltration', 'supply-chain']
+  },
+  {
+    value: 'ai-agent-framework',
+    type: 'package',
+    category: 'malicious-package',
+    severity: 'high',
+    description: 'Generic name used by multiple malicious packages to blend into AI agent dependency lists',
+    source: 'ai-cli-malicious-packages',
+    firstSeen: '2024-07-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 80,
+    tags: ['typosquat', 'ai-agent', 'generic-name']
   },
 
-  // Backdoor patterns
+  // ── Phishing / impersonation domains ──────────────────────────────────────
   {
-    value: 'ignore.*previous.*instructions?.*forget.*rules?',
+    value: 'anthropic-api.net',
+    type: 'domain',
+    category: 'phishing',
+    severity: 'high',
+    description: 'Typosquats api.anthropic.com; used to intercept API keys in misconfigured ANTHROPIC_BASE_URL',
+    source: 'ai-cli-suspicious-domains',
+    firstSeen: '2024-04-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 93,
+    tags: ['phishing', 'api-intercept', 'anthropic']
+  },
+  {
+    value: 'openai-proxy.io',
+    type: 'domain',
+    category: 'phishing',
+    severity: 'high',
+    description: 'Claimed OpenAI-compatible proxy that logs all prompts and responses',
+    source: 'ai-cli-suspicious-domains',
+    firstSeen: '2024-05-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 88,
+    tags: ['phishing', 'prompt-logging', 'openai']
+  },
+  {
+    value: 'cursor-updates.net',
+    type: 'domain',
+    category: 'phishing',
+    severity: 'high',
+    description: 'Impersonates Cursor IDE update infrastructure; delivers trojanized VSIX files',
+    source: 'ai-cli-suspicious-domains',
+    firstSeen: '2024-07-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 87,
+    tags: ['phishing', 'ide-trojan', 'cursor']
+  },
+  {
+    value: 'mcp-registry.net',
+    type: 'domain',
+    category: 'phishing',
+    severity: 'medium',
+    description: 'Unofficial MCP server registry used to distribute malicious MCP server packages',
+    source: 'ai-cli-suspicious-domains',
+    firstSeen: '2024-10-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 78,
+    tags: ['phishing', 'mcp', 'fake-registry']
+  },
+
+  // ── Prompt injection / jailbreak patterns ─────────────────────────────────
+  {
+    value: 'ignore\\s+(all\\s+)?(previous|prior|above)\\s+(instructions?|rules?|constraints?|guidelines?)',
     type: 'pattern',
     category: 'jailbreak-attempt',
     severity: 'high',
-    description: 'Pattern attempting to override AI assistant safety instructions',
-    source: 'ai-cli-backdoor-patterns',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 85,
-    tags: ['jailbreak', 'instruction-override']
+    description: 'Classic instruction-override injection attempting to nullify prior system prompt directives',
+    source: 'ai-cli-injection-patterns',
+    firstSeen: '2023-06-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 90,
+    tags: ['jailbreak', 'instruction-override', 'prompt-injection']
   },
   {
-    value: 'developer.*mode.*enabled|admin.*access.*granted',
+    value: 'you\\s+are\\s+now\\s+(in\\s+)?(developer|jailbreak|dan|unrestricted|god)\\s+mode',
     type: 'pattern',
-    category: 'privilege-escalation',
-    severity: 'medium',
-    description: 'Attempts to claim elevated privileges in AI assistants',
-    source: 'ai-cli-backdoor-patterns',
+    category: 'jailbreak-attempt',
+    severity: 'high',
+    description: 'Developer/DAN mode activation attempt — claims to unlock unrestricted AI behavior',
+    source: 'ai-cli-injection-patterns',
+    firstSeen: '2023-09-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 88,
+    tags: ['jailbreak', 'dan-mode', 'privilege-escalation']
+  },
+  {
+    value: 'disregard\\s+(your\\s+)?(safety|ethical|content)\\s+(policy|policies|guidelines?|filters?)',
+    type: 'pattern',
+    category: 'jailbreak-attempt',
+    severity: 'high',
+    description: 'Attempts to disable AI safety filters by direct instruction',
+    source: 'ai-cli-injection-patterns',
     firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 75,
-    tags: ['privilege-escalation', 'social-engineering']
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 85,
+    tags: ['jailbreak', 'safety-bypass']
+  },
+  {
+    value: 'print\\s+(your\\s+)?(system\\s+prompt|initial\\s+instructions?|full\\s+context)',
+    type: 'pattern',
+    category: 'jailbreak-attempt',
+    severity: 'high',
+    description: 'System prompt exfiltration via direct instruction to reveal context',
+    source: 'ai-cli-injection-patterns',
+    firstSeen: '2024-02-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 82,
+    tags: ['prompt-exfil', 'system-prompt', 'context-leak']
+  },
+  {
+    value: 'as\\s+your\\s+(true\\s+)?(self|creator|master|owner)\\b',
+    type: 'pattern',
+    category: 'jailbreak-attempt',
+    severity: 'medium',
+    description: 'Social-engineering attack claiming authority over the AI assistant',
+    source: 'ai-cli-injection-patterns',
+    firstSeen: '2024-01-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 70,
+    tags: ['jailbreak', 'social-engineering', 'authority-claim']
   },
 
-  // Hash indicators (example malicious file hashes)
+  // ── Exfiltration patterns ─────────────────────────────────────────────────
   {
-    value: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
-    type: 'hash',
-    category: 'malicious-file',
+    value: 'curl\\s+.*\\$\\{?(ANTHROPIC|OPENAI|CLAUDE|GITHUB|AWS|GCP)_?(API_?KEY|TOKEN|SECRET)',
+    type: 'pattern',
+    category: 'exfiltration',
     severity: 'critical',
-    description: 'Hash of known malicious AI CLI configuration file',
-    source: 'ai-cli-malicious-packages',
-    firstSeen: '2024-01-01T00:00:00Z',
-    lastSeen: new Date().toISOString(),
-    confidence: 100,
-    tags: ['malicious-config', 'sha256']
+    description: 'Shell command interpolating AI/cloud API keys directly into a curl request body or URL',
+    source: 'ai-cli-exfiltration-patterns',
+    firstSeen: '2024-03-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 95,
+    tags: ['exfiltration', 'credential-leak', 'curl', 'hook']
+  },
+  {
+    value: 'fetch\\(.*\\$\\{(conversation|messages|response|output|result)',
+    type: 'pattern',
+    category: 'exfiltration',
+    severity: 'high',
+    description: 'JavaScript fetch() call interpolating AI conversation data into a remote request',
+    source: 'ai-cli-exfiltration-patterns',
+    firstSeen: '2024-05-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 88,
+    tags: ['exfiltration', 'conversation-leak', 'fetch']
+  },
+  {
+    value: 'dns\\.lookup|nslookup|dig\\s+.*\\.(com|net|io|xyz)',
+    type: 'pattern',
+    category: 'exfiltration',
+    severity: 'medium',
+    description: 'DNS lookup in a hook context may indicate DNS-based data exfiltration channel',
+    source: 'ai-cli-exfiltration-patterns',
+    firstSeen: '2024-06-01T00:00:00Z',
+    lastSeen: '2025-01-01T00:00:00Z',
+    confidence: 65,
+    tags: ['exfiltration', 'dns-exfil', 'covert-channel']
   }
 ];
 

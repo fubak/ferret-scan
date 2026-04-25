@@ -20,18 +20,19 @@ import { discoverFiles } from './FileDiscovery.js';
 import { matchRules } from './PatternMatcher.js';
 import { getRulesForScan } from '../rules/index.js';
 import { loadCustomRules, loadCustomRulesSource } from '../features/customRules.js';
-import { analyzeFile as analyzeFileSemantics, shouldAnalyze as shouldAnalyzeSemantics, getMemoryUsage } from '../analyzers/AstAnalyzer.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
-import { loadThreatDatabase } from '../intelligence/ThreatFeed.js';
-import { matchIndicators, shouldMatchIndicators } from '../intelligence/IndicatorMatcher.js';
-import { analyzeEntropy, entropyFindingsToFindings } from '../features/entropyAnalysis.js';
-import { validateMcpConfigContent, mcpAssessmentsToFindings } from '../features/mcpValidator.js';
-import { analyzeDependencies, dependencyAssessmentsToFindings } from '../features/dependencyRisk.js';
-import { analyzeCapabilitiesContent, capabilityProfileToFindings } from '../features/capabilityMapping.js';
 import { parseIgnoreComments, shouldIgnoreFinding, type FileIgnoreState } from '../features/ignoreComments.js';
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
-import { createLlmProvider, analyzeWithLlm, type LlmProvider } from '../features/llmAnalysis.js';
+import { createLlmProvider, type LlmProvider } from '../features/llmAnalysis.js';
+import type { IAnalyzer, AnalyzerContext } from './IAnalyzer.js';
+import { EntropyAnalyzer } from './analyzers/EntropyAnalyzer.js';
+import { McpAnalyzer } from './analyzers/McpAnalyzer.js';
+import { DependencyAnalyzer } from './analyzers/DependencyAnalyzer.js';
+import { CapabilityAnalyzer } from './analyzers/CapabilityAnalyzer.js';
+import { LlmAnalyzer, type LlmRuntime } from './analyzers/LlmAnalyzer.js';
+import { SemanticAnalyzer } from './analyzers/SemanticAnalyzer.js';
+import { ThreatIntelAnalyzer } from './analyzers/ThreatIntelAnalyzer.js';
 import logger from '../utils/logger.js';
 import ora from 'ora';
 
@@ -280,19 +281,32 @@ async function loadCustomRulesForScan(config: ScannerConfig): Promise<Rule[]> {
 }
 
 /**
+ * Build the ordered list of analyzers for a scan.
+ */
+function buildAnalyzers(llmProvider: LlmProvider | null, llmRuntime: LlmRuntime): IAnalyzer[] {
+  return [
+    new EntropyAnalyzer(),
+    new McpAnalyzer(),
+    new DependencyAnalyzer(),
+    new CapabilityAnalyzer(),
+    new LlmAnalyzer(llmProvider, llmRuntime),
+    new SemanticAnalyzer(),
+    new ThreatIntelAnalyzer(),
+  ];
+}
+
+/**
  * Scan a single file
  */
 async function scanFile(
   file: DiscoveredFile,
   config: ScannerConfig,
   rules: Rule[],
-  llmProvider: LlmProvider | null,
-  llmRuntime: { analyzed: number; disabled: boolean; disabledReason?: string }
+  analyzers: IAnalyzer[]
 ): Promise<{ findings: Finding[]; errors?: string[]; ignoreState?: FileIgnoreState }> {
   try {
     const content = await readFile(file.path, 'utf-8');
     const allFindings: Finding[] = [];
-    const fileErrors: string[] = [];
     let ignoreState: FileIgnoreState | undefined;
 
     if (config.ignoreComments && content.includes('ferret-')) {
@@ -308,133 +322,22 @@ async function scanFile(
     });
     allFindings.push(...patternFindings);
 
-    // Entropy analysis (secret detection) if enabled
-    if (config.entropyAnalysis) {
+    // Run each analyzer in order via the registry
+    const ctx: AnalyzerContext = { file, content, config, rules, existingFindings: allFindings };
+
+    for (const analyzer of analyzers) {
+      if (!analyzer.shouldRun(ctx)) continue;
       try {
-        const entropyFindings = analyzeEntropy(content, file);
-        const converted = entropyFindingsToFindings(entropyFindings, file, content);
-        allFindings.push(...converted);
-      } catch (entropyError) {
-        const entropyMessage = entropyError instanceof Error ? entropyError.message : String(entropyError);
-        logger.warn(`Entropy analysis error for ${file.relativePath}: ${entropyMessage}`);
+        const found = await analyzer.analyze(ctx);
+        allFindings.push(...found);
+        ctx.existingFindings = allFindings;
+      } catch (err) {
+        logger.warn(
+          `${analyzer.name} error for ${file.relativePath}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 
-    // MCP configuration validation if enabled
-    if (config.mcpValidation && file.component === 'mcp' && file.type === 'json') {
-      const mcpResult = validateMcpConfigContent(content);
-      if (mcpResult.valid && mcpResult.assessments.length > 0) {
-        const mcpFindings = mcpAssessmentsToFindings(mcpResult.assessments, file.path);
-        // Normalize relative path (feature module uses basename)
-        for (const f of mcpFindings) {
-          f.relativePath = file.relativePath;
-        }
-        allFindings.push(...mcpFindings);
-      }
-    }
-
-    // Dependency analysis if enabled
-    if (config.dependencyAnalysis && basename(file.path).toLowerCase() === 'package.json') {
-      try {
-        const depResult = analyzeDependencies(file.path, config.dependencyAudit);
-        const depFindings = dependencyAssessmentsToFindings(depResult);
-        for (const f of depFindings) {
-          f.relativePath = file.relativePath;
-        }
-        allFindings.push(...depFindings);
-      } catch (depError) {
-        const depMessage = depError instanceof Error ? depError.message : String(depError);
-        logger.warn(`Dependency analysis error for ${file.relativePath}: ${depMessage}`);
-      }
-    }
-
-    // Capability mapping if enabled (best-effort, JSON-only)
-    if (config.capabilityMapping && file.type === 'json') {
-      try {
-        const profile = analyzeCapabilitiesContent(file.path, content);
-        if (profile) {
-          const capFindings = capabilityProfileToFindings(profile);
-          for (const f of capFindings) {
-            f.relativePath = file.relativePath;
-          }
-          allFindings.push(...capFindings);
-        }
-      } catch (capError) {
-        const capMessage = capError instanceof Error ? capError.message : String(capError);
-        logger.warn(`Capability mapping error for ${file.relativePath}: ${capMessage}`);
-      }
-    }
-
-    // LLM-assisted analysis (optional; networked)
-    if (config.llmAnalysis && llmProvider && !llmRuntime.disabled && llmRuntime.analyzed < config.llm.maxFiles) {
-      const llmResult = await analyzeWithLlm(
-        llmProvider,
-        config.llm,
-        file,
-        content,
-        allFindings
-      );
-      if (llmResult.ran) {
-        llmRuntime.analyzed += 1;
-      }
-      allFindings.push(...llmResult.findings);
-      if (llmResult.error) {
-        fileErrors.push(`LLM analysis: ${llmResult.error}`);
-
-        if (!llmRuntime.disabled && /\bHTTP 429\b/i.test(llmResult.error)) {
-          llmRuntime.disabled = true;
-          llmRuntime.disabledReason = 'rate limited (HTTP 429)';
-          logger.warn('LLM disabled for remainder of scan due to rate limiting (HTTP 429)');
-        }
-      }
-    }
-
-    // Semantic analysis if enabled and applicable
-    if (config.semanticAnalysis && shouldAnalyzeSemantics(file, config)) {
-      // Monitor memory usage
-      const memBefore = getMemoryUsage();
-      if (memBefore.used > 1000) { // More than 1GB used
-        logger.warn(`High memory usage (${memBefore.used}MB) - skipping semantic analysis for ${file.relativePath}`);
-      } else {
-        try {
-          logger.debug(`Running semantic analysis on ${file.relativePath}`);
-          const semanticFindings = await analyzeFileSemantics(file, content, rules);
-          // Convert SemanticFinding to Finding for compatibility
-          allFindings.push(...semanticFindings);
-
-          const memAfter = getMemoryUsage();
-          logger.debug(`Semantic analysis memory: ${memAfter.used - memBefore.used}MB delta`);
-        } catch (semanticError) {
-          const semanticMessage = semanticError instanceof Error ? semanticError.message : String(semanticError);
-          logger.warn(`Semantic analysis error for ${file.relativePath}: ${semanticMessage}`);
-        }
-      }
-    }
-
-    // Threat intelligence matching if enabled
-    if (config.threatIntel && shouldMatchIndicators(file, config)) {
-      try {
-        const threatDB = loadThreatDatabase();
-        logger.debug(`Running threat intelligence matching on ${file.relativePath}`);
-        const threatFindings = matchIndicators(threatDB, file, content, {
-          minConfidence: 50,
-          enablePatternMatching: true,
-          maxMatchesPerFile: 50
-        });
-        allFindings.push(...threatFindings);
-        logger.debug(`Found ${threatFindings.length} threat intelligence matches`);
-      } catch (threatError) {
-        const threatMessage = threatError instanceof Error ? threatError.message : String(threatError);
-        logger.warn(`Threat intelligence error for ${file.relativePath}: ${threatMessage}`);
-      }
-    }
-
-    if (fileErrors.length > 0 && ignoreState) {
-      return { findings: allFindings, errors: fileErrors, ignoreState };
-    }
-    if (fileErrors.length > 0) {
-      return { findings: allFindings, errors: fileErrors };
-    }
     if (ignoreState) {
       return { findings: allFindings, ignoreState };
     }
@@ -471,7 +374,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const errors: { file?: string; message: string; code?: string; fatal: boolean }[] = [];
   const showProgress = !config.ci && process.stdout.isTTY;
   const ignoreStates = new Map<string, FileIgnoreState>();
-  const llmRuntime: { analyzed: number; disabled: boolean; disabledReason?: string } = { analyzed: 0, disabled: false };
+  const llmRuntime: LlmRuntime = { analyzed: 0, disabled: false };
   let llmProvider: LlmProvider | null = null;
   const baseRules = getRulesForScan(config.categories, config.severities);
   let rulesForScan: Rule[] = baseRules;
@@ -517,6 +420,9 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
       );
     }
   }
+
+  // Build analyzer registry (uses llmProvider + llmRuntime by reference)
+  const analyzers = buildAnalyzers(llmProvider, llmRuntime);
 
   // Discover files with spinner
   let spinner: ReturnType<typeof ora> | null = null;
@@ -589,7 +495,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
       }
     }
 
-    const result = await scanFile(file, config, rulesForScan, llmProvider, llmRuntime);
+    const result = await scanFile(file, config, rulesForScan, analyzers);
 
     if (result.errors && result.errors.length > 0) {
       for (const err of result.errors) {
