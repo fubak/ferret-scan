@@ -52,7 +52,7 @@ CMD ["--help"]
 
 LABEL org.opencontainers.image.title="Ferret Security Scanner"
 LABEL org.opencontainers.image.description="Security scanner for AI CLI configurations"
-LABEL org.opencontainers.image.version="2.1.0"
+LABEL org.opencontainers.image.version="2.2.0"
 LABEL org.opencontainers.image.vendor="Ferret Security"
 LABEL org.opencontainers.image.licenses="MIT"
 LABEL org.opencontainers.image.source="https://github.com/fubak/ferret-scan"

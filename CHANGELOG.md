@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **`redact: true` by default**: `DEFAULT_CONFIG.redact` flipped from `false` to `true` — secrets found during a scan are now redacted in all output formats (console, CI logs, SARIF, HTML, CSV) without requiring any opt-in
+- **ReDoS prevention enforced in custom rules**: `customRules.ts` now compiles all user-supplied patterns via `compileSafePattern` (previously used raw `new RegExp()`), closing the path by which a malicious `.ferret/rules.yml` could hang a CI build; validation step likewise uses `compileSafePattern` to reject unsafe patterns before load
+- **Dependency vulnerabilities patched**: `npm audit fix` resolves all 7 vulnerabilities (1 critical Handlebars JS injection, 3 high ReDoS in minimatch/picomatch/flatted, 3 moderate)
+
+### Changed
+- **Windows platform support**: Removed `"os": ["!win32"]` exclusion; `package.json` now lists `linux`, `darwin`, and `win32`. Platform guards were already in place in `Quarantine.ts` and `gitHooks.ts`
+
+### Fixed
+- **SECURITY.md accuracy**: Supported version table updated to `2.x` (was incorrectly showing `1.x`); custom rules threat mitigation description now accurately describes the `compileSafePattern` enforcement path
+- **Dockerfile version label**: Updated `org.opencontainers.image.version` from `2.1.0` to `2.2.0` for consistency
+
 ### Planned Features
 - Complete LSP server implementation
 - Complete IntelliJ plugin implementation

@@ -121,7 +121,7 @@ describe('loadConfig defaults', () => {
     expect(config.watch).toBe(false);
     expect(config.configOnly).toBe(false);
     expect(config.docDampening).toBe(true);
-    expect(config.redact).toBe(false);
+    expect(config.redact).toBe(true);
     expect(config.ignoreComments).toBe(true);
     expect(config.mitreAtlas).toBe(true);
   });

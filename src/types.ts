@@ -439,7 +439,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   configOnly: false,
   marketplaceMode: 'configs',
   docDampening: true,
-  redact: false,
+  redact: true,
   severities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'],
   categories: [
     'exfiltration',

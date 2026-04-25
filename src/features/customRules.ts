@@ -14,6 +14,7 @@ import { resolve, extname } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import type { Rule, ThreatCategory, Severity, FileType, ComponentType } from '../types.js';
+import { compileSafePattern } from '../utils/safeRegex.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -160,13 +161,14 @@ function parseCustomRulesContent(
  * Convert custom rule definition to Rule object
  */
 function definitionToRule(def: CustomRuleDefinition): Rule {
-  // Compile regex patterns with error handling
+  // Compile regex patterns — reject unsafe patterns via compileSafePattern
   const patterns: RegExp[] = [];
   for (const pattern of def.patterns) {
-    try {
-      patterns.push(new RegExp(pattern, 'gi'));
-    } catch {
-      logger.warn(`Invalid regex pattern in rule ${def.id}: ${pattern}`);
+    const compiled = compileSafePattern(pattern, 'gi');
+    if (compiled === null) {
+      logger.warn(`Unsafe or invalid regex pattern in rule ${def.id} (skipped): ${pattern}`);
+    } else {
+      patterns.push(compiled);
     }
   }
 
@@ -176,32 +178,29 @@ function definitionToRule(def: CustomRuleDefinition): Rule {
 
   // Compile exclude patterns
   const excludePatterns: RegExp[] | undefined = def.excludePatterns?.map((p: string) => {
-    try {
-      return new RegExp(p, 'gi');
-    } catch {
-      logger.warn(`Invalid exclude pattern in rule ${def.id}: ${p}`);
-      return null;
+    const compiled = compileSafePattern(p, 'gi');
+    if (compiled === null) {
+      logger.warn(`Unsafe or invalid exclude pattern in rule ${def.id} (skipped): ${p}`);
     }
+    return compiled;
   }).filter((p): p is RegExp => p !== null);
 
   // Compile require context patterns
   const requireContext: RegExp[] | undefined = def.requireContext?.map((p: string) => {
-    try {
-      return new RegExp(p, 'gi');
-    } catch {
-      logger.warn(`Invalid requireContext pattern in rule ${def.id}: ${p}`);
-      return null;
+    const compiled = compileSafePattern(p, 'gi');
+    if (compiled === null) {
+      logger.warn(`Unsafe or invalid requireContext pattern in rule ${def.id} (skipped): ${p}`);
     }
+    return compiled;
   }).filter((p): p is RegExp => p !== null);
 
   // Compile exclude context patterns
   const excludeContext: RegExp[] | undefined = def.excludeContext?.map((p: string) => {
-    try {
-      return new RegExp(p, 'gi');
-    } catch {
-      logger.warn(`Invalid excludeContext pattern in rule ${def.id}: ${p}`);
-      return null;
+    const compiled = compileSafePattern(p, 'gi');
+    if (compiled === null) {
+      logger.warn(`Unsafe or invalid excludeContext pattern in rule ${def.id} (skipped): ${p}`);
     }
+    return compiled;
   }).filter((p): p is RegExp => p !== null);
 
   const rule: Rule = {
@@ -512,13 +511,11 @@ export function validateCustomRulesFile(filePath: string): {
       };
     }
 
-    // Validate regex patterns
+    // Validate regex patterns — also screen for ReDoS risks
     for (const rule of result.data.rules) {
       for (const pattern of rule.patterns) {
-        try {
-          void new RegExp(pattern, 'gi');
-        } catch {
-          errors.push(`Rule ${rule.id}: Invalid regex pattern "${pattern}"`);
+        if (compileSafePattern(pattern, 'gi') === null) {
+          errors.push(`Rule ${rule.id}: Unsafe or invalid regex pattern "${pattern}"`);
         }
       }
     }
