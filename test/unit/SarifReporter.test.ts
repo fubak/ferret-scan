@@ -230,3 +230,25 @@ describe('SarifReporter', () => {
     });
   });
 });
+
+// ─── mcpTrustSummary in SARIF properties ──────────────────────────────────────
+
+describe('mcpTrustSummary in SARIF output', () => {
+  it('omits mcpTrustSummary when not present', () => {
+    const result = makeScanResult([]);
+    const doc = generateSarifReport(result);
+    expect(doc.runs[0]?.properties?.ferret?.mcpTrustSummary).toBeUndefined();
+  });
+
+  it('includes mcpTrustSummary when populated', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 3, high: 1, medium: 1, low: 0, critical: 1, lowestScore: 20 };
+    const doc = generateSarifReport(result);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const trust = (doc.runs[0]?.properties?.ferret as any)?.mcpTrustSummary as typeof result.mcpTrustSummary;
+    expect(trust).toBeDefined();
+    expect(trust?.total).toBe(3);
+    expect(trust?.critical).toBe(1);
+    expect(trust?.lowestScore).toBe(20);
+  });
+});
