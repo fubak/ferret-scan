@@ -5,8 +5,8 @@
  */
 
 import { Command } from 'commander';
-import { readFileSync } from 'node:fs';
-import { resolve, dirname } from 'node:path';
+import { readFileSync, existsSync } from 'node:fs';
+import { resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { scan, getExitCode } from '../dist/scanner/Scanner.js';
 import { loadConfig, getAIConfigPaths } from '../dist/utils/config.js';
@@ -52,6 +52,7 @@ import { installHooks, uninstallHooks, getHookStatus } from '../dist/features/gi
 import { loadCustomRules, validateCustomRulesFile } from '../dist/features/customRules.js';
 import { analyzeEntropy, entropyFindingsToFindings } from '../dist/features/entropyAnalysis.js';
 import { validateMcpConfig, findAndValidateMcpConfigs, mcpAssessmentsToFindings } from '../dist/features/mcpValidator.js';
+import { scoreMcpServer } from '../dist/features/mcpTrustScore.js';
 import { compareScanResults, formatComparisonReport, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
 import { sendWebhook, detectWebhookType } from '../dist/features/webhooks.js';
 import { analyzeDependencies, dependencyAssessmentsToFindings, findAndAnalyzeDependencies } from '../dist/features/dependencyRisk.js';
@@ -1127,6 +1128,90 @@ mcpCmd
 
     } catch (error) {
       console.error('Error validating MCP configs:', error.message);
+      process.exit(1);
+    }
+  });
+
+mcpCmd
+  .command('audit')
+  .description('Score every MCP server in a config for trust and security posture')
+  .argument('[path]', 'Path to .mcp.json or directory to search (default: current directory)')
+  .option('-f, --format <format>', 'Output format: table, json', 'table')
+  .option('--fail-on <level>', 'Exit non-zero when any server is at or below this trust level: critical, low, medium', 'critical')
+  .action((path, options) => {
+    try {
+      const targetPath = path ? resolve(path) : process.cwd();
+
+      // Locate .mcp.json files
+      const { configs } = findAndValidateMcpConfigs(targetPath);
+      const mcpFiles = configs.map(c => c.path);
+
+      // Also try direct file if it looks like an mcp config
+      if (mcpFiles.length === 0 && existsSync(targetPath) && targetPath.endsWith('.json')) {
+        mcpFiles.push(targetPath);
+      }
+
+      if (mcpFiles.length === 0) {
+        console.log('No MCP configuration files found');
+        process.exit(0);
+      }
+
+      const trustLevelOrder = { CRITICAL: 0, LOW: 1, MEDIUM: 2, HIGH: 3 };
+      const failOrder = { critical: 0, low: 1, medium: 2, high: 3 };
+      const failThreshold = failOrder[options.failOn] ?? 0;
+
+      const allResults = [];
+      let worstTrust = 'HIGH';
+
+      for (const mcpFile of mcpFiles) {
+        let parsed;
+        try {
+          parsed = JSON.parse(readFileSync(mcpFile, 'utf-8'));
+        } catch {
+          console.error(`  Failed to parse ${mcpFile}`);
+          continue;
+        }
+
+        const servers = parsed.mcpServers ?? parsed.servers ?? {};
+        for (const [name, cfg] of Object.entries(servers)) {
+          const trust = scoreMcpServer({ ...cfg, name });
+          allResults.push({ file: basename(mcpFile), name, ...trust });
+          if (trustLevelOrder[trust.trustLevel] < trustLevelOrder[worstTrust]) {
+            worstTrust = trust.trustLevel;
+          }
+        }
+      }
+
+      if (options.format === 'json') {
+        console.log(JSON.stringify({ servers: allResults, worstTrust }, null, 2));
+      } else {
+        const levelIcon = { HIGH: '✅', MEDIUM: '⚠️ ', LOW: '🟠', CRITICAL: '🔴' };
+        console.log('\n  MCP SERVER TRUST AUDIT\n');
+        console.log(`  ${'Server'.padEnd(28)} ${'Score'.padEnd(7)} ${'Trust'.padEnd(10)} Flags`);
+        console.log('  ' + '─'.repeat(80));
+        for (const r of allResults) {
+          const icon = levelIcon[r.trustLevel] ?? '?';
+          const flags = r.flags.length > 0 ? r.flags[0].slice(0, 48) + (r.flags[0].length > 48 ? '…' : '') : '';
+          console.log(`  ${icon} ${r.name.padEnd(26)} ${String(r.score).padEnd(7)} ${r.trustLevel.padEnd(10)} ${flags}`);
+          if (r.flags.length > 1) {
+            for (const f of r.flags.slice(1)) {
+              console.log(`       ${''.padEnd(26)} ${''.padEnd(7)} ${''.padEnd(10)} ${f.slice(0, 48)}`);
+            }
+          }
+        }
+        console.log('');
+        console.log(`  ${allResults.length} server(s) audited  |  Worst trust level: ${worstTrust}`);
+        console.log('');
+      }
+
+      const exitLevel = failOrder[worstTrust.toLowerCase()] ?? 3;
+      if (exitLevel <= failThreshold) {
+        process.exit(1);
+      }
+      process.exit(0);
+
+    } catch (error) {
+      console.error('Error auditing MCP configs:', error.message);
       process.exit(1);
     }
   });

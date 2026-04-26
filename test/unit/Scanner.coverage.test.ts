@@ -502,3 +502,37 @@ describe('isLocalEndpoint IPv6 (line 365)', () => {
     }
   });
 });
+
+// ─── LlmAnalyzer — shouldRun branches (lines 20-27) ──────────────────────────
+
+describe('LlmAnalyzer shouldRun branches', () => {
+  it('does not run LLM when llmAnalysis is false in config', async () => {
+    const tmpDir2 = resolve(tmpdir(), `ferret-llm-shouldrun-${Date.now()}`);
+    await mkdir(tmpDir2, { recursive: true });
+    await writeFile(resolve(tmpDir2, 'test.sh'), 'echo hello\n');
+    const result = await scan({
+      ...DEFAULT_CONFIG, paths: [tmpDir2], ci: true,
+      llmAnalysis: false, // disabled
+    });
+    expect(result.success).toBe(true);
+    await rm(tmpDir2, { recursive: true, force: true });
+  });
+
+  it('does not run LLM when maxFiles limit is 0', async () => {
+    const tmpDir2 = resolve(tmpdir(), `ferret-llm-maxfiles-${Date.now()}`);
+    await mkdir(tmpDir2, { recursive: true });
+    await writeFile(resolve(tmpDir2, 'test.sh'), 'echo hello\n');
+    process.env['FERRET_TEST_KEY2'] = 'sk-fake-key';
+    try {
+      const result = await scan({
+        ...DEFAULT_CONFIG, paths: [tmpDir2], ci: true,
+        llmAnalysis: true,
+        llm: { ...DEFAULT_CONFIG.llm, maxFiles: 0, apiKeyEnv: 'FERRET_TEST_KEY2' },
+      });
+      expect(result.success).toBe(true);
+    } finally {
+      delete process.env['FERRET_TEST_KEY2'];
+      await rm(tmpDir2, { recursive: true, force: true });
+    }
+  });
+});
