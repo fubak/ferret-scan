@@ -986,7 +986,7 @@ describe('--llm-analysis with local Ollama', () => {
       'scan', llmDir,
       '--llm-analysis',
       '--llm-base-url', `${OLLAMA_URL}/v1/chat/completions`,
-      '--llm-model', 'llama3.2:latest',
+      '--llm-model', 'qwen2.5:7b',
       '--llm-api-key-env', 'OLLAMA_KEY',
       '--ci',
     ], { env: { OLLAMA_KEY: 'ollama' } });
@@ -1006,7 +1006,7 @@ describe('--llm-analysis with local Ollama', () => {
       'scan', llmDir,
       '--llm-analysis', '--llm-all-files',
       '--llm-base-url', `${OLLAMA_URL}/v1/chat/completions`,
-      '--llm-model', 'llama3.2:latest',
+      '--llm-model', 'qwen2.5:7b',
       '--llm-api-key-env', 'OLLAMA_KEY',
       '--llm-min-confidence', '0.5',
       '--llm-cache-dir', cacheDir,
@@ -1031,7 +1031,7 @@ describe('--llm-analysis with local Ollama', () => {
       'scan', llmDir,
       '--llm-analysis', '--llm-all-files',
       '--llm-base-url', `${OLLAMA_URL}/v1/chat/completions`,
-      '--llm-model', 'llama3.2:latest',
+      '--llm-model', 'qwen2.5:7b',
       '--llm-api-key-env', 'OLLAMA_KEY',
       '--llm-min-confidence', '0.5',
       '--llm-cache-dir', cacheDir,
@@ -1048,7 +1048,7 @@ describe('--llm-analysis with local Ollama', () => {
     expect(result.success).toBe(true);
   }, 120_000);
 
-  it('--llm-model flag selects a different model (qwen2.5:7b)', () => {
+  it('--llm-model flag selects a different model (llama3.2:latest)', () => {
     if (skipIf()) return;
     const out = join(root, 'llm-qwen.json');
     const r = ferret([
@@ -1062,7 +1062,7 @@ describe('--llm-analysis with local Ollama', () => {
       '--format', 'json', '-o', out,
     ], { env: { OLLAMA_KEY: 'ollama' } });
     expect(r.status).toBeDefined();
-    // qwen model accepted without error
+    // llama3.2 model accepted without error (may not produce valid JSON but scan completes)
     expect(typeof r.status).toBe('number');
   }, 120_000);
 
@@ -1077,7 +1077,7 @@ describe('--llm-analysis with local Ollama', () => {
       'scan', llmDir,
       '--llm-analysis', '--llm-all-files',
       '--llm-base-url', `${OLLAMA_URL}/v1/chat/completions`,
-      '--llm-model', 'llama3.2:latest',
+      '--llm-model', 'qwen2.5:7b',
       '--llm-api-key-env', 'OLLAMA_KEY',
       '--llm-cache-dir', cacheDir,
       '--llm-max-files', '2',
@@ -1102,7 +1102,7 @@ describe('--llm-analysis with local Ollama', () => {
       'scan', llmDir,
       '--llm-analysis', '--llm-all-files',
       '--llm-base-url', `${OLLAMA_URL}/v1/chat/completions`,
-      '--llm-model', 'llama3.2:latest',
+      '--llm-model', 'qwen2.5:7b',
       '--llm-api-key-env', 'OLLAMA_KEY',
       '--llm-min-confidence', '0.5',
       '--llm-cache-dir', cacheDir,
@@ -1112,10 +1112,9 @@ describe('--llm-analysis with local Ollama', () => {
     const env = { OLLAMA_KEY: 'ollama' };
     const t0 = Date.now(); ferret(args, { env }); const t1 = Date.now();
     const t2 = Date.now(); ferret(args, { env }); const t3 = Date.now();
-    const firstMs = t1 - t0;
+    const _firstMs = t1 - t0; void _firstMs; // first run populates cache
     const secondMs = t3 - t2;
-    // Second run should be substantially faster (cache hit)
-    // We accept any result — just verify the cache mechanism doesn't break
-    expect(secondMs).toBeLessThanOrEqual(firstMs + 1000); // allow up to 1s longer (startup noise)
+    // Second run hits cache — must be < 2s regardless of Ollama speed
+    expect(secondMs).toBeLessThan(2000);
   }, 240_000);
 });
