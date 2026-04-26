@@ -13,6 +13,7 @@ import type {
   Severity,
   ThreatCategory,
   ScanSummary,
+  McpTrustSummary,
   DiscoveredFile,
 } from '../types.js';
 import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
@@ -365,6 +366,26 @@ function isLocalEndpoint(urlStr: string): boolean {
   }
 }
 
+function buildMcpTrustSummary(trustFindings: Finding[]): McpTrustSummary {
+  const summary: McpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
+  const seen = new Set<string>();
+  for (const f of trustFindings) {
+    const server = String(f.metadata?.['serverName'] ?? f.file);
+    if (seen.has(server)) continue;
+    seen.add(server);
+    summary.total++;
+    const score = typeof f.metadata?.['trustScore'] === 'number'
+      ? (f.metadata['trustScore'] as number)
+      : (f.severity === 'CRITICAL' ? 20 : 45);
+    summary.lowestScore = Math.min(summary.lowestScore, score);
+    if (score >= 80) summary.high++;
+    else if (score >= 60) summary.medium++;
+    else if (score >= 40) summary.low++;
+    else summary.critical++;
+  }
+  return summary;
+}
+
 /**
  * Main scan function
  */
@@ -577,6 +598,10 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const endTime = new Date();
   const duration = endTime.getTime() - startTime.getTime();
 
+  // Build MCP trust summary from trust-score findings emitted by mcpValidator
+  const mcpTrustFindings = sortedFindings.filter(f => f.metadata?.['issueType'] === 'trust-score');
+  const mcpTrustSummary = mcpTrustFindings.length > 0 ? buildMcpTrustSummary(mcpTrustFindings) : undefined;
+
   const result: ScanResult = {
     success: true,
     startTime,
@@ -593,6 +618,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     summary: calculateSummary(sortedFindings),
     errors,
     ignoredFindings,
+    ...(mcpTrustSummary !== undefined ? { mcpTrustSummary } : {}),
   };
 
   logger.info(

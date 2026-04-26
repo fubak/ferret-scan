@@ -252,6 +252,24 @@ export interface ScanResult {
   errors: ScanError[];
   /** Findings that were suppressed via inline ignore directives */
   ignoredFindings?: number;
+  /** Aggregate MCP server trust score summary (present when MCP configs were scanned) */
+  mcpTrustSummary?: McpTrustSummary;
+}
+
+/** Aggregated MCP server trust scores across a scan */
+export interface McpTrustSummary {
+  /** Total number of MCP servers evaluated */
+  total: number;
+  /** Servers with HIGH trust (score 80–100) */
+  high: number;
+  /** Servers with MEDIUM trust (score 60–79) */
+  medium: number;
+  /** Servers with LOW trust (score 40–59) */
+  low: number;
+  /** Servers with CRITICAL trust (score 0–39) */
+  critical: number;
+  /** Lowest individual trust score seen */
+  lowestScore: number;
 }
 
 /** Summary statistics for a scan */
