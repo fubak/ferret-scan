@@ -122,7 +122,7 @@ jobs:
         run: node bin/ferret.js scan . --ci
 
       - name: Upload self-scan SARIF
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: ferret-self-scan.sarif
