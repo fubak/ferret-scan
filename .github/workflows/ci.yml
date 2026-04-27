@@ -66,7 +66,7 @@ jobs:
 
       - name: Download baseline benchmark (main branch)
         id: restore-baseline
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: baseline.json
           key: bench-baseline-${{ github.base_ref || 'main' }}
@@ -80,7 +80,7 @@ jobs:
 
       - name: Save new baseline (main branch only)
         if: github.ref == 'refs/heads/main'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: bench.json
           key: bench-baseline-main
