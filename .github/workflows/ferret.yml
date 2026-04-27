@@ -221,7 +221,7 @@ jobs:
 
       - name: Create PR for updates
         if: success()
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'chore: update security threat intelligence database'
