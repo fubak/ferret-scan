@@ -117,3 +117,5 @@ pnpm-lock.yaml
 
 # Unrelated projects
 vitly/
+.ferret-policy.json
+undefined/
