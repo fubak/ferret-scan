@@ -1,14 +1,20 @@
 # Documentation
 
-This directory contains the maintained documentation for Ferret.
+Maintained documentation for Ferret.
 
-## Docs Index
+## User & Operator Docs
 
-- `docs/README.md`: This index and navigation entry point.
-- `docs/architecture.md`: System overview and data flow.
-- `docs/deployment.md`: Installation, Docker, and CI usage.
+- [`architecture.md`](./architecture.md) — System overview, components, and data flow
+- [`deployment.md`](./deployment.md) — Installation, Docker, and CI usage
+- [`THREAT_MODEL.md`](./THREAT_MODEL.md) — Adversaries, mitigations, and residual risks
 
-## Current docs
+## Reference & Analysis
 
-- `docs/architecture.md` - System overview and data flow
-- `docs/deployment.md` - Installation, Docker, and CI usage
+- [`mcp-scan-comparison.md`](./mcp-scan-comparison.md) — Architectural comparison with Snyk's mcp-scan
+- [`PATENT_LANDSCAPE_ANALYSIS.md`](./PATENT_LANDSCAPE_ANALYSIS.md) — Patent landscape research
+- [`PATENT_ACTION_PLAN.md`](./PATENT_ACTION_PLAN.md) — Patent strategy roadmap
+- [`ip-submissions/`](./ip-submissions/) — Provisional patent submissions (5 inventions)
+
+## Generated
+
+- `api/` — TypeDoc API reference (gitignored; run `npm run docs:api` to generate)

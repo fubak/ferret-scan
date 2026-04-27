@@ -8,6 +8,9 @@ dist/
 # Coverage
 coverage/
 
+# Generated API docs (regenerable via `npm run docs:api`)
+docs/api/
+
 # IDE
 .idea/
 .vscode/
