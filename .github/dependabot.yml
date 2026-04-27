@@ -14,6 +14,11 @@ updates:
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # typescript-eslint pinned at 8.54.0 — newer versions surface 400+ pre-existing
+      # lint errors. Unpin only as part of a focused lint-debt cleanup.
+      - dependency-name: "typescript-eslint"
+      - dependency-name: "@typescript-eslint/*"
+      - dependency-name: "eslint"
 
   - package-ecosystem: "github-actions"
     directory: "/"
