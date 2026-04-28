@@ -93,28 +93,10 @@ async function main() {
   // Dynamically import to avoid module caching affecting results
   const { scan } = await import(`${projectRoot}/dist/scanner/Scanner.js`);
   const { getRulesForScan } = await import(`${projectRoot}/dist/rules/index.js`);
+  const { DEFAULT_CONFIG: REAL_DEFAULT } = await import(`${projectRoot}/dist/types.js`);
 
-  const DEFAULT_CONFIG = {
-    paths: [],
-    severities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'],
-    categories: [
-      'exfiltration', 'credentials', 'injection', 'backdoors',
-      'supply-chain', 'permissions', 'persistence', 'obfuscation',
-      'ai-specific', 'advanced-hiding', 'behavioral',
-    ],
-    ignore: ['**/node_modules/**', '**/.git/**'],
-    failOn: 'HIGH',
-    watch: false,
-    threatIntel: false,
-    semanticAnalysis: false,
-    correlationAnalysis: false,
-    autoRemediation: false,
-    contextLines: 3,
-    maxFileSize: 10 * 1024 * 1024,
-    format: 'console',
-    verbose: false,
-    ci: true,
-  };
+  // Use the real DEFAULT_CONFIG to avoid drift when Scanner adds required fields.
+  const DEFAULT_CONFIG = { ...REAL_DEFAULT, format: 'console', ci: true };
 
   const tmpDir = resolve(tmpdir(), `ferret-bench-${Date.now()}`);
 
