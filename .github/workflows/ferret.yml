@@ -57,7 +57,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install ferret-scan
@@ -210,7 +210,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install ferret-scan
         run: npm install -g ferret-scan@latest

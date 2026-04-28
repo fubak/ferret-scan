@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-04-27
+
+### Changed
+- **Dropped Node 18 support**: `engines.node` bumped from `>=18.0.0` to `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` native module no longer builds on it (CI Test (18) was failing on main). CI matrix updated to `['20', '22']`; ancillary workflows (`ferret.yml`) bumped from Node 18 → 20.
+
 ### Security
 - **`redact: true` by default**: `DEFAULT_CONFIG.redact` flipped from `false` to `true` — secrets found during a scan are now redacted in all output formats (console, CI logs, SARIF, HTML, CSV) without requiring any opt-in
 - **ReDoS prevention enforced in custom rules**: `customRules.ts` now compiles all user-supplied patterns via `compileSafePattern` (previously used raw `new RegExp()`), closing the path by which a malicious `.ferret/rules.yml` could hang a CI build; validation step likewise uses `compileSafePattern` to reject unsafe patterns before load
