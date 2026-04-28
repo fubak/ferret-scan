@@ -10,28 +10,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.4.0] - 2026-04-27
 
 ### Changed
-- **Dropped Node 18 support**: `engines.node` bumped from `>=18.0.0` to `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` native module no longer builds on it (CI Test (18) was failing on main). CI matrix updated to `['20', '22']`; ancillary workflows (`ferret.yml`) bumped from Node 18 → 20.
-
-### Security
-- **`redact: true` by default**: `DEFAULT_CONFIG.redact` flipped from `false` to `true` — secrets found during a scan are now redacted in all output formats (console, CI logs, SARIF, HTML, CSV) without requiring any opt-in
-- **ReDoS prevention enforced in custom rules**: `customRules.ts` now compiles all user-supplied patterns via `compileSafePattern` (previously used raw `new RegExp()`), closing the path by which a malicious `.ferret/rules.yml` could hang a CI build; validation step likewise uses `compileSafePattern` to reject unsafe patterns before load
-- **Dependency vulnerabilities patched**: `npm audit fix` resolves all 7 vulnerabilities (1 critical Handlebars JS injection, 3 high ReDoS in minimatch/picomatch/flatted, 3 moderate)
-
-### Changed
-- **Windows platform support**: Removed `"os": ["!win32"]` exclusion; `package.json` now lists `linux`, `darwin`, and `win32`. Platform guards were already in place in `Quarantine.ts` and `gitHooks.ts`
+- **Dropped Node 18 support**: `engines.node` bumped from `>=18.0.0` to `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` native module no longer builds on it. CI matrix updated to `['20', '22']`; ancillary workflows bumped from Node 18 → 20.
 
 ### Fixed
-- **SECURITY.md accuracy**: Supported version table updated to `2.x` (was incorrectly showing `1.x`); custom rules threat mitigation description now accurately describes the `compileSafePattern` enforcement path
-- **Dockerfile version label**: Updated `org.opencontainers.image.version` from `2.1.0` to `2.2.0` for consistency
+- **`bench.mjs` config drift**: imports the canonical `DEFAULT_CONFIG` from `dist/types.js` instead of maintaining a hand-rolled copy that lost sync with `Scanner.ts` (Scanner crashed in benchmark with `Cannot read properties of undefined (reading 'enabled')` when `mitreAtlasCatalog` was missing)
+- **`getAIConfigPaths` test**: dropped `paths.length > 0` assertion — the function gates every entry through `existsSync()` against `$HOME` and CWD, so empty array is correct on a clean CI runner
+- **`cli.test.ts` FERRET_E2E gate**: replaced fragile gate that left fixtures undefined when the env var was unset. Now uses `const d = runCli ? describe : describe.skip` so all 120 CLI tests cleanly skip when FERRET_E2E is not set, instead of crashing with `TypeError`
+- **`publish.yml` ordering**: `Build` step now runs before `Run tests` (CLI integration tests spawn `bin/ferret.js` which imports from `dist/`); FERRET_E2E set on the test step
+- **`prepublishOnly`**: dropped redundant `npm run test` (the workflow's Test job already validates; running tests again during `npm publish` was wasteful)
 
-### Planned Features
-- Complete LSP server implementation
-- Complete IntelliJ plugin implementation
-- Community rule sharing backend
-- Real-time monitoring dashboard
-- CI/CD plugins for Jenkins, Azure DevOps
-- REST API for third-party integrations
-- SIEM/SOAR integrations
+### Tests
+- **1921 tests** across 107 suites; passing on Node 20 and Node 22
+
+### Code Quality
+- **Lint debt cleared**: 333 lint errors → 0. Added test-file override to `eslint.config.js` relaxing `no-unsafe-*` rules for tests (where they fire on `require()`, mocks, and `any`-typed fixtures with little benefit). Source code keeps full strict-type-checked + stylistic-type-checked. One real source fix in `Scanner.ts:373` (type-narrow `unknown` to `string` before use). CI lint enforcement re-enabled.
+
+## [2.3.0] - 2026-04-26
+
+### Added
+- **`ferret mcp audit`**: scores MCP servers in `.mcp.json` configurations on security posture. Returns trust score (0–100), trust level (HIGH/MEDIUM/LOW/CRITICAL), and the specific flags that reduced the score (insecure transport, unpinned `npx` packages, dangerous args, suspicious names). Exits non-zero when CRITICAL trust servers are found (configurable via `--fail-on`).
+- **MCP trust summary in all reporters**: Console, HTML, SARIF, and CSV reporters surface MCP trust state.
+
+### Security
+- **`redact: true` by default**: `DEFAULT_CONFIG.redact` flipped from `false` to `true` — secrets found during a scan are now redacted in all output formats (console, CI logs, SARIF, HTML, CSV) without requiring any opt-in.
+- **ReDoS prevention enforced in custom rules**: `customRules.ts` now compiles all user-supplied patterns via `compileSafePattern` (previously used raw `new RegExp()`), closing the path by which a malicious `.ferret/rules.yml` could hang a CI build; validation step likewise uses `compileSafePattern` to reject unsafe patterns before load.
+- **RE2 regex engine**: replaces native JS regex for AST/correlation analysis to eliminate ReDoS class entirely.
+- **Quarantine path traversal CVE**: hardened path validation in remediation Quarantine.
+- **Dependency vulnerabilities patched**: `npm audit fix` resolves all 7 vulnerabilities (1 critical Handlebars JS injection, 3 high ReDoS in minimatch/picomatch/flatted, 3 moderate).
+
+### Changed
+- **Windows platform support**: Removed `"os": ["!win32"]` exclusion. Platform guards already in place in `Quarantine.ts` and `gitHooks.ts`.
+- **Coverage**: Global ~90% line coverage, ~78% branch coverage; per-module thresholds for `Scanner`, `WatchMode`, `capabilityMapping`, all four reporters.
+
+### Fixed
+- **`categories: []` no longer disables all rules**: a critical bug where passing an empty array silently produced zero rules (now correctly falls back to default category set).
+- **SECURITY.md accuracy**: Supported version table now shows `2.x` current, `1.x` end-of-life.
+
+### Tests
+- **1733 tests** at v2.3.0 release (grew to 1921 in v2.4.0).
+
+### CI/CD
+- CodeQL, Dependabot, SARIF upload, and npm provenance all wired into release workflow.
 
 ## [2.2.0] - 2026-04-23
 

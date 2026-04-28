@@ -95,21 +95,23 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.1.0
+## What's New in v2.4.0
 
-- **NO_COLOR support**: Respects the `NO_COLOR` environment variable per [no-color.org](https://no-color.org)
-- **SSRF protection**: Remote custom rules URLs blocked by default; use `--allow-remote-rules` to opt in
-- **SIGINT handler**: Graceful shutdown on Ctrl+C during scan
-- **Interactive baseline removal**: `ferret baseline remove` prompts for confirmation
-- **244 tests**: Comprehensive test suite covering rules, config, reporters, and exit codes
-- **npm-shrinkwrap.json**: Deterministic dependency installs
+- **Drops Node 18**: `engines.node` now `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` regex engine no longer builds on it
+- **CI matrix on Node 20 + 22**: tests run on both, fully green
+- **Lint debt paid down**: 333 lint errors → 0; CI lint enforcement re-enabled
+- **`ferret mcp audit`**: score MCP servers in `.mcp.json` for security posture (trust score 0–100, HIGH/MEDIUM/LOW/CRITICAL levels) — shipped in v2.3.0
+- **1921 tests** across 107 suites; 90%+ line coverage, 78%+ branch coverage
+
+See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
 
 ## Advanced Features
 
 **Analysis Engines** (all implemented, local/offline)
 - **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
+- **MCP trust scoring**: `ferret mcp audit` rates `.mcp.json` servers on transport, package pinning, suspicious args, and known-bad patterns
 - **LLM-assisted analysis**: Optional AI-powered threat detection via OpenAI-compatible APIs (opt-in, networked)
-- **Semantic analysis**: TypeScript AST-based code analysis
+- **Semantic analysis**: TypeScript AST-based code analysis with RE2 (no ReDoS)
 - **Cross-file correlation**: Detect multi-file attack chains
 - **Entropy analysis**: Secret detection via Shannon entropy
 - **Threat intelligence**: Local indicator database matching
@@ -120,7 +122,6 @@ Ferret understands AI CLI structures and catches **AI-specific threats** that ge
 **Planned Features**
 - Language Server Protocol (LSP) for universal IDE support
 - IntelliJ plugin
-- MCP server trust scoring and provenance verification
 - SBOM/AIBOM generation for AI configurations
 - Runtime behavior monitoring and anomaly detection (currently static analysis only)
 - Compliance framework assessments (SOC2, ISO 27001, GDPR)
@@ -391,7 +392,7 @@ Every LLM finding includes a confidence score:
 
 ## Installation
 
-**Requirements:** Node.js 18+
+**Requirements:** Node.js 20+
 
 ```bash
 # Global install (recommended)
