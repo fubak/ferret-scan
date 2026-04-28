@@ -78,12 +78,14 @@ jobs:
         run: npm publish --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FERRET_E2E: '1'
 
       - name: Publish to npm
         if: inputs.dry_run != true
         run: npm publish --access public --provenance
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          FERRET_E2E: '1'
 
       - name: Get package info
         if: inputs.dry_run != true
