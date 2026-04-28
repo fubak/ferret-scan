@@ -12,7 +12,7 @@ import {
 } from '../analyzers/CorrelationAnalyzer.js';
 import type { DiscoveredFile, Rule, CorrelationRule, ThreatCategory } from '../types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
 
 // ---------------------------------------------------------------------------

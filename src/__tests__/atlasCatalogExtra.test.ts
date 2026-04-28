@@ -22,13 +22,13 @@ function makeConfig(overrides: Partial<MitreAtlasCatalogConfig> = {}): MitreAtla
   };
 }
 
-function makeStixBundle(techniques: Array<{
+function makeStixBundle(techniques: {
   id?: string;
   name?: string;
   externalId?: string;
   url?: string;
   tactics?: string[];
-}>): object {
+}[]): object {
   return {
     type: 'bundle',
     objects: techniques.map(t => ({

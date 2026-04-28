@@ -264,6 +264,7 @@ describe('getAIConfigPaths', () => {
 describe('getClaudeConfigPaths', () => {
   it('returns same as getAIConfigPaths', () => {
     const ai = getAIConfigPaths();
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- intentionally testing the deprecated alias
     const claude = getClaudeConfigPaths();
     expect(ai).toEqual(claude);
   });

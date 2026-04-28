@@ -21,7 +21,7 @@ describe('Basic Functionality', () => {
         // Rules may have patterns, semanticPatterns, or correlationRules
         const hasPatterns = rule.patterns.length > 0;
         const hasSemanticPatterns = (rule.semanticPatterns?.length ?? 0) > 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+         
         const hasCorrelationRules = ((rule as any).correlationRules?.length ?? 0) > 0;
         expect(hasPatterns || hasSemanticPatterns || hasCorrelationRules).toBe(true);
         for (const pattern of rule.patterns) {

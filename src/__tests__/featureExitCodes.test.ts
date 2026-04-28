@@ -93,11 +93,11 @@ function makePolicyResult(passed: boolean, blockerCount = 0): PolicyEvaluationRe
 // ---------------------------------------------------------------------------
 
 describe('DEFAULT_EXIT_CODES', () => {
-  it('has success = 0', () => expect(DEFAULT_EXIT_CODES.success).toBe(0));
-  it('has findingsFound = 1', () => expect(DEFAULT_EXIT_CODES.findingsFound).toBe(1));
-  it('has policyViolation = 2', () => expect(DEFAULT_EXIT_CODES.policyViolation).toBe(2));
-  it('has scanError = 3', () => expect(DEFAULT_EXIT_CODES.scanError).toBe(3));
-  it('has interrupted = 130', () => expect(DEFAULT_EXIT_CODES.interrupted).toBe(130));
+  it('has success = 0', () => { expect(DEFAULT_EXIT_CODES.success).toBe(0); });
+  it('has findingsFound = 1', () => { expect(DEFAULT_EXIT_CODES.findingsFound).toBe(1); });
+  it('has policyViolation = 2', () => { expect(DEFAULT_EXIT_CODES.policyViolation).toBe(2); });
+  it('has scanError = 3', () => { expect(DEFAULT_EXIT_CODES.scanError).toBe(3); });
+  it('has interrupted = 130', () => { expect(DEFAULT_EXIT_CODES.interrupted).toBe(130); });
 });
 
 // ---------------------------------------------------------------------------
@@ -309,7 +309,7 @@ describe('parseExitCodesFromEnv', () => {
   ];
 
   afterEach(() => {
-    for (const v of ENV_VARS) delete process.env[v];
+    for (const v of ENV_VARS) Reflect.deleteProperty(process.env, v);
   });
 
   it('returns empty object when no env vars set', () => {

@@ -20,7 +20,7 @@ import {
   type ThreatIndicator,
 } from '../intelligence/ThreatFeed.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
 
 // ---------------------------------------------------------------------------
@@ -162,7 +162,7 @@ describe('saveThreatDatabase', () => {
     mockFs.mkdirSync.mockReturnValue(undefined);
     mockFs.writeFileSync.mockImplementation(() => { throw new Error('disk full'); });
     const db = makeDatabase();
-    expect(() => saveThreatDatabase(db, '/intel-dir')).toThrow('disk full');
+    expect(() => { saveThreatDatabase(db, '/intel-dir'); }).toThrow('disk full');
   });
 
   it('updates lastUpdated timestamp on save', () => {

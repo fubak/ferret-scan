@@ -126,7 +126,7 @@ describe('AgentMonitor', () => {
 
   describe('completeExecution', () => {
     it('does nothing if id is unknown', () => {
-      expect(() => monitor.completeExecution('nonexistent-id', 0)).not.toThrow();
+      expect(() => { monitor.completeExecution('nonexistent-id', 0); }).not.toThrow();
     });
 
     it('sets endTime, exitCode, and duration on known execution', () => {

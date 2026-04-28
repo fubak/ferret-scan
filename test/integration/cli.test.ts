@@ -102,11 +102,18 @@ if (!runCli) {
   it.skip('all CLI tests skipped — set FERRET_E2E=1 to run', () => {});
 }
 
+// Use d() instead of describe() so every block is properly skipped when
+// FERRET_E2E is unset. Without this, describe blocks below still register
+// their it() declarations and crash with TypeError on undefined fixtures
+// (mcpDir, cleanDir, intelDir are only initialized inside beforeAll when
+// runCli is true).
+const d = runCli ? describe : describe.skip;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // GLOBAL FLAGS
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('global', () => {
+d('global', () => {
   it('--version returns semver matching package.json', () => {
     const r = ferret(['--version']);
     expect(r.status).toBe(0);
@@ -132,7 +139,7 @@ describe('global', () => {
 // SCAN — EXIT CODES
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('scan — exit codes', () => {
+d('scan — exit codes', () => {
   it('clean directory exits 0', () => {
     expect(ferret(['scan', cleanDir]).status).toBe(0);
   });
@@ -163,7 +170,7 @@ describe('scan — exit codes', () => {
 // SCAN — OUTPUT FORMATS (semantic assertions)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('scan --format json', () => {
+d('scan --format json', () => {
   it('output has all required top-level fields', () => {
     const out = scanToFile(['scan', FIXTURES]);
     expect(typeof out.success).toBe('boolean');
@@ -216,7 +223,7 @@ describe('scan --format json', () => {
   });
 });
 
-describe('scan --format sarif', () => {
+d('scan --format sarif', () => {
   it('produces SARIF 2.1.0 with correct schema URL', () => {
     const r = ferret(['scan', FIXTURES, '--format', 'sarif']);
     const out = json<{ version: string; $schema: string; runs: unknown[] }>(r);
@@ -261,7 +268,7 @@ describe('scan --format sarif', () => {
   });
 });
 
-describe('scan --format csv', () => {
+d('scan --format csv', () => {
   it('first row is header with expected columns', () => {
     const r = ferret(['scan', FIXTURES, '--format', 'csv']);
     const lines = r.stdout.trim().split('\n');
@@ -280,7 +287,7 @@ describe('scan --format csv', () => {
   });
 });
 
-describe('scan --format html', () => {
+d('scan --format html', () => {
   it('produces HTML5 document with ferret branding', () => {
     const r = ferret(['scan', FIXTURES, '--format', 'html']);
     expect(r.stdout).toContain('<!DOCTYPE html>');
@@ -302,7 +309,7 @@ describe('scan --format html', () => {
   });
 });
 
-describe('scan --format atlas', () => {
+d('scan --format atlas', () => {
   it('produces MITRE ATLAS Navigator layer JSON', () => {
     const r = ferret(['scan', FIXTURES, '--format', 'atlas']);
     const out = json<{ name: string; techniques: { techniqueID: string; score: number }[] }>(r);
@@ -326,7 +333,7 @@ describe('scan --format atlas', () => {
 // SCAN — FLAGS THAT CHANGE BEHAVIOR
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('scan --severity filter', () => {
+d('scan --severity filter', () => {
   it('--severity critical returns only CRITICAL findings', () => {
     const out = scanToFile(['scan', FIXTURES, '--severity', 'critical']);
     for (const f of out.findings) {
@@ -349,7 +356,7 @@ describe('scan --severity filter', () => {
   });
 });
 
-describe('scan --categories filter', () => {
+d('scan --categories filter', () => {
   it('--categories credentials returns only credential findings', () => {
     const out = scanToFile(['scan', FIXTURES, '--categories', 'credentials']);
     for (const f of out.findings) {
@@ -371,7 +378,7 @@ describe('scan --categories filter', () => {
   });
 });
 
-describe('scan --fail-on threshold', () => {
+d('scan --fail-on threshold', () => {
   it('--fail-on high: exits non-zero when HIGH findings present', () => {
     const r = ferret(['scan', FIXTURES, '--fail-on', 'high', '--ci']);
     expect(r.status).not.toBe(0);
@@ -387,7 +394,7 @@ describe('scan --fail-on threshold', () => {
   });
 });
 
-describe('scan --ci mode', () => {
+d('scan --ci mode', () => {
   it('--ci output has [FERRET] prefix lines', () => {
     const r = ferret(['scan', FIXTURES, '--ci']);
     expect(r.stdout).toContain('[FERRET]');
@@ -415,7 +422,7 @@ describe('scan --ci mode', () => {
   });
 });
 
-describe('scan --redact', () => {
+d('scan --redact', () => {
   it('--redact masks secret-like values in findings match field', () => {
     // evil-hook.sh contains credential access patterns; with --redact the raw value is masked
     const plain = scanToFile(['scan', FIXTURES]);
@@ -429,7 +436,7 @@ describe('scan --redact', () => {
   });
 });
 
-describe('scan --config-only', () => {
+d('scan --config-only', () => {
   it('--config-only scans fewer or equal files than default', () => {
     const full = scanToFile(['scan', FIXTURES]);
     const configOnly = scanToFile(['scan', FIXTURES, '--config-only']);
@@ -437,7 +444,7 @@ describe('scan --config-only', () => {
   });
 });
 
-describe('scan --entropy-analysis', () => {
+d('scan --entropy-analysis', () => {
   it('flag is accepted and scan completes without error', () => {
     const out = scanToFile(['scan', FIXTURES, '--entropy-analysis']);
     expect(out.success).toBe(true);
@@ -450,7 +457,7 @@ describe('scan --entropy-analysis', () => {
   });
 });
 
-describe('scan --mcp-validation', () => {
+d('scan --mcp-validation', () => {
   it('produces MCP findings for risky server config', () => {
     const r = ferret(['scan', mcpDir, '--mcp-validation', '--format', 'json']);
     const out = json<ScanResult>(r);
@@ -459,7 +466,7 @@ describe('scan --mcp-validation', () => {
   });
 });
 
-describe('scan --dependency-analysis', () => {
+d('scan --dependency-analysis', () => {
   it('analyzes package.json and completes without error', () => {
     // Use the project root which has a real package.json
     const out = scanToFile(['scan', resolve(__dirname, '../..'), '--dependency-analysis']);
@@ -467,14 +474,14 @@ describe('scan --dependency-analysis', () => {
   });
 });
 
-describe('scan --correlation-analysis', () => {
+d('scan --correlation-analysis', () => {
   it('flag is accepted and scan completes', () => {
     const out = scanToFile(['scan', FIXTURES, '--correlation-analysis']);
     expect(out.success).toBe(true);
   });
 });
 
-describe('scan --no-doc-dampening', () => {
+d('scan --no-doc-dampening', () => {
   it('produces same or more findings than with dampening', () => {
     const damped = scanToFile(['scan', FIXTURES]);
     const noDamp = scanToFile(['scan', FIXTURES, '--no-doc-dampening']);
@@ -482,7 +489,7 @@ describe('scan --no-doc-dampening', () => {
   });
 });
 
-describe('scan --marketplace', () => {
+d('scan --marketplace', () => {
   it('--marketplace off accepts the flag without error', () => {
     const r = ferret(['scan', cleanDir, '--marketplace', 'off', '--format', 'json']);
     expect(json<ScanResult>(r).success).toBe(true);
@@ -495,7 +502,7 @@ describe('scan --marketplace', () => {
   });
 });
 
-describe('scan -o output file', () => {
+d('scan -o output file', () => {
   it('-o writes JSON to file and stdout is empty/minimal', () => {
     const outFile = join(root, 'scan-out.json');
     ferret(['scan', cleanDir, '--format', 'json', '-o', outFile]);
@@ -514,7 +521,7 @@ describe('scan -o output file', () => {
   });
 });
 
-describe('scan --custom-rules', () => {
+d('scan --custom-rules', () => {
   it('custom rule with correct format is applied and produces matching finding', () => {
     const dir = join(root, 'custom-rules');
     mkdirSync(dir, { recursive: true });
@@ -545,7 +552,7 @@ describe('scan --custom-rules', () => {
 // RULES COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('rules', () => {
+d('rules', () => {
   it('rules list exits 0 and shows 80+ rules', () => {
     const r = ferret(['rules', 'list']);
     expect(r.status).toBe(0);
@@ -593,7 +600,7 @@ describe('rules', () => {
 // VERSION COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('version', () => {
+d('version', () => {
   it('exits 0 and shows changelog link', () => {
     const r = ferret(['version']);
     expect(r.status).toBe(0);
@@ -606,7 +613,7 @@ describe('version', () => {
 // BASELINE COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('baseline', () => {
+d('baseline', () => {
   let baseFile: string;
 
   it('baseline create produces a valid JSON baseline file', () => {
@@ -650,7 +657,7 @@ describe('baseline', () => {
 // INTEL COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('intel', () => {
+d('intel', () => {
   it('intel status shows indicator count (0 for fresh dir)', () => {
     const r = ferret(['intel', 'status', '--intel-dir', intelDir]);
     expect(r.status).toBe(0);
@@ -695,7 +702,7 @@ describe('intel', () => {
 // MCP COMMANDS
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('mcp validate', () => {
+d('mcp validate', () => {
   it('shows server names from .mcp.json', () => {
     const r = ferret(['mcp', 'validate', mcpDir]);
     expect(r.status).toBeDefined();
@@ -710,7 +717,7 @@ describe('mcp validate', () => {
   });
 });
 
-describe('mcp audit', () => {
+d('mcp audit', () => {
   it('--format json produces {servers, worstTrust} shape', () => {
     const r = ferret(['mcp', 'audit', mcpDir, '--format', 'json']);
     type AuditOut = { servers: { name: string; score: number; trustLevel: string; flags: string[] }[]; worstTrust: string };
@@ -771,7 +778,7 @@ describe('mcp audit', () => {
 // POLICY COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('policy', () => {
+d('policy', () => {
   it('policy init default creates .ferret-policy.json in cwd', () => {
     const pDir = join(root, 'policy-d');
     mkdirSync(pDir);
@@ -809,7 +816,7 @@ describe('policy', () => {
 // DIFF COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('diff', () => {
+d('diff', () => {
   it('diff save creates a JSON file with findings array and metadata', () => {
     const out = join(root, 'diff-a.json');
     const r = ferret(['diff', 'save', FIXTURES, '-o', out]);
@@ -850,7 +857,7 @@ describe('diff', () => {
 // FIX COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('fix scan --dry-run', () => {
+d('fix scan --dry-run', () => {
   it('does not modify files — content unchanged after dry-run', () => {
     const fDir = join(root, 'fix-dry');
     mkdirSync(join(fDir, '.claude', 'hooks'), { recursive: true });
@@ -867,7 +874,7 @@ describe('fix scan --dry-run', () => {
 // DEPS COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('deps analyze', () => {
+d('deps analyze', () => {
   it('analyzes project root package.json without error', () => {
     const r = ferret(['deps', 'analyze', resolve(__dirname, '../..'), '--no-audit']);
     expect(r.status).toBe(0);
@@ -884,7 +891,7 @@ describe('deps analyze', () => {
 // CAPABILITIES COMMAND
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('capabilities analyze', () => {
+d('capabilities analyze', () => {
   it('exits 0 on a directory without AI CLI configs', () => {
     expect(ferret(['capabilities', 'analyze', cleanDir]).status).toBe(0);
   });
@@ -898,7 +905,7 @@ describe('capabilities analyze', () => {
 // HOOKS STATUS
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('hooks', () => {
+d('hooks', () => {
   it('hooks status reports whether hooks are installed', () => {
     const r = ferret(['hooks', 'status'], { cwd: cleanDir });
     expect(r.status).toBe(0);
@@ -910,7 +917,7 @@ describe('hooks', () => {
 // QUARANTINE (fix quarantine)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('fix quarantine', () => {
+d('fix quarantine', () => {
   const qDir = () => join(root, 'q-test');
 
   it('--list exits 0 and shows empty list for fresh dir', () => {
@@ -950,7 +957,7 @@ const ollamaAvailable = runCli && (() => {
   return r.status === 0 && r.stdout.includes('models');
 })();
 
-describe('--llm-analysis with local Ollama', () => {
+d('--llm-analysis with local Ollama', () => {
   let llmDir: string;
 
   beforeAll(() => {
@@ -1123,7 +1130,7 @@ describe('--llm-analysis with local Ollama', () => {
 // UNTESTED FLAG COVERAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('scan --config <file>', () => {
+d('scan --config <file>', () => {
   it('loads .ferretrc.json and applies its settings', () => {
     const cfgDir = join(root, 'config-test');
     mkdirSync(join(cfgDir, '.claude', 'hooks'), { recursive: true });
@@ -1154,7 +1161,7 @@ describe('scan --config <file>', () => {
   });
 });
 
-describe('scan --thorough', () => {
+d('scan --thorough', () => {
   it('produces same or more findings than default scan', () => {
     const base = scanToFile(['scan', FIXTURES]);
     const thorough = scanToFile(['scan', FIXTURES, '--thorough']);
@@ -1166,7 +1173,7 @@ describe('scan --thorough', () => {
   });
 });
 
-describe('scan --semantic-analysis', () => {
+d('scan --semantic-analysis', () => {
   it('completes without error and produces valid JSON', () => {
     const out = scanToFile(['scan', FIXTURES, '--semantic-analysis']);
     expect(out.success).toBe(true);
@@ -1179,21 +1186,21 @@ describe('scan --semantic-analysis', () => {
   });
 });
 
-describe('scan --threat-intel', () => {
+d('scan --threat-intel', () => {
   it('completes without error', () => {
     const out = scanToFile(['scan', cleanDir, '--threat-intel']);
     expect(out.success).toBe(true);
   });
 });
 
-describe('scan --capability-mapping', () => {
+d('scan --capability-mapping', () => {
   it('completes without error on fixtures', () => {
     const out = scanToFile(['scan', FIXTURES, '--capability-mapping']);
     expect(out.success).toBe(true);
   });
 });
 
-describe('scan --no-mitre-atlas', () => {
+d('scan --no-mitre-atlas', () => {
   it('produces findings without ATLAS metadata when disabled', () => {
     const withAtlas = scanToFile(['scan', FIXTURES]);
     const withoutAtlas = scanToFile(['scan', FIXTURES, '--no-mitre-atlas']);
@@ -1203,7 +1210,7 @@ describe('scan --no-mitre-atlas', () => {
   });
 });
 
-describe('scan --no-ignore-comments', () => {
+d('scan --no-ignore-comments', () => {
   it('finds findings in files that have ferret-ignore directives (directives not honoured)', () => {
     const ignDir = join(root, 'ignore-comments');
     mkdirSync(join(ignDir, '.claude', 'hooks'), { recursive: true });
@@ -1221,7 +1228,7 @@ describe('scan --no-ignore-comments', () => {
   });
 });
 
-describe('scan --ignore-baseline', () => {
+d('scan --ignore-baseline', () => {
   it('shows all findings even when baseline exists', () => {
     // Create a baseline from FIXTURES (suppresses all known findings)
     const blFile = join(root, 'ign-baseline.json');
@@ -1238,7 +1245,7 @@ describe('scan --ignore-baseline', () => {
   });
 });
 
-describe('scan --verbose', () => {
+d('scan --verbose', () => {
   it('produces more output than default (context lines shown)', () => {
     // --verbose in non-CI mode adds context lines to findings
     const r = ferret(['scan', FIXTURES]);
@@ -1248,7 +1255,7 @@ describe('scan --verbose', () => {
   });
 });
 
-describe('fix scan --safe-only and --backup-dir', () => {
+d('fix scan --safe-only and --backup-dir', () => {
   it('--safe-only is accepted without error', () => {
     const fixDir = join(root, 'fix-safe');
     mkdirSync(join(fixDir, '.claude', 'hooks'), { recursive: true });
@@ -1271,7 +1278,7 @@ describe('fix scan --safe-only and --backup-dir', () => {
   });
 });
 
-describe('hooks install / uninstall', () => {
+d('hooks install / uninstall', () => {
   it('hooks install exits 0 in a git repo', () => {
     // Use cleanDir which is inside the project's git repo
     const r = ferret(['hooks', 'install', '--pre-commit'], { cwd: process.cwd() });
@@ -1285,7 +1292,7 @@ describe('hooks install / uninstall', () => {
   });
 });
 
-describe('rules list --verbose', () => {
+d('rules list --verbose', () => {
   it('shows more detail than default rules list', () => {
     const base = ferret(['rules', 'list']);
     ferret(['rules', 'list']); // baseline: --verbose is not a flag on rules list, just verify no crash

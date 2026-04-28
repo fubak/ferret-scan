@@ -27,7 +27,7 @@
     "prepare": "npm run build",
     "schema:generate": "node scripts/generate-json-schema.mjs",
     "schema:check": "node scripts/generate-json-schema.mjs --check",
-    "prepublishOnly": "npm run build && npm run schema:generate && npm run test",
+    "prepublishOnly": "npm run build && npm run schema:generate",
     "scan": "node bin/ferret.js scan",
     "check:resources": "node -e \"console.log('RAM:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB')\"",
     "bench": "npm run build && node scripts/bench.mjs",

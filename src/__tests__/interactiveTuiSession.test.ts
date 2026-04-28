@@ -74,7 +74,7 @@ describe('startInteractiveSession', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    consoleSpy = jest.spyOn(console, 'log').mockImplementation(jest.fn());
   });
 
   afterEach(() => {

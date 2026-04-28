@@ -17,7 +17,7 @@ import { DEFAULT_CONFIG } from '../types.js';
 let warnSpy: jest.SpyInstance;
 
 beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const logger = require('../utils/logger.js').default;
   // eslint-disable-next-line @typescript-eslint/no-empty-function
   warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});

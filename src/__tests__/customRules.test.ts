@@ -18,9 +18,9 @@ import {
   loadCustomRulesSource,
 } from '../features/customRules.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockYaml = yaml as any;
 
 // ---------------------------------------------------------------------------
@@ -326,15 +326,11 @@ describe('loadCustomRules', () => {
 
   it('accumulates rules from multiple found paths', () => {
     // Two paths exist
-    let callCount = 0;
     mockFs.existsSync.mockImplementation((p: unknown) => {
       const s = String(p);
       return s.endsWith('.ferret/rules.yaml') || s.endsWith('.ferret/custom-rules.yaml');
     });
-    mockFs.readFileSync.mockImplementation(() => {
-      callCount++;
-      return 'content' as unknown as Buffer;
-    });
+    mockFs.readFileSync.mockImplementation(() => 'content' as unknown as Buffer);
     mockYaml.parse.mockReturnValue(JSON.parse(VALID_RULE_JSON));
     const rules = loadCustomRules('/project');
     // Should have loaded 2 sets of 1 rule each

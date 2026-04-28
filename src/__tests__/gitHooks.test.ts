@@ -18,9 +18,9 @@ import {
   getHookStatus,
 } from '../features/gitHooks.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockChildProcess = child_process as any;
 
 // ---------------------------------------------------------------------------

@@ -16,7 +16,7 @@ import {
 } from '../features/scanDiff.js';
 import type { Finding, ScanResult, ThreatCategory } from '../types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
 
 // ---------------------------------------------------------------------------

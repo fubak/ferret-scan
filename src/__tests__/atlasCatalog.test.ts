@@ -12,7 +12,7 @@ import {
 } from '../mitre/atlasCatalog.js';
 import type { MitreAtlasCatalogConfig } from '../types.js';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const mockFs = fs as any;
 
 // ---------------------------------------------------------------------------

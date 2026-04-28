@@ -370,12 +370,13 @@ function buildMcpTrustSummary(trustFindings: Finding[]): McpTrustSummary {
   const summary: McpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
   const seen = new Set<string>();
   for (const f of trustFindings) {
-    const server = String(f.metadata?.['serverName'] ?? f.file);
+    const serverName = f.metadata?.['serverName'];
+    const server = typeof serverName === 'string' ? serverName : f.file;
     if (seen.has(server)) continue;
     seen.add(server);
     summary.total++;
     const score = typeof f.metadata?.['trustScore'] === 'number'
-      ? (f.metadata['trustScore'] as number)
+      ? (f.metadata['trustScore'])
       : (f.severity === 'CRITICAL' ? 20 : 45);
     summary.lowestScore = Math.min(summary.lowestScore, score);
     if (score >= 80) summary.high++;

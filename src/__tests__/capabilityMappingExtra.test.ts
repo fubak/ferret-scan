@@ -133,7 +133,7 @@ lint-cmd: npm run lint
       allowedTools: ['webfetch'],
     });
     const result = analyzeCapabilitiesContent('/project/.claude/settings.json', content);
-    if (result && result.capabilities.some(c => c.type === 'network_access' && c.permission === 'allowed')) {
+    if (result?.capabilities.some(c => c.type === 'network_access' && c.permission === 'allowed')) {
       expect(result.recommendations.some(r => r.toLowerCase().includes('network'))).toBe(true);
     }
   });

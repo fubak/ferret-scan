@@ -80,11 +80,11 @@ describe('getMitreAtlasTechnique', () => {
 // ---------------------------------------------------------------------------
 
 describe('severityToAtlasScore', () => {
-  it('maps CRITICAL to 5', () => expect(severityToAtlasScore('CRITICAL')).toBe(5));
-  it('maps HIGH to 4', () => expect(severityToAtlasScore('HIGH')).toBe(4));
-  it('maps MEDIUM to 3', () => expect(severityToAtlasScore('MEDIUM')).toBe(3));
-  it('maps LOW to 2', () => expect(severityToAtlasScore('LOW')).toBe(2));
-  it('maps INFO to 1', () => expect(severityToAtlasScore('INFO')).toBe(1));
+  it('maps CRITICAL to 5', () => { expect(severityToAtlasScore('CRITICAL')).toBe(5); });
+  it('maps HIGH to 4', () => { expect(severityToAtlasScore('HIGH')).toBe(4); });
+  it('maps MEDIUM to 3', () => { expect(severityToAtlasScore('MEDIUM')).toBe(3); });
+  it('maps LOW to 2', () => { expect(severityToAtlasScore('LOW')).toBe(2); });
+  it('maps INFO to 1', () => { expect(severityToAtlasScore('INFO')).toBe(1); });
 });
 
 // ---------------------------------------------------------------------------
@@ -94,7 +94,7 @@ describe('severityToAtlasScore', () => {
 describe('getMitreAtlasTechniqueIdsForFinding — rule-specific', () => {
   beforeEach(() => { setMitreAtlasTechniqueCatalog(null); });
 
-  const RULE_CASES: Array<[string, string[]]> = [
+  const RULE_CASES: [string, string[]][] = [
     ['AI-001', ['AML.T0056']],
     ['AI-004', ['AML.T0080']],
     ['AI-005', ['AML.T0094']],
@@ -129,7 +129,7 @@ describe('getMitreAtlasTechniqueIdsForFinding — rule-specific', () => {
 describe('getMitreAtlasTechniqueIdsForFinding — category fallbacks', () => {
   beforeEach(() => { setMitreAtlasTechniqueCatalog(null); });
 
-  const CATEGORY_CASES: Array<[string, string[]]> = [
+  const CATEGORY_CASES: [string, string[]][] = [
     ['injection', ['AML.T0051']],
     ['ai-specific', ['AML.T0051']],
     ['credentials', ['AML.T0083', 'AML.T0098']],
