@@ -369,7 +369,7 @@ export interface ScannerConfig {
 }
 
 /** Supported output formats */
-export type OutputFormat = 'console' | 'json' | 'sarif' | 'html' | 'csv' | 'atlas';
+export type OutputFormat = 'console' | 'json' | 'sarif' | 'html' | 'csv' | 'atlas' | 'sbom' | 'aibom';
 
 /** CLI options passed from command line */
 export interface CliOptions {

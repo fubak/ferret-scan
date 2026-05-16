@@ -2,6 +2,11 @@
  * LLM Prompt Construction
  */
 
+ 
+ 
+ 
+ 
+
 import type { MitreAtlasTechnique } from '../../mitre/atlas.js';
 import type { LineRange } from './types.js';
 
@@ -67,7 +72,7 @@ export function stripLineNumberPrefixes(excerpt: string): string {
 export function buildFindingsAwareExcerpt(
   content: string,
   maxChars: number,
-  existingFindings: Array<{ line?: number }>
+  existingFindings: { line?: number }[]
 ): { excerpt: string; truncated: boolean } {
   const lines = content.split('\n');
   const totalLines = lines.length;

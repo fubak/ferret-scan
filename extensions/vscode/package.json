@@ -2,7 +2,7 @@
   "name": "ferret-security",
   "displayName": "Ferret Security Scanner",
   "description": "Real-time security scanning for AI agent configurations",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "publisher": "ferret-security",
   "icon": "resources/icon.png",
   "engines": {
@@ -104,6 +104,16 @@
           "type": "string",
           "default": "ferret",
           "description": "Path to ferret executable"
+        },
+        "ferret.useLanguageServer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Use the Ferret Language Server (ferret-lsp) for real-time analysis instead of the built-in diagnostic provider. Requires ferret-lsp to be installed."
+        },
+        "ferret.languageServerPath": {
+          "type": "string",
+          "default": "ferret-lsp",
+          "description": "Path to the ferret-lsp executable (used when 'useLanguageServer' is enabled)"
         }
       }
     },
@@ -142,5 +152,7 @@
     "typescript": "^5.3.3",
     "@vscode/vsce": "^2.22.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  }
 }

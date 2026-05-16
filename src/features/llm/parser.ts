@@ -2,6 +2,11 @@
  * LLM Response Parsing & Finding Conversion
  */
 
+ 
+ 
+ 
+ 
+
 import type { Finding, Severity, ThreatCategory, DiscoveredFile } from '../../types.js';
 import { LlmResponseSchema } from './types.js';
 import logger from '../../utils/logger.js';
@@ -48,7 +53,7 @@ export function severityToRiskScore(sev: Severity, confidence: number): number {
 export function extractJson(text: string): unknown {
   // Try to find ```json ... ``` or bare { ... }
   const fenceMatch = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(text);
-  if (fenceMatch && fenceMatch[1]) {
+  if (fenceMatch?.[1]) {
     try { return JSON.parse(fenceMatch[1]); } catch {}
   }
   const braceMatch = /\{[\s\S]*\}/m.exec(text);

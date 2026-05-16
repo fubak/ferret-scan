@@ -1,0 +1,39 @@
+{
+  "name": "ferret-lsp",
+  "version": "0.2.0",
+  "description": "Language Server Protocol implementation for Ferret security scanner (VS Code, Neovim, Emacs, Zed, etc.)",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "ferret-lsp": "bin/ferret-lsp.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node bin/ferret-lsp.js",
+    "test": "node --test test/**/*.test.mjs",
+    "test:handshake": "node test-handshake.mjs",
+    "package": "vsce package"
+  },
+  "keywords": [
+    "lsp",
+    "language-server",
+    "security",
+    "ai-security",
+    "ferret",
+    "ferret-scan"
+  ],
+  "author": "Ferret Security Team",
+  "license": "MIT",
+  "dependencies": {
+    "vscode-languageserver": "^9.0.1",
+    "vscode-languageserver-textdocument": "^1.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.0",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

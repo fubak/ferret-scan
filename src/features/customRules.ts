@@ -15,6 +15,7 @@ import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import type { Rule, ThreatCategory, Severity, FileType, ComponentType } from '../types.js';
 import { compileSafePattern } from '../utils/safeRegex.js';
+import { getAllRules } from '../rules/index.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -67,8 +68,43 @@ function sha256(input: string): string {
   return createHash('sha256').update(input, 'utf8').digest('hex');
 }
 
-function isHttpUrl(value: string): boolean {
+export function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value);
+}
+
+/**
+ * Resolve community / remote rule source shorthands to a fetchable URL.
+ * Supports:
+ *   github:owner/repo/path/to/rules.yml
+ *   github:owner/repo@branch/path/to/rules.yml
+ *   gitlab:owner/repo/path/to/rules.yml (basic)
+ * Falls back to the original string for raw URLs or local paths.
+ */
+export function resolveRuleSource(source: string): string {
+  const trimmed = source.trim();
+
+  // github:owner/repo/path or github:owner/repo@ref/path
+  const ghMatch = /^github:([^/]+)\/([^/@]+)(?:@([^/]+))?\/(.+)$/i.exec(trimmed);
+  if (ghMatch) {
+    const owner = ghMatch[1];
+    const repo = ghMatch[2];
+    const ref = ghMatch[3] ?? 'main';
+    const path = ghMatch[4];
+    // raw.githubusercontent.com
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${ref}/${path}`;
+  }
+
+  // gitlab shorthand (basic) - owner/repo/path
+  const glMatch = /^gitlab:([^/]+)\/([^/]+)\/(.+)$/i.exec(trimmed);
+  if (glMatch) {
+    const owner = glMatch[1];
+    const repo = glMatch[2];
+    const path = glMatch[3];
+    // GitLab raw URL (unencoded path)
+    return `https://gitlab.com/${owner}/${repo}/-/raw/main/${path}`;
+  }
+
+  return trimmed;
 }
 
 function isCacheFresh(path: string, ttlHours: number): boolean {
@@ -135,6 +171,20 @@ function parseCustomRulesContent(
         success: false,
         rules: [],
         errors: [`Invalid custom rules in ${sourceLabel}: ${issues.join('; ')}`],
+      };
+    }
+
+    // Hard security check: prevent custom rules from silently overriding built-in rule IDs
+    const builtinRuleIds = new Set(getAllRules().map(r => r.id));
+    const shadowing = result.data.rules.filter(r => builtinRuleIds.has(r.id));
+    if (shadowing.length > 0) {
+      return {
+        success: false,
+        rules: [],
+        errors: [
+          `Custom rules from ${sourceLabel} contain IDs that shadow built-in rules: ${shadowing.map(r => r.id).join(', ')}. ` +
+          'Built-in rule IDs cannot be overridden. Choose different IDs (e.g. CUSTOM-XXX or MYORG-001).',
+        ],
       };
     }
 
@@ -282,6 +332,20 @@ export function loadCustomRulesFile(filePath: string): {
       };
     }
 
+    // Hard security check: prevent custom rules from silently overriding built-in rule IDs
+    const builtinRuleIds = new Set(getAllRules().map(r => r.id));
+    const shadowing = result.data.rules.filter(r => builtinRuleIds.has(r.id));
+    if (shadowing.length > 0) {
+      return {
+        success: false,
+        rules: [],
+        errors: [
+          `Custom rules file contains IDs that shadow built-in rules: ${shadowing.map(r => r.id).join(', ')}. ` +
+          'Built-in rule IDs cannot be overridden. Choose different IDs (e.g. CUSTOM-XXX or MYORG-001).',
+        ],
+      };
+    }
+
     // Convert definitions to rules
     for (const def of result.data.rules) {
       try {
@@ -313,8 +377,11 @@ export async function loadCustomRulesSource(
   source: string,
   options: { cacheDir?: string; cacheTtlHours?: number; timeoutMs?: number } = {}
 ): Promise<{ success: boolean; rules: Rule[]; errors: string[] }> {
-  if (!isHttpUrl(source)) {
-    return loadCustomRulesFile(source);
+  // Resolve shorthands (github:, gitlab:) to real URLs before any processing
+  const resolvedSource = resolveRuleSource(source);
+
+  if (!isHttpUrl(resolvedSource)) {
+    return loadCustomRulesFile(resolvedSource);
   }
 
   const cacheDir = options.cacheDir ?? DEFAULT_REMOTE_CACHE_DIR;
@@ -323,12 +390,12 @@ export async function loadCustomRulesSource(
 
   let sourceExt = '';
   try {
-    sourceExt = extname(new URL(source).pathname).toLowerCase();
+    sourceExt = extname(new URL(resolvedSource).pathname).toLowerCase();
   } catch {
     sourceExt = '';
   }
 
-  const cacheKey = sha256(source);
+  const cacheKey = sha256(resolvedSource);
   const cachePath = resolve(cacheDir, `${cacheKey}${sourceExt || '.txt'}`);
 
   // Use cache if fresh; otherwise fetch and refresh.
@@ -343,7 +410,7 @@ export async function loadCustomRulesSource(
 
   if (content === null) {
     try {
-      content = await fetchText(source, timeoutMs);
+      content = await fetchText(resolvedSource, timeoutMs);
       mkdirSync(cacheDir, { recursive: true });
       writeFileSync(cachePath, content, 'utf-8');
     } catch (e) {
@@ -357,12 +424,12 @@ export async function loadCustomRulesSource(
         }
       }
       if (content === null) {
-        return { success: false, rules: [], errors: [`Failed to fetch custom rules from ${source}: ${msg}`] };
+        return { success: false, rules: [], errors: [`Failed to fetch custom rules from ${resolvedSource}: ${msg}`] };
       }
     }
   }
 
-  return parseCustomRulesContent(content, sourceExt, source);
+  return parseCustomRulesContent(content, sourceExt, resolvedSource);
 }
 
 /**
@@ -525,6 +592,16 @@ export function validateCustomRulesFile(filePath: string): {
     const duplicates = ids.filter((id, i) => ids.indexOf(id) !== i);
     if (duplicates.length > 0) {
       errors.push(`Duplicate rule IDs: ${Array.from(new Set(duplicates)).join(', ')}`);
+    }
+
+    // Hard security check: prevent custom rules from shadowing built-in rule IDs
+    const builtinRuleIds = new Set(getAllRules().map(r => r.id));
+    const shadowing = result.data.rules.filter(r => builtinRuleIds.has(r.id));
+    if (shadowing.length > 0) {
+      errors.push(
+        `Rules shadow built-in rule IDs: ${shadowing.map(r => r.id).join(', ')}. ` +
+        'Built-in IDs (INJ-*, CRED-*, etc.) cannot be overridden.'
+      );
     }
 
     return {

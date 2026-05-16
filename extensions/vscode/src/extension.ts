@@ -2,10 +2,17 @@ import * as vscode from 'vscode';
 import { FerretDiagnosticProvider } from './diagnostics';
 import { FerretTreeDataProvider } from './treeView';
 import { FerretCodeActionProvider } from './quickFixes';
+import {
+  LanguageClient,
+  LanguageClientOptions,
+  ServerOptions,
+  TransportKind
+} from 'vscode-languageclient/node';
 
 let diagnosticProvider: FerretDiagnosticProvider;
 let diagnosticCollection: vscode.DiagnosticCollection;
 let treeDataProvider: FerretTreeDataProvider;
+let languageClient: LanguageClient | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('Ferret Security extension activated');
@@ -17,6 +24,43 @@ export function activate(context: vscode.ExtensionContext) {
     // Initialize providers
     diagnosticProvider = new FerretDiagnosticProvider(context, diagnosticCollection);
     treeDataProvider = new FerretTreeDataProvider();
+
+    // Start Language Server if enabled
+    const config = vscode.workspace.getConfiguration('ferret');
+    if (config.get<boolean>('useLanguageServer')) {
+      const serverPath = config.get<string>('languageServerPath') || 'ferret-lsp';
+
+      const serverOptions: ServerOptions = {
+        run: { command: serverPath, transport: TransportKind.stdio },
+        debug: { command: serverPath, transport: TransportKind.stdio, args: ['--stdio'] }
+      };
+
+      const clientOptions: LanguageClientOptions = {
+        documentSelector: [
+          { scheme: 'file', language: 'markdown' },
+          { scheme: 'file', language: 'json' },
+          { scheme: 'file', language: 'yaml' },
+          { scheme: 'file', language: 'shellscript' }
+        ],
+        synchronize: {
+          configurationSection: 'ferret'
+        }
+      };
+
+      languageClient = new LanguageClient(
+        'ferret-lsp',
+        'Ferret Language Server',
+        serverOptions,
+        clientOptions
+      );
+
+      context.subscriptions.push(languageClient);
+      languageClient.start().then(() => {
+        console.log('Ferret Language Server started successfully');
+      }).catch((err) => {
+        vscode.window.showErrorMessage(`Failed to start Ferret Language Server: ${err.message}`);
+      });
+    }
 
     // Register tree view
     const treeView = vscode.window.createTreeView('ferretFindings', {

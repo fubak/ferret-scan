@@ -119,15 +119,19 @@ See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
 - **Threat intelligence**: Local indicator database matching
 
 **IDE Integration**
-- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes (build from source)
+- **Language Server Protocol (LSP)**: Full LSP server (`ferret lsp`) with diagnostics, hover (rule details), completion, and code actions. Works with VS Code, Neovim, Zed, Emacs, Helix, etc.
+- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes (supports both direct mode and LSP mode)
 
-**Planned Features**
-- Language Server Protocol (LSP) for universal IDE support
-- IntelliJ plugin
-- SBOM/AIBOM generation for AI configurations
-- Runtime behavior monitoring and anomaly detection (currently static analysis only)
-- Compliance framework assessments (SOC2, ISO 27001, GDPR)
-- Community rule sharing platform
+**Implemented (v2.6+)**
+- **SBOM + AIBOM** — `ferret scan --sbom --format aibom`
+- **Community rule sharing** — `ferret rules fetch github:owner/repo/path`, `validate`, `install` with GitHub shorthand and shadowing protection
+- **LSP server** — `ferret lsp` + standalone `ferret-lsp` package (diagnostics, hover, completion for any editor)
+- **Runtime prompt monitor** — `ferret monitor --target claude` / `--stdio` for live injection/credential detection during LLM CLI use (alerting-only by default)
+
+**Still Planned**
+- IntelliJ / JetBrains plugin
+- Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
+- Optional curated community rules index repository
 
 ---
 

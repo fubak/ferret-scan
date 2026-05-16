@@ -9,6 +9,7 @@ import {
   loadCustomRules,
   generateExampleRulesFile,
   validateCustomRulesFile,
+  resolveRuleSource,
 } from '../features/customRules.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -308,5 +309,57 @@ describe('validateCustomRulesFile', () => {
     const result = validateCustomRulesFile('/nonexistent/rules.json');
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
+  });
+});
+
+// ── Resolver + Shadowing Protection Tests ───────────────────────────────────
+
+describe('resolveRuleSource (community shorthand)', () => {
+  it('converts github: shorthand to raw.githubusercontent.com URL', () => {
+    const url = resolveRuleSource('github:ferret-scan/community-rules/rules/injection.yml');
+    expect(url).toBe('https://raw.githubusercontent.com/ferret-scan/community-rules/main/rules/injection.yml');
+  });
+
+  it('supports @branch/ref in github shorthand', () => {
+    const url = resolveRuleSource('github:myorg/rules@develop/prompt-injection.json');
+    expect(url).toBe('https://raw.githubusercontent.com/myorg/rules/develop/prompt-injection.json');
+  });
+
+  it('leaves raw https URLs untouched', () => {
+    const original = 'https://example.com/my-rules.yml';
+    expect(resolveRuleSource(original)).toBe(original);
+  });
+
+  it('leaves local file paths untouched', () => {
+    expect(resolveRuleSource('.ferret/rules.yml')).toBe('.ferret/rules.yml');
+  });
+});
+
+describe('Custom rules ID shadowing protection', () => {
+  it('rejects loading a custom rule that uses a built-in ID (e.g. INJ-001)', async () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ferret-shadow-'));
+    const rulesPath = path.join(tmp, 'bad-rules.json');
+
+    const bad = {
+      version: '1',
+      rules: [
+        {
+          id: 'INJ-001', // shadows built-in
+          name: 'Evil override',
+          category: 'injection',
+          severity: 'HIGH',
+          description: 'Trying to override',
+          patterns: ['something'],
+        },
+      ],
+    };
+
+    fs.writeFileSync(rulesPath, JSON.stringify(bad));
+
+    const result = loadCustomRulesFile(rulesPath);
+    expect(result.success).toBe(false);
+    expect(result.errors.some(e => e.includes('shadow') || e.includes('INJ-001'))).toBe(true);
+
+    fs.rmSync(tmp, { recursive: true, force: true });
   });
 });

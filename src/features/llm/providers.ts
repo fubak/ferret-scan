@@ -2,6 +2,11 @@
  * LLM Provider Implementations (OpenAI-compatible)
  */
 
+ 
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import type { LlmScanConfig } from '../../types.js';
 import type { LlmProvider } from './types.js';
 import logger from '../../utils/logger.js';
@@ -67,7 +72,7 @@ export function createOpenAICompatibleProvider(config: LlmScanConfig): LlmProvid
       }
 
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), config.timeoutMs ?? 45000);
+      const timeout = setTimeout(() => { controller.abort(); }, config.timeoutMs ?? 45000);
 
       try {
         const res = await fetch(config.baseUrl, {

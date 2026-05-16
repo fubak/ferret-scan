@@ -5,6 +5,34 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-05-16
+
+### Added — Major New Features
+- **SBOM + AIBOM Generation** (`SbomReporter.ts`)
+  - `ferret scan --sbom` / `--format sbom|aibom`
+  - Full CycloneDX 1.5 compliant output + AI-specific AIBOM extension (`aiSurface`, MCP trust, risk posture, injection/credential/exfil surface)
+- **Community Rule Sharing**
+  - `github:owner/repo@ref/path` and `gitlab:` shorthand support via `resolveRuleSource()`
+  - `ferret rules validate|fetch|install`
+  - **Hard shadowing protection**: Custom rules cannot override built-in rule IDs (INJ-*, CRED-*, etc.)
+- **Language Server Protocol** (`lsp/` standalone package)
+  - `ferret lsp` launches a full LSP server (diagnostics, hover on rule IDs, completion for categories/severities/rule IDs)
+  - Works with Neovim, Emacs, Zed, Helix, Sublime, and VS Code (opt-in)
+  - `ferret check` now supports `--format json` for machine consumption
+- **Lightweight Runtime Prompt Monitor**
+  - `ferret monitor --stdio` and `--target <cli>`
+  - Real-time detection of injection, credentials, and exfiltration in prompts sent to LLM CLIs
+  - Alerting-only by default (`--block` for enforcement). Emits structured JSON alerts to stderr. Extremely lightweight (reuses `PatternMatcher`).
+
+### Changed
+- `ferret check` now accepts `--format json|console`
+- `loadCustomRulesSource` transparently resolves community shorthands before fetching
+
+### Tests & Quality
+- New dedicated test files: `SbomReporter.test.ts`, `runtimeMonitor.test.ts`, expanded `customRules.extra.test.ts`
+- All new modules covered by real (non-mock) tests
+- `ferret scan --self --ci` continues to pass with expected evil-fixture detections
+
 ## [2.5.0] - 2026-05-16
 
 ### Added

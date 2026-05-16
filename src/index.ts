@@ -44,6 +44,7 @@ export {
 // Reporters
 export { generateConsoleReport } from './reporters/ConsoleReporter.js';
 export { formatCsvReport } from './reporters/CsvReporter.js';
+export { formatCycloneDxBom, formatAiBom, formatSbom } from './reporters/SbomReporter.js';
 
 // Utils
 export { loadConfig, getAIConfigPaths } from './utils/config.js';

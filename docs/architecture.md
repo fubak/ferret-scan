@@ -102,3 +102,47 @@ flowchart TD
     G --> H[MITRE Enrichment]
     H --> I[Reporters + Exit Code]
 ```
+
+## New Features (v2.6+)
+
+### SBOM + AIBOM Generation
+`SbomReporter` produces CycloneDX 1.5 and an AI-specific AIBOM extension containing:
+- Prompt injection / credential / exfiltration surface
+- MCP server trust summary
+- Capability and risk posture
+
+Invoked via `--format sbom|aibom` or `--sbom`.
+
+### Community Rule Sharing
+- `resolveRuleSource()` converts `github:owner/repo@ref/path` shorthand into raw URLs
+- `loadCustomRulesSource` + `validateCustomRulesFile` now enforce **ID shadowing protection** (custom rules cannot override built-in rule IDs)
+- New commands: `ferret rules validate|fetch|install`
+
+### Language Server Protocol (`lsp/` package)
+Standalone `ferret-lsp` package provides:
+- Real-time diagnostics (via `ferret check --format json`)
+- Hover on rule IDs (pulls from rule registry)
+- Completion for severities, categories, and rule IDs in config files
+
+Launched via `ferret lsp` or directly as `ferret-lsp`.
+
+### Lightweight Runtime Prompt Monitor
+`runtimeMonitor.ts` implements `scanPrompt()` + `startRuntimeMonitor()`:
+- Reuses `PatternMatcher` + high-signal rule subset for speed
+- Supports `--stdio` (pipe) and `--target` (wrapper) modes
+- Alerting-only by default; `--block` for enforcement
+- Emits structured JSON alerts to stderr
+
+Designed for live interception during `claude`, `cursor`, or any LLM CLI usage without heavy resource monitoring.
+
+### Component Addition Diagram
+
+```mermaid
+flowchart LR
+    CLI["bin/ferret.js"] -->|new| LSP["lsp/ (ferret-lsp)"]
+    CLI -->|new| Monitor["RuntimeMonitor"]
+    Scanner -->|new reporter| SBOM["SbomReporter"]
+    CustomRules -->|enhanced| Community["resolveRuleSource + shadowing guard"]
+    Monitor -->|reuses| PatternMatcher
+    LSP -->|calls| Check["ferret check --format json"]
+```
