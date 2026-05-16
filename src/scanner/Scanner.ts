@@ -4,7 +4,7 @@
 
 import { readFile } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
-import { basename, dirname } from 'node:path';
+import { dirname, basename } from 'node:path';
 import type {
   ScannerConfig,
   ScanResult,
@@ -36,24 +36,11 @@ import {
   groupByCategory,
   calculateSummary,
   sortFindings,
+  mergeRules,
 } from './reporting.js';
 import logger from '../utils/logger.js';
 import ora from 'ora';
 
-
-function mergeRules(baseRules: Rule[], customRules: Rule[]): Rule[] {
-  const merged = new Map<string, Rule>();
-  for (const rule of baseRules) {
-    merged.set(rule.id, rule);
-  }
-  for (const rule of customRules) {
-    if (merged.has(rule.id)) {
-      logger.warn(`Custom rule overrides built-in rule: ${rule.id}`);
-    }
-    merged.set(rule.id, rule);
-  }
-  return Array.from(merged.values());
-}
 
 function getRuleScanRoots(paths: string[]): string[] {
   const roots: string[] = [];

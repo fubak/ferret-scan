@@ -11,8 +11,10 @@ import type {
   ScanSummary,
   Severity,
   ThreatCategory,
+  Rule,
 } from '../types.js';
 import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
+import logger from '../utils/logger.js';
 
 /**
  * Create an empty scan summary
@@ -121,4 +123,21 @@ export function sortFindings(findings: Finding[]): Finding[] {
     // Then by file path
     return a.relativePath.localeCompare(b.relativePath);
   });
+}
+
+/**
+ * Merges built-in rules with custom rules (custom rules override by id)
+ */
+export function mergeRules(baseRules: Rule[], customRules: Rule[]): Rule[] {
+  const merged = new Map<string, Rule>();
+  for (const rule of baseRules) {
+    merged.set(rule.id, rule);
+  }
+  for (const rule of customRules) {
+    if (merged.has(rule.id)) {
+      logger.warn(`Custom rule overrides built-in rule: ${rule.id}`);
+    }
+    merged.set(rule.id, rule);
+  }
+  return Array.from(merged.values());
 }
