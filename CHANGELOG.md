@@ -5,7 +5,26 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.5.0] - 2026-05-16
+
+### Added
+- **`ferret scan --self`**: New dogfooding command that scans Ferret’s own source + the malicious fixtures in `test/fixtures/`. Includes a dedicated `self-scan` CI job that runs on every push/PR.
+- **Real integrated test expansion**: Hundreds of new real e2e tests (no mocks) covering complex FileDiscovery structures, docDampening scenarios, baseline error paths, analyzer error injection, and WatchMode real FS behavior.
+
+### Changed
+- **Scanner architecture**: Extracted pure reporting utilities into `src/scanner/reporting.ts` and documentation dampening into `src/features/docDampening.ts`.
+- **LLM Analysis split**: Broke the monolithic 800+ LOC `llmAnalysis.ts` into a clean, maintainable `src/features/llm/` module (types, providers, prompts, cache, parser).
+- **VS Code extension**: Added settings for `--thorough`, `--llm-analysis`, `--mitre-atlas`, and `--semantic-analysis` for better CLI parity.
+- **Coverage thresholds**: Raised global and per-file targets in `jest.config.js` (now targeting 60%+ global, 80%+ on core modules).
+
+### Tests
+- **~1935 tests** across 108 suites; **~87% statements / 88% lines / 89% functions** coverage (major jump from previous ~55%).
+
+### Documentation
+- Added high-quality Mermaid diagrams (component overview, self-scan loop, data flow) to `docs/architecture.md`.
+- Refreshed `docs/TEST_RESULTS.md` with current test locations and coverage reality.
+
+See the full project review and implementation plan for details.
 
 ## [2.4.0] - 2026-04-27
 

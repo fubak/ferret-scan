@@ -95,13 +95,15 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.4.0
+## What's New in v2.5.0
 
-- **Drops Node 18**: `engines.node` now `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` regex engine no longer builds on it
-- **CI matrix on Node 20 + 22**: tests run on both, fully green
-- **Lint debt paid down**: 333 lint errors → 0; CI lint enforcement re-enabled
-- **`ferret mcp audit`**: score MCP servers in `.mcp.json` for security posture (trust score 0–100, HIGH/MEDIUM/LOW/CRITICAL levels) — shipped in v2.3.0
-- **1921 tests** across 107 suites; 90%+ line coverage, 78%+ branch coverage
+- **`ferret scan --self`**: New dogfooding mode that scans Ferret’s own source + malicious test fixtures (`evil-hook.sh`, `malicious-skill.md`, etc.). Includes dedicated CI job.
+- **Major architecture improvements**:
+  - Scanner core refactored (pure reporting logic extracted to `reporting.ts`, documentation dampening to `docDampening.ts`)
+  - 800+ LOC `llmAnalysis.ts` cleanly split into `src/features/llm/` module
+- **Real integrated test expansion**: Hundreds of new real e2e tests (no mocks). Global coverage now **~87% statements / 88% lines / 89% functions**.
+- **VS Code extension parity**: New settings for `--thorough`, `--llm-analysis`, `--mitre-atlas`, `--semantic-analysis`.
+- **Documentation**: High-quality Mermaid diagrams added to `architecture.md`; `TEST_RESULTS.md` refreshed.
 
 See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
 
@@ -620,6 +622,16 @@ ferret intel status                    # Threat database status
 ferret intel search "jailbreak"        # Search indicators
 ferret intel add --type pattern --value "malicious" --severity high
 ```
+
+### `ferret scan --self` (Dogfooding Mode)
+
+Special mode that scans Ferret’s own source code + the malicious test fixtures it ships. Highly recommended for contributors and before releasing.
+
+```bash
+ferret scan --self --ci --fail-on high
+```
+
+This is the best way to validate that your rule changes still catch the evil examples in `test/fixtures/`.
 
 
 ## CI/CD Integration
