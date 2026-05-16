@@ -105,5 +105,5 @@ export function buildFindingsAwareExcerpt(
 
 export function mitreAtlasFromIds(ids: string[]): MitreAtlasTechnique[] {
   // Placeholder - real implementation lives in mitre/atlas.ts
-  return ids.map(id => ({ id, name: id, tactics: [] }) as unknown as MitreAtlasTechnique);
+  return ids.map(id => ({ id, name: id, tactics: [] }) as unknown as MitreAtlasTechnique); // TODO: Align with full MitreAtlasTechnique type
 }

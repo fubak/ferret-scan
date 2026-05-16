@@ -102,7 +102,7 @@ export function parseLlmResponseToFindings(
         confidence: llmFinding.confidence,
         provider: 'llm-assisted',
       },
-    } as unknown as Finding;
+    } as unknown as Finding; // TODO: Improve Finding type compatibility after LLM split
 
     // Avoid obvious duplicates with existing regex findings
     const isDuplicate = existingFindings.some(existing =>
