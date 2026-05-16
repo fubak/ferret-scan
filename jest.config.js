@@ -30,14 +30,32 @@ const config = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  // Thresholds lock in Phase 2/3 coverage gains. Set at ~5% below current values
-  // so routine refactors don't trip the CI gate, but silent regressions will fail.
+  // Target: 60%+ global coverage with real integrated tests (achieved ~55% in current push).
+  // Long-term stretch: 80%+ on core logic.
   coverageThreshold: {
     global: {
-      branches:   20,
-      functions:  29,
-      lines:      30,
-      statements: 30,
+      branches:   40,
+      functions:  52,
+      lines:      58,
+      statements: 58,
+    },
+    './src/scanner/Scanner.ts': {
+      lines: 80,
+      functions: 83,
+      branches: 58,
+    },
+    './src/scanner/PatternMatcher.ts': {
+      lines: 91,
+      functions: 79,
+    },
+    './src/scanner/FileDiscovery.ts': {
+      lines: 70,
+      functions: 72,
+      branches: 56,
+    },
+    './src/scanner/reporting.ts': {
+      lines: 95,
+      functions: 90,
     },
     './src/remediation/Fixer.ts': {
       lines:     73,

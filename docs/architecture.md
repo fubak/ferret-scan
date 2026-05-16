@@ -53,3 +53,51 @@ Ferret focuses on AI CLI configs plus related scripts:
 - Add new rules in `src/rules/`.
 - Use `.ferretrc.json` for default settings and ignore patterns.
 - Use `ferret rules` and `ferret baseline` to manage rules and accepted findings.
+
+## Diagrams
+
+### Core Component Overview
+
+```mermaid
+flowchart LR
+    CLI["bin/ferret.js<br/>(Commander)"] --> LoadConfig["loadConfig()"]
+    LoadConfig --> Scanner["Scanner.scan()"]
+    Scanner --> FileDisc["FileDiscovery"]
+    Scanner --> Pattern["PatternMatcher<br/>(safeRegex)"]
+    Scanner --> Analyzers["Analyzers<br/>(AST, Correlation, Entropy, MCP, Deps, Caps, LLM)"]
+    Analyzers --> MITRE["MITRE ATLAS"]
+    Analyzers --> Redact["Redaction"]
+    Scanner --> Reporters["Reporters<br/>(Console, SARIF, HTML, CSV, Atlas)"]
+    Scanner --> Remediation["Remediation / Quarantine"]
+```
+
+### Self-Scan Dogfooding Loop (Phase 3)
+
+```mermaid
+sequenceDiagram
+    participant Dev as Contributor
+    participant CLI as ferret scan --self
+    participant Fixtures as test/fixtures (evil-*)
+    participant Rules as Rule Engine
+
+    Dev->>CLI: ferret scan --self --ci
+    CLI->>Fixtures: Discover + scan malicious examples
+    Fixtures->>Rules: Match against 80+ rules
+    Rules-->>CLI: CRITICAL findings (expected)
+    CLI-->>Dev: Pass (or fail build if rules regress)
+```
+
+### Data Flow for a Thorough Scan
+
+```mermaid
+flowchart TD
+    A[Paths + Config] --> B[FileDiscovery<br/>+ ignore + configOnly]
+    B --> C[Pattern Match + Context]
+    C --> D{Optional Analyzers?}
+    D -->|Yes| E[Semantic / Correlation / LLM / MCP / Entropy]
+    D -->|No| F[Findings]
+    E --> F
+    F --> G[Doc Dampening + Ignore Comments]
+    G --> H[MITRE Enrichment]
+    H --> I[Reporters + Exit Code]
+```

@@ -119,6 +119,20 @@ export class FerretDiagnosticProvider {
             '--severity', severities.join(',')
         ];
 
+        // Advanced parity options from VS Code settings
+        if (this.config.get('thorough')) {
+            args.push('--thorough');
+        }
+        if (this.config.get('llmAnalysis')) {
+            args.push('--llm-analysis');
+        }
+        if (this.config.get('mitreAtlas') !== false) {
+            args.push('--mitre-atlas');
+        }
+        if (this.config.get('semanticAnalysis')) {
+            args.push('--semantic-analysis');
+        }
+
         try {
             const { stdout, stderr } = await execFileAsync(execPath, args, {
                 maxBuffer: 10 * 1024 * 1024, // 10MB

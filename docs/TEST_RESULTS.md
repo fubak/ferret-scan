@@ -1,12 +1,35 @@
-# Ferret-Scan v2.0 - Comprehensive Test Results
+# Ferret-Scan Test Results
 
-## Test Execution Summary
+> **Note:** This file is a high-level historical snapshot. For the authoritative, always-current numbers run:
+> ```bash
+> FERRET_E2E=1 npm run test:coverage
+> ```
+> Then open `coverage/lcov-report/index.html` or check the text summary in CI.
 
-**Date:** February 15, 2026
-**Version:** 2.0.0
-**Test Framework:** Jest
-**Total Test Suites:** 13
-**Total Tests:** 49
+## Latest Execution Summary (as of plan execution)
+
+**Version:** 2.2.0+ (main)
+**Test Framework:** Jest (ts-jest + babel for ESM-only deps)
+**Total Test Suites:** 38 passed (+1 skipped)
+**Total Tests:** 666 passed (+1 skipped)
+**Coverage (baseline before Phase 1.1 additions):** Statements 56%, Branches 41%, Functions 57%, Lines 57%
+
+The suite has grown substantially since the v2.0 snapshot (49 tests). Dedicated unit + integration coverage now exists for:
+- Core scanner (FileDiscovery, PatternMatcher with bounds, Scanner orchestrator + getExitCode)
+- All reporters (Console, SARIF, HTML, CSV, Atlas)
+- Remediation (Fixer, Quarantine)
+- Advanced analyzers (Ast, Entropy, MCP validator, Dependency risk, Capability mapping, Correlation, LLM)
+- Features (ignore comments, policy enforcement, custom rules, baseline, watch mode, git hooks, webhooks, interactive TUI)
+- Security internals (safeRegex ReDoS protection, pathSecurity, redaction)
+- Exit codes, config loading, and self-scan fixtures
+
+## Key Test Locations
+- `test/unit/` — pure + fast unit tests (PatternMatcher bounds, safeRegex, reporters, etc.)
+- `test/integration/` — end-to-end with real fixtures (scan.test.ts, thorough.test.ts, llm.test.ts, remediation.test.ts, customRules.test.ts)
+- `src/__tests__/` — rule registry, exit codes, reporters, config
+- `test/fixtures/` — malicious examples (evil-hook.sh, malicious-skill.md) used for both normal tests and `ferret scan --self` dogfooding (Phase 3)
+
+See the approved implementation plan (in session plan.md) for the ongoing work to raise coverage on the three core scanner modules and lock in per-file thresholds.
 
 ## Overall Results
 

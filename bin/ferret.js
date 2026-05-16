@@ -106,6 +106,7 @@ program
   .option('--mitre-atlas-catalog', 'Enable MITRE ATLAS technique catalog auto-update (networked)')
   .option('--mitre-atlas-catalog-force-refresh', 'Force-refresh MITRE ATLAS catalog each run (networked)')
   .option('--thorough', 'Enable all available analyses (slow)')
+  .option('--self', 'Self-scan mode: dogfood Ferret by scanning its own source, rules, and test fixtures (recommended for contributors)')
   .option('--llm-analysis', 'Enable LLM-assisted analysis (requires network + API key)')
   .option('--llm-provider <name>', 'LLM provider (default: openai-compatible)')
   .option('--llm-model <model>', 'LLM model name')
@@ -237,6 +238,41 @@ program
 
       // Apply auto-fix if enabled
       const shouldAutoFix = options.autoFix || options.autoRemediation;
+
+      // Self-scan dogfooding mode (Phase 3 of review recommendations)
+      if (options.self) {
+        const currentFileUrl = import.meta.url;
+        const currentFile = fileURLToPath(currentFileUrl);
+        const packageRoot = resolve(dirname(currentFile), '..');
+
+        // Prioritize the malicious test fixtures (the whole point of self-scan) + project root
+        const fixturesPath = resolve(packageRoot, 'test', 'fixtures');
+        config.paths = [packageRoot, fixturesPath];
+
+        // For self-scan we want to catch the evil examples even if they are not "config-only" style files
+        config.configOnly = false;
+        config.marketplaceMode = 'configs';
+
+        // Heavy but safe ignores for a self-scan of Ferret's own repo
+        const selfIgnores = [
+          'node_modules/**',
+          'dist/**',
+          'coverage/**',
+          'docs/api/**',
+          '**/*.png',
+          '**/*.drawio',
+          '**/*.svg',
+          'patent-*.png',
+          '.git/**',
+          '.ferret-cache/**',
+          '**/node_modules/**',
+        ];
+        config.ignore = [...(config.ignore || []), ...selfIgnores];
+
+        console.log('\n🐶 Ferret Self-Scan (dogfooding mode)');
+        console.log('   Scanning Ferret\'s own source + test/fixtures to ensure its rules still catch the evil-hook.sh and malicious-skill.md examples it ships.');
+        console.log('   This is the recommended way for contributors to validate that detection still works.\n');
+      }
 
       // If no paths specified and no AI CLI configs found, show helpful message
       if (config.paths.length === 0) {

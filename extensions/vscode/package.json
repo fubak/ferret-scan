@@ -80,6 +80,26 @@
           },
           "description": "Severity levels to show"
         },
+        "ferret.thorough": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable all analyzers (slower but more complete)"
+        },
+        "ferret.llmAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable LLM-assisted analysis (requires OPENAI_API_KEY or equivalent in environment)"
+        },
+        "ferret.mitreAtlas": {
+          "type": "boolean",
+          "default": true,
+          "description": "Annotate findings with MITRE ATLAS techniques"
+        },
+        "ferret.semanticAnalysis": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable AST-based semantic analysis"
+        },
         "ferret.executablePath": {
           "type": "string",
           "default": "ferret",

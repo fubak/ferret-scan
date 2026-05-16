@@ -10,12 +10,9 @@ import type {
   ScanResult,
   Finding,
   Rule,
-  Severity,
-  ThreatCategory,
-  ScanSummary,
   DiscoveredFile,
 } from '../types.js';
-import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
+import { SEVERITY_ORDER } from '../types.js';
 import { discoverFiles } from './FileDiscovery.js';
 import { matchRules } from './PatternMatcher.js';
 import { getRulesForScan } from '../rules/index.js';
@@ -32,180 +29,17 @@ import { parseIgnoreComments, shouldIgnoreFinding, type FileIgnoreState } from '
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
 import { createLlmProvider, analyzeWithLlm, type LlmProvider } from '../features/llmAnalysis.js';
+import { applyDocumentationDampening } from '../features/docDampening.js';
+import {
+  calculateOverallRiskScore,
+  groupBySeverity,
+  groupByCategory,
+  calculateSummary,
+  sortFindings,
+} from './reporting.js';
 import logger from '../utils/logger.js';
 import ora from 'ora';
 
-function looksLikeDocumentationPath(filePath: string): boolean {
-  const p = filePath.toLowerCase();
-  const name = basename(p);
-
-  if (name === 'readme.md' || name === 'changelog.md' || name === 'contributing.md' || name === 'license.md') {
-    return true;
-  }
-
-  if (p.includes('/references/') || p.includes('\\references\\')) return true;
-  if (p.includes('/docs/') || p.includes('\\docs\\')) return true;
-  if (p.includes('/examples/') || p.includes('\\examples\\')) return true;
-
-  // Claude marketplace plugins are predominantly documentation/instructions.
-  if (p.includes('/plugins/marketplaces/') || p.includes('\\plugins\\marketplaces\\')) {
-    return true;
-  }
-
-  return false;
-}
-
-function applyDocumentationDampening(findings: Finding[]): void {
-  const fileCategories = new Map<string, Set<ThreatCategory>>();
-  for (const f of findings) {
-    const set = fileCategories.get(f.file) ?? new Set<ThreatCategory>();
-    set.add(f.category);
-    fileCategories.set(f.file, set);
-  }
-
-  const correlatedCategories: ThreatCategory[] = [
-    // Only treat truly suspicious categories as correlation signals in documentation.
-    // Many docs mention persistence/permissions changes (e.g., updating shell rc files),
-    // which should not prevent dampening of simple env var mentions.
-    'exfiltration',
-    'backdoors',
-    'injection',
-  ];
-
-  for (const f of findings) {
-    if (f.ruleId !== 'CRED-001') continue;
-    if (f.severity !== 'CRITICAL') continue;
-    if (!looksLikeDocumentationPath(f.file)) continue;
-
-    const cats = fileCategories.get(f.file);
-    const correlated = Boolean(cats && correlatedCategories.some((c) => cats.has(c)));
-    if (correlated) continue;
-
-    const from = f.severity;
-    const to: Severity = 'MEDIUM';
-
-    f.severity = to;
-    f.riskScore = Math.min(f.riskScore, SEVERITY_WEIGHTS[to]);
-    f.metadata = {
-      ...(f.metadata ?? {}),
-      dampening: {
-        reason: 'Documentation context without correlated tool/exfil/persistence indicators in the same file',
-        fromSeverity: from,
-        toSeverity: to,
-        ruleId: f.ruleId,
-      },
-    };
-  }
-}
-
-/**
- * Create an empty scan summary
- */
-function createEmptySummary(): ScanSummary {
-  return {
-    critical: 0,
-    high: 0,
-    medium: 0,
-    low: 0,
-    info: 0,
-    total: 0,
-  };
-}
-
-/**
- * Calculate overall risk score from findings
- */
-function calculateOverallRiskScore(findings: Finding[]): number {
-  if (findings.length === 0) return 0;
-
-  const totalWeight = findings.reduce((sum, finding) => {
-    return sum + SEVERITY_WEIGHTS[finding.severity];
-  }, 0);
-
-  // Normalize to 0-100 scale with diminishing returns
-  const normalizedScore = Math.min(100, Math.log1p(totalWeight) * 15);
-  return Math.round(normalizedScore);
-}
-
-/**
- * Group findings by severity
- */
-function groupBySeverity(findings: Finding[]): Record<Severity, Finding[]> {
-  const grouped: Record<Severity, Finding[]> = {
-    CRITICAL: [],
-    HIGH: [],
-    MEDIUM: [],
-    LOW: [],
-    INFO: [],
-  };
-
-  for (const finding of findings) {
-    grouped[finding.severity].push(finding);
-  }
-
-  return grouped;
-}
-
-/**
- * Group findings by category
- */
-function groupByCategory(findings: Finding[]): Record<ThreatCategory, Finding[]> {
-  const grouped: Partial<Record<ThreatCategory, Finding[]>> = {};
-
-  for (const finding of findings) {
-    grouped[finding.category] ??= [];
-    grouped[finding.category]!.push(finding);
-  }
-
-  return grouped as Record<ThreatCategory, Finding[]>;
-}
-
-/**
- * Calculate summary from findings
- */
-function calculateSummary(findings: Finding[]): ScanSummary {
-  const summary = createEmptySummary();
-
-  for (const finding of findings) {
-    switch (finding.severity) {
-      case 'CRITICAL':
-        summary.critical++;
-        break;
-      case 'HIGH':
-        summary.high++;
-        break;
-      case 'MEDIUM':
-        summary.medium++;
-        break;
-      case 'LOW':
-        summary.low++;
-        break;
-      case 'INFO':
-        summary.info++;
-        break;
-    }
-    summary.total++;
-  }
-
-  return summary;
-}
-
-/**
- * Sort findings by severity (most severe first)
- */
-function sortFindings(findings: Finding[]): Finding[] {
-  return findings.sort((a, b) => {
-    const severityDiff =
-      SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
-    if (severityDiff !== 0) return severityDiff;
-
-    // Then by risk score
-    if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
-
-    // Then by file
-    return a.relativePath.localeCompare(b.relativePath);
-  });
-}
 
 function mergeRules(baseRules: Rule[], customRules: Rule[]): Rule[] {
   const merged = new Map<string, Rule>();

