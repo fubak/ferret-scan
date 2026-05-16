@@ -50,14 +50,14 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install ferret-scan
@@ -96,13 +96,13 @@ jobs:
 
       - name: Upload SARIF results
         if: steps.scan.outputs.format == 'sarif'
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ steps.scan.outputs.results_file }}
           category: ferret-scan
 
       - name: Upload scan results as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ferret-scan-results-${{ github.run_number }}
           path: ${{ steps.scan.outputs.results_file }}
@@ -110,7 +110,7 @@ jobs:
 
       - name: Comment PR with results summary
         if: github.event_name == 'pull_request' && steps.scan.outputs.format == 'json'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         env:
           RESULTS_FILE: ${{ steps.scan.outputs.results_file }}
         with:
@@ -205,12 +205,12 @@ jobs:
     if: github.event_name == 'schedule'
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '18'
+          node-version: '20'
 
       - name: Install ferret-scan
         run: npm install -g ferret-scan@latest
@@ -221,7 +221,7 @@ jobs:
 
       - name: Create PR for updates
         if: success()
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: 'chore: update security threat intelligence database'

@@ -252,7 +252,7 @@ describe('SARIF Reporter', () => {
     it('should output valid JSON', () => {
       const result = createMockResult();
       const output = formatSarifReport(result);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+       
       expect(() => JSON.parse(output)).not.toThrow();
     });
 

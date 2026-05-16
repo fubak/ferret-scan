@@ -152,6 +152,16 @@ export function loadQuarantineDatabase(quarantineDir: string): QuarantineDatabas
       return createEmptyDatabase();
     }
 
+    // SECURITY: Sanitize loaded entries — reject any with null bytes in paths
+    db.entries = db.entries.filter(entry => {
+      if (typeof entry.originalPath !== 'string' || entry.originalPath.includes('\0') ||
+          typeof entry.quarantinePath !== 'string' || entry.quarantinePath.includes('\0')) {
+        logger.warn(`Skipping quarantine entry with invalid path: ${entry.id}`);
+        return false;
+      }
+      return true;
+    });
+
     return db;
   } catch (error) {
     logger.error(`Failed to load quarantine database: ${error instanceof Error ? error.message : String(error)}`);
@@ -343,16 +353,25 @@ export function restoreQuarantinedFile(
       return false;
     }
 
-    // SECURITY: Validate originalPath if allowedRestoreBase is specified
-    if (allowedRestoreBase) {
-      if (!isPathWithinBase(entry.originalPath, allowedRestoreBase)) {
-        logger.error(`Restore path outside allowed directory: ${entry.originalPath}`);
-        return false;
-      }
+    // SECURITY: Reject paths containing null bytes — these bypass some OS path checks
+    if (entry.originalPath.includes('\0')) {
+      logger.error(`Restore path contains null byte — rejecting: ${entryId}`);
+      return false;
+    }
+
+    // SECURITY: Always validate originalPath, defaulting to CWD when no base is supplied.
+    // Without this, an attacker who crafts a quarantine DB entry can restore a file
+    // to any path on the filesystem (e.g. /etc/cron.d/evil, ~/.ssh/authorized_keys).
+    const restoreBase = allowedRestoreBase ?? process.cwd();
+    if (!isPathWithinBase(entry.originalPath, restoreBase)) {
+      logger.error(`Restore path outside allowed directory '${restoreBase}': ${entry.originalPath}`);
+      return false;
     }
 
     // SECURITY: Validate the quarantine path is within quarantine directory
     validatePathWithinBase(entry.quarantinePath, quarantineDir, 'restoreQuarantinedFile');
+
+    logger.info(`Restoring '${entry.originalPath}' from quarantine`);
 
     // Ensure original directory exists
     mkdirSync(dirname(entry.originalPath), { recursive: true });
@@ -397,6 +416,9 @@ export function deleteQuarantinedFile(
       logger.error(`Entry not found at index ${entryIndex}`);
       return false;
     }
+
+    // SECURITY: Validate quarantine path is within quarantine directory before deleting
+    validatePathWithinBase(entry.quarantinePath, quarantineDir, 'deleteQuarantinedFile');
 
     // Delete quarantined file
     if (existsSync(entry.quarantinePath)) {

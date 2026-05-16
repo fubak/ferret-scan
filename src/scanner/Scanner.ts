@@ -4,43 +4,224 @@
 
 import { readFile } from 'node:fs/promises';
 import { existsSync, statSync } from 'node:fs';
-import { dirname, basename } from 'node:path';
+import { basename, dirname } from 'node:path';
 import type {
   ScannerConfig,
   ScanResult,
   Finding,
   Rule,
+  Severity,
+  ThreatCategory,
+  ScanSummary,
+  McpTrustSummary,
   DiscoveredFile,
 } from '../types.js';
-import { SEVERITY_ORDER } from '../types.js';
+import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
 import { discoverFiles } from './FileDiscovery.js';
 import { matchRules } from './PatternMatcher.js';
 import { getRulesForScan } from '../rules/index.js';
 import { loadCustomRules, loadCustomRulesSource } from '../features/customRules.js';
-import { analyzeFile as analyzeFileSemantics, shouldAnalyze as shouldAnalyzeSemantics, getMemoryUsage } from '../analyzers/AstAnalyzer.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
-import { loadThreatDatabase } from '../intelligence/ThreatFeed.js';
-import { matchIndicators, shouldMatchIndicators } from '../intelligence/IndicatorMatcher.js';
-import { analyzeEntropy, entropyFindingsToFindings } from '../features/entropyAnalysis.js';
-import { validateMcpConfigContent, mcpAssessmentsToFindings } from '../features/mcpValidator.js';
-import { analyzeDependencies, dependencyAssessmentsToFindings } from '../features/dependencyRisk.js';
-import { analyzeCapabilitiesContent, capabilityProfileToFindings } from '../features/capabilityMapping.js';
 import { parseIgnoreComments, shouldIgnoreFinding, type FileIgnoreState } from '../features/ignoreComments.js';
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
-import { createLlmProvider, analyzeWithLlm, type LlmProvider } from '../features/llmAnalysis.js';
-import { applyDocumentationDampening } from '../features/docDampening.js';
-import {
-  calculateOverallRiskScore,
-  groupBySeverity,
-  groupByCategory,
-  calculateSummary,
-  sortFindings,
-  mergeRules,
-} from './reporting.js';
+import { createLlmProvider, type LlmProvider } from '../features/llmAnalysis.js';
+import type { IAnalyzer, AnalyzerContext } from './IAnalyzer.js';
+import { EntropyAnalyzer } from './analyzers/EntropyAnalyzer.js';
+import { McpAnalyzer } from './analyzers/McpAnalyzer.js';
+import { DependencyAnalyzer } from './analyzers/DependencyAnalyzer.js';
+import { CapabilityAnalyzer } from './analyzers/CapabilityAnalyzer.js';
+import { LlmAnalyzer, type LlmRuntime } from './analyzers/LlmAnalyzer.js';
+import { SemanticAnalyzer } from './analyzers/SemanticAnalyzer.js';
+import { ThreatIntelAnalyzer } from './analyzers/ThreatIntelAnalyzer.js';
 import logger from '../utils/logger.js';
 import ora from 'ora';
 
+function looksLikeDocumentationPath(filePath: string): boolean {
+  const p = filePath.toLowerCase();
+  const name = basename(p);
+
+  if (name === 'readme.md' || name === 'changelog.md' || name === 'contributing.md' || name === 'license.md') {
+    return true;
+  }
+
+  if (p.includes('/references/') || p.includes('\\references\\')) return true;
+  if (p.includes('/docs/') || p.includes('\\docs\\')) return true;
+  if (p.includes('/examples/') || p.includes('\\examples\\')) return true;
+
+  // Claude marketplace plugins are predominantly documentation/instructions.
+  if (p.includes('/plugins/marketplaces/') || p.includes('\\plugins\\marketplaces\\')) {
+    return true;
+  }
+
+  return false;
+}
+
+function applyDocumentationDampening(findings: Finding[]): void {
+  const fileCategories = new Map<string, Set<ThreatCategory>>();
+  for (const f of findings) {
+    const set = fileCategories.get(f.file) ?? new Set<ThreatCategory>();
+    set.add(f.category);
+    fileCategories.set(f.file, set);
+  }
+
+  const correlatedCategories: ThreatCategory[] = [
+    // Only treat truly suspicious categories as correlation signals in documentation.
+    // Many docs mention persistence/permissions changes (e.g., updating shell rc files),
+    // which should not prevent dampening of simple env var mentions.
+    'exfiltration',
+    'backdoors',
+    'injection',
+  ];
+
+  for (const f of findings) {
+    if (f.ruleId !== 'CRED-001') continue;
+    if (f.severity !== 'CRITICAL') continue;
+    if (!looksLikeDocumentationPath(f.file)) continue;
+
+    const cats = fileCategories.get(f.file);
+    const correlated = Boolean(cats && correlatedCategories.some((c) => cats.has(c)));
+    if (correlated) continue;
+
+    const from = f.severity;
+    const to: Severity = 'MEDIUM';
+
+    f.severity = to;
+    f.riskScore = Math.min(f.riskScore, SEVERITY_WEIGHTS[to]);
+    f.metadata = {
+      ...(f.metadata ?? {}),
+      dampening: {
+        reason: 'Documentation context without correlated tool/exfil/persistence indicators in the same file',
+        fromSeverity: from,
+        toSeverity: to,
+        ruleId: f.ruleId,
+      },
+    };
+  }
+}
+
+/**
+ * Create an empty scan summary
+ */
+function createEmptySummary(): ScanSummary {
+  return {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+    info: 0,
+    total: 0,
+  };
+}
+
+/**
+ * Calculate overall risk score from findings
+ */
+function calculateOverallRiskScore(findings: Finding[]): number {
+  if (findings.length === 0) return 0;
+
+  const totalWeight = findings.reduce((sum, finding) => {
+    return sum + SEVERITY_WEIGHTS[finding.severity];
+  }, 0);
+
+  // Normalize to 0-100 scale with diminishing returns
+  const normalizedScore = Math.min(100, Math.log1p(totalWeight) * 15);
+  return Math.round(normalizedScore);
+}
+
+/**
+ * Group findings by severity
+ */
+function groupBySeverity(findings: Finding[]): Record<Severity, Finding[]> {
+  const grouped: Record<Severity, Finding[]> = {
+    CRITICAL: [],
+    HIGH: [],
+    MEDIUM: [],
+    LOW: [],
+    INFO: [],
+  };
+
+  for (const finding of findings) {
+    grouped[finding.severity].push(finding);
+  }
+
+  return grouped;
+}
+
+/**
+ * Group findings by category
+ */
+function groupByCategory(findings: Finding[]): Record<ThreatCategory, Finding[]> {
+  const grouped: Partial<Record<ThreatCategory, Finding[]>> = {};
+
+  for (const finding of findings) {
+    grouped[finding.category] ??= [];
+    grouped[finding.category]!.push(finding);
+  }
+
+  return grouped as Record<ThreatCategory, Finding[]>;
+}
+
+/**
+ * Calculate summary from findings
+ */
+function calculateSummary(findings: Finding[]): ScanSummary {
+  const summary = createEmptySummary();
+
+  for (const finding of findings) {
+    switch (finding.severity) {
+      case 'CRITICAL':
+        summary.critical++;
+        break;
+      case 'HIGH':
+        summary.high++;
+        break;
+      case 'MEDIUM':
+        summary.medium++;
+        break;
+      case 'LOW':
+        summary.low++;
+        break;
+      case 'INFO':
+        summary.info++;
+        break;
+    }
+    summary.total++;
+  }
+
+  return summary;
+}
+
+/**
+ * Sort findings by severity (most severe first)
+ */
+function sortFindings(findings: Finding[]): Finding[] {
+  return findings.sort((a, b) => {
+    const severityDiff =
+      SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
+    if (severityDiff !== 0) return severityDiff;
+
+    // Then by risk score
+    if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
+
+    // Then by file
+    return a.relativePath.localeCompare(b.relativePath);
+  });
+}
+
+function mergeRules(baseRules: Rule[], customRules: Rule[]): Rule[] {
+  const merged = new Map<string, Rule>();
+  for (const rule of baseRules) {
+    merged.set(rule.id, rule);
+  }
+  for (const rule of customRules) {
+    if (merged.has(rule.id)) {
+      logger.warn(`Custom rule overrides built-in rule: ${rule.id}`);
+    }
+    merged.set(rule.id, rule);
+  }
+  return Array.from(merged.values());
+}
 
 function getRuleScanRoots(paths: string[]): string[] {
   const roots: string[] = [];
@@ -101,19 +282,32 @@ async function loadCustomRulesForScan(config: ScannerConfig): Promise<Rule[]> {
 }
 
 /**
+ * Build the ordered list of analyzers for a scan.
+ */
+function buildAnalyzers(llmProvider: LlmProvider | null, llmRuntime: LlmRuntime): IAnalyzer[] {
+  return [
+    new EntropyAnalyzer(),
+    new McpAnalyzer(),
+    new DependencyAnalyzer(),
+    new CapabilityAnalyzer(),
+    new LlmAnalyzer(llmProvider, llmRuntime),
+    new SemanticAnalyzer(),
+    new ThreatIntelAnalyzer(),
+  ];
+}
+
+/**
  * Scan a single file
  */
 async function scanFile(
   file: DiscoveredFile,
   config: ScannerConfig,
   rules: Rule[],
-  llmProvider: LlmProvider | null,
-  llmRuntime: { analyzed: number; disabled: boolean; disabledReason?: string }
+  analyzers: IAnalyzer[]
 ): Promise<{ findings: Finding[]; errors?: string[]; ignoreState?: FileIgnoreState }> {
   try {
     const content = await readFile(file.path, 'utf-8');
     const allFindings: Finding[] = [];
-    const fileErrors: string[] = [];
     let ignoreState: FileIgnoreState | undefined;
 
     if (config.ignoreComments && content.includes('ferret-')) {
@@ -129,133 +323,22 @@ async function scanFile(
     });
     allFindings.push(...patternFindings);
 
-    // Entropy analysis (secret detection) if enabled
-    if (config.entropyAnalysis) {
+    // Run each analyzer in order via the registry
+    const ctx: AnalyzerContext = { file, content, config, rules, existingFindings: allFindings };
+
+    for (const analyzer of analyzers) {
+      if (!analyzer.shouldRun(ctx)) continue;
       try {
-        const entropyFindings = analyzeEntropy(content, file);
-        const converted = entropyFindingsToFindings(entropyFindings, file, content);
-        allFindings.push(...converted);
-      } catch (entropyError) {
-        const entropyMessage = entropyError instanceof Error ? entropyError.message : String(entropyError);
-        logger.warn(`Entropy analysis error for ${file.relativePath}: ${entropyMessage}`);
+        const found = await analyzer.analyze(ctx);
+        allFindings.push(...found);
+        ctx.existingFindings = allFindings;
+      } catch (err) {
+        logger.warn(
+          `${analyzer.name} error for ${file.relativePath}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 
-    // MCP configuration validation if enabled
-    if (config.mcpValidation && file.component === 'mcp' && file.type === 'json') {
-      const mcpResult = validateMcpConfigContent(content);
-      if (mcpResult.valid && mcpResult.assessments.length > 0) {
-        const mcpFindings = mcpAssessmentsToFindings(mcpResult.assessments, file.path);
-        // Normalize relative path (feature module uses basename)
-        for (const f of mcpFindings) {
-          f.relativePath = file.relativePath;
-        }
-        allFindings.push(...mcpFindings);
-      }
-    }
-
-    // Dependency analysis if enabled
-    if (config.dependencyAnalysis && basename(file.path).toLowerCase() === 'package.json') {
-      try {
-        const depResult = analyzeDependencies(file.path, config.dependencyAudit);
-        const depFindings = dependencyAssessmentsToFindings(depResult);
-        for (const f of depFindings) {
-          f.relativePath = file.relativePath;
-        }
-        allFindings.push(...depFindings);
-      } catch (depError) {
-        const depMessage = depError instanceof Error ? depError.message : String(depError);
-        logger.warn(`Dependency analysis error for ${file.relativePath}: ${depMessage}`);
-      }
-    }
-
-    // Capability mapping if enabled (best-effort, JSON-only)
-    if (config.capabilityMapping && file.type === 'json') {
-      try {
-        const profile = analyzeCapabilitiesContent(file.path, content);
-        if (profile) {
-          const capFindings = capabilityProfileToFindings(profile);
-          for (const f of capFindings) {
-            f.relativePath = file.relativePath;
-          }
-          allFindings.push(...capFindings);
-        }
-      } catch (capError) {
-        const capMessage = capError instanceof Error ? capError.message : String(capError);
-        logger.warn(`Capability mapping error for ${file.relativePath}: ${capMessage}`);
-      }
-    }
-
-    // LLM-assisted analysis (optional; networked)
-    if (config.llmAnalysis && llmProvider && !llmRuntime.disabled && llmRuntime.analyzed < config.llm.maxFiles) {
-      const llmResult = await analyzeWithLlm(
-        llmProvider,
-        config.llm,
-        file,
-        content,
-        allFindings
-      );
-      if (llmResult.ran) {
-        llmRuntime.analyzed += 1;
-      }
-      allFindings.push(...llmResult.findings);
-      if (llmResult.error) {
-        fileErrors.push(`LLM analysis: ${llmResult.error}`);
-
-        if (!llmRuntime.disabled && /\bHTTP 429\b/i.test(llmResult.error)) {
-          llmRuntime.disabled = true;
-          llmRuntime.disabledReason = 'rate limited (HTTP 429)';
-          logger.warn('LLM disabled for remainder of scan due to rate limiting (HTTP 429)');
-        }
-      }
-    }
-
-    // Semantic analysis if enabled and applicable
-    if (config.semanticAnalysis && shouldAnalyzeSemantics(file, config)) {
-      // Monitor memory usage
-      const memBefore = getMemoryUsage();
-      if (memBefore.used > 1000) { // More than 1GB used
-        logger.warn(`High memory usage (${memBefore.used}MB) - skipping semantic analysis for ${file.relativePath}`);
-      } else {
-        try {
-          logger.debug(`Running semantic analysis on ${file.relativePath}`);
-          const semanticFindings = await analyzeFileSemantics(file, content, rules);
-          // Convert SemanticFinding to Finding for compatibility
-          allFindings.push(...semanticFindings);
-
-          const memAfter = getMemoryUsage();
-          logger.debug(`Semantic analysis memory: ${memAfter.used - memBefore.used}MB delta`);
-        } catch (semanticError) {
-          const semanticMessage = semanticError instanceof Error ? semanticError.message : String(semanticError);
-          logger.warn(`Semantic analysis error for ${file.relativePath}: ${semanticMessage}`);
-        }
-      }
-    }
-
-    // Threat intelligence matching if enabled
-    if (config.threatIntel && shouldMatchIndicators(file, config)) {
-      try {
-        const threatDB = loadThreatDatabase();
-        logger.debug(`Running threat intelligence matching on ${file.relativePath}`);
-        const threatFindings = matchIndicators(threatDB, file, content, {
-          minConfidence: 50,
-          enablePatternMatching: true,
-          maxMatchesPerFile: 50
-        });
-        allFindings.push(...threatFindings);
-        logger.debug(`Found ${threatFindings.length} threat intelligence matches`);
-      } catch (threatError) {
-        const threatMessage = threatError instanceof Error ? threatError.message : String(threatError);
-        logger.warn(`Threat intelligence error for ${file.relativePath}: ${threatMessage}`);
-      }
-    }
-
-    if (fileErrors.length > 0 && ignoreState) {
-      return { findings: allFindings, errors: fileErrors, ignoreState };
-    }
-    if (fileErrors.length > 0) {
-      return { findings: allFindings, errors: fileErrors };
-    }
     if (ignoreState) {
       return { findings: allFindings, ignoreState };
     }
@@ -283,6 +366,27 @@ function isLocalEndpoint(urlStr: string): boolean {
   }
 }
 
+function buildMcpTrustSummary(trustFindings: Finding[]): McpTrustSummary {
+  const summary: McpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
+  const seen = new Set<string>();
+  for (const f of trustFindings) {
+    const serverName = f.metadata?.['serverName'];
+    const server = typeof serverName === 'string' ? serverName : f.file;
+    if (seen.has(server)) continue;
+    seen.add(server);
+    summary.total++;
+    const score = typeof f.metadata?.['trustScore'] === 'number'
+      ? (f.metadata['trustScore'])
+      : (f.severity === 'CRITICAL' ? 20 : 45);
+    summary.lowestScore = Math.min(summary.lowestScore, score);
+    if (score >= 80) summary.high++;
+    else if (score >= 60) summary.medium++;
+    else if (score >= 40) summary.low++;
+    else summary.critical++;
+  }
+  return summary;
+}
+
 /**
  * Main scan function
  */
@@ -292,7 +396,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const errors: { file?: string; message: string; code?: string; fatal: boolean }[] = [];
   const showProgress = !config.ci && process.stdout.isTTY;
   const ignoreStates = new Map<string, FileIgnoreState>();
-  const llmRuntime: { analyzed: number; disabled: boolean; disabledReason?: string } = { analyzed: 0, disabled: false };
+  const llmRuntime: LlmRuntime = { analyzed: 0, disabled: false };
   let llmProvider: LlmProvider | null = null;
   const baseRules = getRulesForScan(config.categories, config.severities);
   let rulesForScan: Rule[] = baseRules;
@@ -338,6 +442,9 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
       );
     }
   }
+
+  // Build analyzer registry (uses llmProvider + llmRuntime by reference)
+  const analyzers = buildAnalyzers(llmProvider, llmRuntime);
 
   // Discover files with spinner
   let spinner: ReturnType<typeof ora> | null = null;
@@ -410,7 +517,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
       }
     }
 
-    const result = await scanFile(file, config, rulesForScan, llmProvider, llmRuntime);
+    const result = await scanFile(file, config, rulesForScan, analyzers);
 
     if (result.errors && result.errors.length > 0) {
       for (const err of result.errors) {
@@ -492,6 +599,10 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
   const endTime = new Date();
   const duration = endTime.getTime() - startTime.getTime();
 
+  // Build MCP trust summary from trust-score findings emitted by mcpValidator
+  const mcpTrustFindings = sortedFindings.filter(f => f.metadata?.['issueType'] === 'trust-score');
+  const mcpTrustSummary = mcpTrustFindings.length > 0 ? buildMcpTrustSummary(mcpTrustFindings) : undefined;
+
   const result: ScanResult = {
     success: true,
     startTime,
@@ -508,6 +619,7 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     summary: calculateSummary(sortedFindings),
     errors,
     ignoredFindings,
+    ...(mcpTrustSummary !== undefined ? { mcpTrustSummary } : {}),
   };
 
   logger.info(

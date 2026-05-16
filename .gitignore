@@ -3,9 +3,13 @@ node_modules/
 
 # Build output
 dist/
+*.tsbuildinfo
 
 # Coverage
 coverage/
+
+# Generated API docs (regenerable via `npm run docs:api`)
+docs/api/
 
 # IDE
 .idea/
@@ -82,7 +86,7 @@ service-account*.json
 .ferret-cache/
 .ferret-quarantine/
 .ferret-backups/
-.ferret-intel/
+.ferret-intel/**
 .ferret-data/
 .ferret-config/
 
@@ -116,3 +120,5 @@ pnpm-lock.yaml
 
 # Unrelated projects
 vitly/
+.ferret-policy.json
+undefined/

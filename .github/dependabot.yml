@@ -1,0 +1,27 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      dev-dependencies:
+        dependency-type: "development"
+      eslint:
+        patterns: ["eslint*", "@eslint*", "@typescript-eslint*"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # typescript-eslint pinned at 8.54.0 — newer versions surface 400+ pre-existing
+      # lint errors. Unpin only as part of a focused lint-debt cleanup.
+      - dependency-name: "typescript-eslint"
+      - dependency-name: "@typescript-eslint/*"
+      - dependency-name: "eslint"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5

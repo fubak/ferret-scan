@@ -201,3 +201,42 @@ describe('HtmlReporter', () => {
     });
   });
 });
+
+// ─── mcpTrustSummary card in HTML output ─────────────────────────────────────
+
+describe('mcpTrustSummary in HTML output', () => {
+  it('omits MCP trust card when mcpTrustSummary is absent', () => {
+    const result = makeScanResult([]);
+    const html = generateHtmlReport(result);
+    expect(html).not.toContain('MCP Trust Min');
+  });
+
+  it('omits MCP trust card when total is 0', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
+    const html = generateHtmlReport(result);
+    expect(html).not.toContain('MCP Trust Min');
+  });
+
+  it('shows MCP trust card with lowest score when total > 0', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 2, high: 0, medium: 1, low: 0, critical: 1, lowestScore: 15 };
+    const html = generateHtmlReport(result);
+    expect(html).toContain('MCP Trust Min');
+    expect(html).toContain('15');
+  });
+
+  it('uses red colour for critical trust level', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 1, high: 0, medium: 0, low: 0, critical: 1, lowestScore: 10 };
+    const html = generateHtmlReport(result);
+    expect(html).toContain('#dc2626'); // critical colour
+  });
+
+  it('uses orange colour for low trust level (no critical)', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 1, high: 0, medium: 0, low: 1, critical: 0, lowestScore: 45 };
+    const html = generateHtmlReport(result);
+    expect(html).toContain('#ea580c'); // low/orange colour
+  });
+});

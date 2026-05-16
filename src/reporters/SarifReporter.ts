@@ -75,6 +75,7 @@ interface SarifDocument {
         scanDuration: number;
         filesScanned: number;
         riskScore: number;
+        mcpTrustSummary?: import('../types.js').McpTrustSummary;
       };
     };
   }[];
@@ -229,6 +230,7 @@ export function generateSarifReport(result: ScanResult): SarifDocument {
           scanDuration: result.duration,
           filesScanned: result.analyzedFiles,
           riskScore: result.overallRiskScore,
+          ...(result.mcpTrustSummary ? { mcpTrustSummary: result.mcpTrustSummary } : {}),
         },
       },
     }],

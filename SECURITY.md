@@ -19,7 +19,8 @@ We will acknowledge your report within **48 hours** and aim to provide an initia
 
 | Version | Supported |
 |---------|-----------|
-| 1.x     | ✓ Current |
+| 2.x     | ✓ Current |
+| 1.x     | ✗ End of life |
 | < 1.0   | ✗ Not supported |
 
 ## Security Model
@@ -32,7 +33,7 @@ ferret-scan is a **static analysis tool**. It reads files and reports findings; 
 |---------|-------------|------------|
 | Scanned files | Files could contain adversarial regex or obfuscated content | All regex patterns bounded (`safeRegex.ts`); file size capped |
 | Config files | `.ferretrc.json` could be crafted maliciously | Zod schema validation via `schemas.ts` |
-| Custom rules | User-supplied patterns could trigger ReDoS | `compileSafePattern` rejects nested quantifiers |
+| Custom rules | User-supplied patterns could trigger ReDoS | All user patterns compiled via `compileSafePattern`, which rejects nested quantifiers and screens for known ReDoS triggers before `new RegExp()` is called |
 | Quarantine dir | Quarantined files contain attacker-controlled content | Directory created with mode `0700`; path traversal blocked |
 | Threat feeds | External indicator databases could be compromised | Feeds are user-opt-in; schema-validated on load |
 

@@ -103,6 +103,17 @@ function formatSummary(summary: ScanSummary, result: ScanResult): string {
   const ignored = result.ignoredFindings ? `  |  Ignored: ${result.ignoredFindings}` : '';
   lines.push(`Files scanned: ${result.analyzedFiles}  |  Time: ${result.duration}ms  |  Risk Score: ${result.overallRiskScore}/100${ignored}`);
 
+  if (result.mcpTrustSummary && result.mcpTrustSummary.total > 0) {
+    const t = result.mcpTrustSummary;
+    const trustParts = [
+      t.critical > 0 ? SEVERITY_FORMATTERS['CRITICAL'](`${t.critical} CRITICAL`) : null,
+      t.low > 0 ? SEVERITY_FORMATTERS['HIGH'](`${t.low} LOW`) : null,
+      t.medium > 0 ? SEVERITY_FORMATTERS['MEDIUM'](`${t.medium} MEDIUM`) : null,
+      t.high > 0 ? `${t.high} HIGH` : null,
+    ].filter(Boolean);
+    lines.push(`MCP Trust: ${t.total} server(s) scored — ${trustParts.join(', ')}  |  Lowest: ${t.lowestScore}/100`);
+  }
+
   return lines.join('\n');
 }
 

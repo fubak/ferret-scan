@@ -585,6 +585,11 @@ export function generateHtmlReport(result: ScanResult, options: HtmlReportOption
         <div class="summary-number" style="color: ${result.overallRiskScore > 75 ? '#dc2626' : result.overallRiskScore > 50 ? '#ea580c' : '#16a34a'}">${result.overallRiskScore}</div>
         <div class="summary-label">Risk Score</div>
       </div>
+      ${result.mcpTrustSummary && result.mcpTrustSummary.total > 0 ? `
+      <div class="summary-card">
+        <div class="summary-number" style="color: ${result.mcpTrustSummary.critical > 0 ? '#dc2626' : result.mcpTrustSummary.low > 0 ? '#ea580c' : '#16a34a'}">${result.mcpTrustSummary.lowestScore}</div>
+        <div class="summary-label">MCP Trust Min</div>
+      </div>` : ''}
     </div>
 
     <div class="filters">

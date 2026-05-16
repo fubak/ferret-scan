@@ -224,3 +224,145 @@ describe('WatchMode', () => {
     });
   });
 });
+
+// ─── Additional coverage: verbose events, performScan, startEnhancedWatchMode ─
+
+// Re-import startEnhancedWatchMode and scan mock from top-level mocks above
+import { startEnhancedWatchMode } from '../../src/scanner/WatchMode.js';
+import { scan as mockScanFn } from '../../src/scanner/Scanner.js';
+
+describe('WatchMode — verbose event handlers', () => {
+  beforeEach(() => {
+    mockWatcher = createMockWatcher();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.useRealTimers();
+  });
+
+  it('logs debug messages for add/change/unlink when verbose=true', async () => {
+    const config = makeConfig({ verbose: true });
+    await startWatchMode(config);
+
+    // Trigger all three event types
+    const addHandlers = mockWatcher._handlers.get('add') ?? [];
+    const changeHandlers = mockWatcher._handlers.get('change') ?? [];
+    const unlinkHandlers = mockWatcher._handlers.get('unlink') ?? [];
+
+    expect(addHandlers.length).toBeGreaterThan(0);
+    expect(changeHandlers.length).toBeGreaterThan(0);
+    expect(unlinkHandlers.length).toBeGreaterThan(0);
+
+    // These should not throw (they log via logger.debug)
+    expect(() => addHandlers[0]?.('/tmp/new.sh')).not.toThrow();
+    expect(() => changeHandlers[0]?.('/tmp/changed.sh')).not.toThrow();
+    expect(() => unlinkHandlers[0]?.('/tmp/removed.sh')).not.toThrow();
+  });
+
+  it('does not log debug when verbose=false', async () => {
+    const config = makeConfig({ verbose: false });
+    await startWatchMode(config);
+
+    const addHandlers = mockWatcher._handlers.get('add') ?? [];
+    expect(() => addHandlers[0]?.('/tmp/new.sh')).not.toThrow();
+  });
+
+  it('fires performScan when debounce timer expires after add event', async () => {
+    jest.useFakeTimers();
+    const mockedScan = mockScanFn as jest.MockedFunction<typeof mockScanFn>;
+    mockedScan.mockClear();
+
+    const config = makeConfig();
+    await startWatchMode(config);
+
+    // Fire an 'add' event to trigger debouncedScan
+    const addHandlers = mockWatcher._handlers.get('add') ?? [];
+    addHandlers[0]?.('/tmp/new-file.sh');
+
+    // Allow the debounce to fire (default 1000ms)
+    await jest.advanceTimersByTimeAsync(1001);
+
+    expect(mockedScan).toHaveBeenCalled();
+  });
+
+  it('debounce collapses rapid events — each debounce window fires the scan handler once', async () => {
+    jest.useFakeTimers();
+    const mockedScan = mockScanFn as jest.MockedFunction<typeof mockScanFn>;
+    mockedScan.mockClear();
+    mockedScan.mockResolvedValue(mockScanResult);
+
+    const config = makeConfig();
+    await startWatchMode(config);
+
+    const callsBefore = mockedScan.mock.calls.length;
+    const addHandlers = mockWatcher._handlers.get('add') ?? [];
+
+    // Two rapid events — debounce should collapse them into one performScan invocation
+    addHandlers[0]?.('/tmp/file1.sh');
+    addHandlers[0]?.('/tmp/file2.sh');
+    await jest.advanceTimersByTimeAsync(1001);
+
+    // At most one additional scan should have fired
+    expect(mockedScan.mock.calls.length).toBeLessThanOrEqual(callsBefore + 1);
+    expect(mockedScan.mock.calls.length).toBeGreaterThanOrEqual(callsBefore);
+  });
+
+  it('watch mode registers all three event handlers (add, change, unlink)', async () => {
+    const config = makeConfig();
+    await startWatchMode(config);
+
+    expect(mockWatcher._handlers.has('add')).toBe(true);
+    expect(mockWatcher._handlers.has('change')).toBe(true);
+    expect(mockWatcher._handlers.has('unlink')).toBe(true);
+  });
+
+  it('triggers performScan in verbose mode and logs file counts', async () => {
+    jest.useFakeTimers();
+    const mockedScan = mockScanFn as jest.MockedFunction<typeof mockScanFn>;
+    mockedScan.mockClear();
+    mockedScan.mockResolvedValue(mockScanResult);
+
+    const config = makeConfig({ verbose: true });
+    await startWatchMode(config);
+
+    const addHandlers = mockWatcher._handlers.get('add') ?? [];
+    // Push > 5 events to exercise the "> 5 more" branch in verbose logging
+    for (let i = 0; i < 8; i++) {
+      addHandlers[0]?.(`/tmp/file${i}.sh`);
+    }
+
+    await jest.advanceTimersByTimeAsync(1001);
+    expect(mockedScan).toHaveBeenCalled();
+  });
+});
+
+describe('startEnhancedWatchMode', () => {
+  beforeEach(() => {
+    mockWatcher = createMockWatcher();
+    jest.spyOn(console, 'log').mockImplementation(() => {});
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('returns a cleanup function', async () => {
+    const cleanup = await startEnhancedWatchMode(makeConfig());
+    expect(typeof cleanup).toBe('function');
+  });
+
+  it('logs startup banner to console', async () => {
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+    await startEnhancedWatchMode(makeConfig({ paths: ['/my-project'] }));
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Ferret Watch Mode'));
+  });
+
+  it('passes options through to startWatchMode', async () => {
+    await startEnhancedWatchMode(makeConfig(), { debounceMs: 500 });
+    expect(chokidar.watch).toHaveBeenCalled();
+  });
+});

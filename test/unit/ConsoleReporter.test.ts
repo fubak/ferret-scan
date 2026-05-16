@@ -186,3 +186,36 @@ describe('ConsoleReporter', () => {
     });
   });
 });
+
+// ─── mcpTrustSummary branch coverage ─────────────────────────────────────────
+
+describe('ConsoleReporter mcpTrustSummary output', () => {
+  it('includes MCP trust line when total > 0 with critical servers', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 2, high: 0, medium: 0, low: 0, critical: 2, lowestScore: 10 };
+    const output = generateConsoleReport(result, {});
+    expect(output).toContain('MCP Trust');
+    expect(output).toContain('2 server');
+  });
+
+  it('includes MCP trust line with low and medium servers', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 3, high: 1, medium: 1, low: 1, critical: 0, lowestScore: 45 };
+    const output = generateConsoleReport(result, {});
+    expect(output).toContain('MCP Trust');
+  });
+
+  it('includes MCP trust line when only high trust servers', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 1, high: 1, medium: 0, low: 0, critical: 0, lowestScore: 90 };
+    const output = generateConsoleReport(result, {});
+    expect(output).toContain('MCP Trust');
+  });
+
+  it('omits MCP trust line when total is 0', () => {
+    const result = makeScanResult([]);
+    result.mcpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
+    const output = generateConsoleReport(result, {});
+    expect(output).not.toContain('MCP Trust');
+  });
+});

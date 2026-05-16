@@ -19,7 +19,7 @@
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢻⣿⣟⣿⣿⠿⣿⡿⠟⠁
 ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⠻⠯⠝⠋⠀⠀⠀⠀
 </pre>
-<strong>Security Scanner for AI CLI Configurations</strong>
+<strong>Static Security Scanner for AI CLI and MCP Configurations</strong>
 </p>
 
 <p align="center">
@@ -42,9 +42,9 @@
 
 ---
 
-**Ferret** is a security scanner purpose-built for AI assistant configurations. It detects prompt injections, credential leaks, jailbreak attempts, and malicious patterns in your AI CLI setup before they become problems.
+**Ferret** is a static security scanner purpose-built for AI assistant configurations. It detects prompt injections, credential leaks, jailbreak attempts, and malicious patterns in your AI CLI and MCP server configs before they become problems.
 
-Threat intelligence uses a local indicator database by default (no external feeds unless you add indicators).
+Scanning is **local and offline by default** — no data leaves your machine. Threat intelligence uses a local indicator database (no external feeds unless you opt in).
 
 ```
 $ ferret scan .
@@ -95,32 +95,35 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.1.0
+## What's New in v2.4.0
 
-- **NO_COLOR support**: Respects the `NO_COLOR` environment variable per [no-color.org](https://no-color.org)
-- **SSRF protection**: Remote custom rules URLs blocked by default; use `--allow-remote-rules` to opt in
-- **SIGINT handler**: Graceful shutdown on Ctrl+C during scan
-- **Interactive baseline removal**: `ferret baseline remove` prompts for confirmation
-- **244 tests**: Comprehensive test suite covering rules, config, reporters, and exit codes
-- **npm-shrinkwrap.json**: Deterministic dependency installs
+- **Drops Node 18**: `engines.node` now `>=20.0.0`. Node 18 reached end-of-life April 2025 and the bundled `re2` regex engine no longer builds on it
+- **CI matrix on Node 20 + 22**: tests run on both, fully green
+- **Lint debt paid down**: 333 lint errors → 0; CI lint enforcement re-enabled
+- **`ferret mcp audit`**: score MCP servers in `.mcp.json` for security posture (trust score 0–100, HIGH/MEDIUM/LOW/CRITICAL levels) — shipped in v2.3.0
+- **1921 tests** across 107 suites; 90%+ line coverage, 78%+ branch coverage
+
+See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
 
 ## Advanced Features
 
-**IDE Integration**
-- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes
-
-**Analysis Engines**
+**Analysis Engines** (all implemented, local/offline)
 - **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
-- **LLM-assisted analysis**: Optional AI-powered threat detection (OpenAI-compatible APIs)
-- **Semantic analysis**: TypeScript AST-based code analysis
+- **MCP trust scoring**: `ferret mcp audit` rates `.mcp.json` servers on transport, package pinning, suspicious args, and known-bad patterns
+- **LLM-assisted analysis**: Optional AI-powered threat detection via OpenAI-compatible APIs (opt-in, networked)
+- **Semantic analysis**: TypeScript AST-based code analysis with RE2 (no ReDoS)
 - **Cross-file correlation**: Detect multi-file attack chains
 - **Entropy analysis**: Secret detection via Shannon entropy
 - **Threat intelligence**: Local indicator database matching
 
+**IDE Integration**
+- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes (build from source)
+
 **Planned Features**
 - Language Server Protocol (LSP) for universal IDE support
 - IntelliJ plugin
-- Runtime behavior monitoring
+- SBOM/AIBOM generation for AI configurations
+- Runtime behavior monitoring and anomaly detection (currently static analysis only)
 - Compliance framework assessments (SOC2, ISO 27001, GDPR)
 - Community rule sharing platform
 
@@ -389,7 +392,7 @@ Every LLM finding includes a confidence score:
 
 ## Installation
 
-**Requirements:** Node.js 18+
+**Requirements:** Node.js 20+
 
 ```bash
 # Global install (recommended)
@@ -850,14 +853,16 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 ## Planned Features
 
+- MCP server trust scoring and package provenance verification
+- SBOM/AIBOM generation for AI configurations
 - Language Server Protocol (LSP) for Neovim, Emacs, Sublime Text
 - IntelliJ plugin for JetBrains IDEs
-- Runtime behavior monitoring and anomaly detection
+- Runtime behavior monitoring and anomaly detection (tool is currently static analysis only)
 - Compliance framework assessments (SOC2, ISO 27001, GDPR)
 - Community rule sharing platform
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
-- Threat intel updates from external sources
+- Threat intel feeds from external sources (currently local DB only)
 - More LLM providers and local-first presets
 
 ## IDE Integration

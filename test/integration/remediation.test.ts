@@ -121,7 +121,7 @@ describe('Remediation integration', () => {
     rmSync(filePath);
 
     // Restore from quarantine
-    const restored = restoreQuarantinedFile(entry!.id, quarantineDir);
+    const restored = restoreQuarantinedFile(entry!.id, quarantineDir, tmpDir);
     expect(restored).toBe(true);
     expect(existsSync(filePath)).toBe(true);
 

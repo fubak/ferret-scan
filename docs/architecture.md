@@ -7,15 +7,16 @@ Ferret is a CLI security scanner for AI assistant configuration files. The scann
 - **CLI** (`bin/ferret.js`): argument parsing, config loading, scan orchestration, reporting, and exit codes.
 - **Config & Ignore** (`src/utils/config.ts`, `src/utils/ignore.ts`): merges CLI options with `.ferretrc` and `.ferretignore`.
 - **File Discovery** (`src/scanner/FileDiscovery.ts`): finds relevant config, markdown, JSON, YAML, and shell files.
-- **Rule Engine** (`src/scanner/PatternMatcher.ts`, `src/rules/*`): regex-based matching with context filters and severity.
-- **Semantic Analysis** (`src/analyzers/AstAnalyzer.ts`): AST-based checks for JS/TS and code blocks in markdown.
+- **Rule Engine** (`src/scanner/PatternMatcher.ts`, `src/rules/*`): RE2-based matching (no ReDoS) with context filters and severity. User-supplied patterns are compiled via `compileSafePattern` for additional defense.
+- **Semantic Analysis** (`src/analyzers/AstAnalyzer.ts`): AST-based checks for JS/TS and code blocks in markdown, with per-block (500ms) and per-file (2s) deadlines.
 - **Correlation Analysis** (`src/analyzers/CorrelationAnalyzer.ts`): cross-file pattern correlation.
 - **Threat Intelligence** (`src/intelligence/*`): indicator matching against a local threat database (no external feeds by default).
 - **LLM Analysis** (`src/features/llmAnalysis.ts`): optional LLM-assisted scanning with redaction and caching (disabled by default).
-- **Custom Rules** (`src/features/customRules.ts`): load user-defined rules from `.ferret/rules.*` or `--custom-rules`.
+- **MCP Trust Scoring** (`src/features/mcpTrustScore.ts`): scores `.mcp.json` servers (transport, package pinning, suspicious args, known-bad patterns); surfaced via `ferret mcp audit`.
+- **Custom Rules** (`src/features/customRules.ts`): load user-defined rules from `.ferret/rules.*` or `--custom-rules`. All patterns RE2-validated before load.
 - **MITRE ATLAS Catalog** (`src/mitre/atlasCatalog.ts`): optional cached download of the official STIX bundle for up-to-date technique metadata.
-- **Remediation** (`src/remediation/*`): safe auto-fix and quarantine helpers.
-- **Reporters** (`src/reporters/*`): console, JSON, SARIF, HTML, and CSV outputs.
+- **Remediation** (`src/remediation/*`): safe auto-fix and quarantine helpers (path-traversal hardened; quarantine dir mode 0700 on POSIX).
+- **Reporters** (`src/reporters/*`): console, JSON, SARIF (with MCP trust summary), HTML, and CSV outputs. Secrets are redacted by default.
 
 ## Data Flow (Scan)
 
