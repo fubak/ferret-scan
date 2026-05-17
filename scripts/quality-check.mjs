@@ -37,9 +37,18 @@ function warn(msg) {
 
 // ─── File Size Enforcement ───────────────────────────────────────────────────
 
-const MAX_PROD_LOC = 550;   // target after cleanup
+const MAX_PROD_LOC = 550;   // preferred target
 const HARD_FAIL_LOC = 800;
 const MAX_TEST_LOC = 700;
+
+// Files that are known to be large for architectural reasons.
+// We still report them as warnings so they stay on the radar, but they don't
+// block CI as hard errors.
+const SIZE_EXCEPTIONS = new Set([
+  'src/reporters/HtmlReporter.ts',
+  'src/features/customRules.ts',
+  'src/types.ts',
+]);
 
 function walkTs(dir, files = []) {
   for (const entry of readdirSync(dir)) {
@@ -68,7 +77,11 @@ function checkFileSizes() {
     if (lines > HARD_FAIL_LOC) {
       fail(`${rel} has ${lines} lines (hard limit ${HARD_FAIL_LOC})`);
     } else if (lines > max) {
-      warn(`${rel} has ${lines} lines (target ≤${max})`);
+      if (SIZE_EXCEPTIONS.has(rel)) {
+        warn(`${rel} has ${lines} lines (known exception — still above preferred ${max})`);
+      } else {
+        warn(`${rel} has ${lines} lines (target ≤${max})`);
+      }
     }
   }
   log(`   Checked ${files.length} .ts files`);
