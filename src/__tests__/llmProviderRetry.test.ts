@@ -3,7 +3,7 @@
  * Tests for retry behavior in createOpenAICompatibleProvider
  */
 
-import { createOpenAICompatibleProvider } from '../features/llmAnalysis.js';
+import { createOpenAICompatibleProvider } from '../features/llm/index.js';
 import type { LlmScanConfig } from '../types.js';
 
 function makeConfig(overrides: Partial<LlmScanConfig> = {}): LlmScanConfig {

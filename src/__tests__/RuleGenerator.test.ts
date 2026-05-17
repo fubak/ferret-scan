@@ -7,14 +7,14 @@ import { AIRuleGenerator } from '../ai-rules/RuleGenerator.js';
 import type { ThreatReport } from '../ai-rules/RuleGenerator.js';
 
 // Mock the LLM provider creation
-jest.mock('../features/llmAnalysis.js', () => ({
+jest.mock('../features/llm/index.js', () => ({
   createLlmProvider: jest.fn().mockReturnValue({
     name: 'mock-provider',
     analyze: jest.fn(),
   }),
 }));
 
-import { createLlmProvider } from '../features/llmAnalysis.js';
+import { createLlmProvider } from '../features/llm/index.js';
 
 function makeThreatReport(overrides: Partial<ThreatReport> = {}): ThreatReport {
   return {

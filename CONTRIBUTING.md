@@ -33,6 +33,12 @@ npm install
 npm run build
 ```
 
+**Note**: The `lsp/` directory is a separate package. Run `npm run build` from inside `lsp/` if you're working on the Language Server.
+
+```bash
+npm run build
+```
+
 4. **Run Tests**
 
 ```bash

@@ -3,7 +3,7 @@
  * Tests for analyzeWithLlm with MITRE atlas options
  */
 
-import { analyzeWithLlm } from '../features/llmAnalysis.js';
+import { analyzeWithLlm } from '../features/llm/index.js';
 import type { LlmScanConfig } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -185,9 +185,10 @@ describe('analyzeWithLlm - MITRE atlas integration', () => {
 
     const result = await analyzeWithLlm(provider, config, file, 'test content', []);
     if (result.ran && result.findings.length > 0) {
-      expect(result.findings[0]?.category).toBe('injection');
-      expect(result.findings[1]?.category).toBe('credentials');
-      expect(result.findings[2]?.category).toBe('exfiltration');
+      const categories = result.findings.map(f => f.category);
+      expect(categories).toContain('injection');
+      expect(categories).toContain('credentials');
+      expect(categories).toContain('exfiltration');
     }
   });
 

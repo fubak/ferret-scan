@@ -3,7 +3,7 @@
  * Tests the excerpt building logic for large files with existing findings
  */
 
-import { analyzeWithLlm } from '../features/llmAnalysis.js';
+import { analyzeWithLlm } from '../features/llm/index.js';
 import type { LlmScanConfig, Finding, ThreatCategory } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';

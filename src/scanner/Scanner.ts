@@ -12,20 +12,27 @@ import type {
   Rule,
   Severity,
   ThreatCategory,
-  ScanSummary,
   McpTrustSummary,
   DiscoveredFile,
 } from '../types.js';
 import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
 import { discoverFiles } from './FileDiscovery.js';
 import { matchRules } from './PatternMatcher.js';
+import {
+  calculateOverallRiskScore,
+  groupBySeverity,
+  groupByCategory,
+  calculateSummary,
+  sortFindings,
+  mergeRules,
+} from './reporting.js';
 import { getRulesForScan } from '../rules/index.js';
 import { loadCustomRules, loadCustomRulesSource } from '../features/customRules.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
 import { parseIgnoreComments, shouldIgnoreFinding, type FileIgnoreState } from '../features/ignoreComments.js';
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
-import { createLlmProvider, type LlmProvider } from '../features/llmAnalysis.js';
+import { createLlmProvider, type LlmProvider } from '../features/llm/index.js';
 import type { IAnalyzer, AnalyzerContext } from './IAnalyzer.js';
 import { EntropyAnalyzer } from './analyzers/EntropyAnalyzer.js';
 import { McpAnalyzer } from './analyzers/McpAnalyzer.js';
@@ -98,129 +105,6 @@ function applyDocumentationDampening(findings: Finding[]): void {
       },
     };
   }
-}
-
-/**
- * Create an empty scan summary
- */
-function createEmptySummary(): ScanSummary {
-  return {
-    critical: 0,
-    high: 0,
-    medium: 0,
-    low: 0,
-    info: 0,
-    total: 0,
-  };
-}
-
-/**
- * Calculate overall risk score from findings
- */
-function calculateOverallRiskScore(findings: Finding[]): number {
-  if (findings.length === 0) return 0;
-
-  const totalWeight = findings.reduce((sum, finding) => {
-    return sum + SEVERITY_WEIGHTS[finding.severity];
-  }, 0);
-
-  // Normalize to 0-100 scale with diminishing returns
-  const normalizedScore = Math.min(100, Math.log1p(totalWeight) * 15);
-  return Math.round(normalizedScore);
-}
-
-/**
- * Group findings by severity
- */
-function groupBySeverity(findings: Finding[]): Record<Severity, Finding[]> {
-  const grouped: Record<Severity, Finding[]> = {
-    CRITICAL: [],
-    HIGH: [],
-    MEDIUM: [],
-    LOW: [],
-    INFO: [],
-  };
-
-  for (const finding of findings) {
-    grouped[finding.severity].push(finding);
-  }
-
-  return grouped;
-}
-
-/**
- * Group findings by category
- */
-function groupByCategory(findings: Finding[]): Record<ThreatCategory, Finding[]> {
-  const grouped: Partial<Record<ThreatCategory, Finding[]>> = {};
-
-  for (const finding of findings) {
-    grouped[finding.category] ??= [];
-    grouped[finding.category]!.push(finding);
-  }
-
-  return grouped as Record<ThreatCategory, Finding[]>;
-}
-
-/**
- * Calculate summary from findings
- */
-function calculateSummary(findings: Finding[]): ScanSummary {
-  const summary = createEmptySummary();
-
-  for (const finding of findings) {
-    switch (finding.severity) {
-      case 'CRITICAL':
-        summary.critical++;
-        break;
-      case 'HIGH':
-        summary.high++;
-        break;
-      case 'MEDIUM':
-        summary.medium++;
-        break;
-      case 'LOW':
-        summary.low++;
-        break;
-      case 'INFO':
-        summary.info++;
-        break;
-    }
-    summary.total++;
-  }
-
-  return summary;
-}
-
-/**
- * Sort findings by severity (most severe first)
- */
-function sortFindings(findings: Finding[]): Finding[] {
-  return findings.sort((a, b) => {
-    const severityDiff =
-      SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity);
-    if (severityDiff !== 0) return severityDiff;
-
-    // Then by risk score
-    if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
-
-    // Then by file
-    return a.relativePath.localeCompare(b.relativePath);
-  });
-}
-
-function mergeRules(baseRules: Rule[], customRules: Rule[]): Rule[] {
-  const merged = new Map<string, Rule>();
-  for (const rule of baseRules) {
-    merged.set(rule.id, rule);
-  }
-  for (const rule of customRules) {
-    if (merged.has(rule.id)) {
-      logger.warn(`Custom rule overrides built-in rule: ${rule.id}`);
-    }
-    merged.set(rule.id, rule);
-  }
-  return Array.from(merged.values());
 }
 
 function getRuleScanRoots(paths: string[]): string[] {
@@ -366,7 +250,11 @@ function isLocalEndpoint(urlStr: string): boolean {
   }
 }
 
-function buildMcpTrustSummary(trustFindings: Finding[]): McpTrustSummary {
+/**
+ * Exported for test coverage of the MCP trust summary logic.
+ * Not intended for external use.
+ */
+export function buildMcpTrustSummary(trustFindings: Finding[]): McpTrustSummary {
   const summary: McpTrustSummary = { total: 0, high: 0, medium: 0, low: 0, critical: 0, lowestScore: 100 };
   const seen = new Set<string>();
   for (const f of trustFindings) {

@@ -5,6 +5,20 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Unreleased — Quality Gate Cleanup (v2.6.x)
+
+### Changed
+- Raised global test coverage thresholds to true 80%+ (lines/statements/functions) with pragmatic 70% branch floor. All existing per-file overrides retained.
+- Extracted large data tables and types from `capabilityMapping.ts` into `src/features/capabilities/{data.ts,types.ts}` (main file reduced from 639 → 493 LOC).
+- Added `npm run quality` (powered by `scripts/quality-check.mjs`) that enforces file size, function length heuristics, lint, typecheck, coverage, self-scan dogfooding, and production audit in one command.
+- Created `docs/QUALITY_GATES.md` documenting standards, limits, and how to run the gate.
+- Fixed the last outstanding TODO (LLM prompt placeholder type alignment).
+- Added `audit:prod`, `quality`, `quality:fix`, `quality:json` scripts.
+
+### Improved
+- Self-scan, coverage, and size hygiene now have automated enforcement beyond CI.
+- The project itself now better exemplifies the security standards it scans for.
+
 ## [2.6.0] - 2026-05-16
 
 ### Added — Major New Features

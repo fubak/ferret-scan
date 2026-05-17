@@ -17,7 +17,20 @@ jest.mock('ora', () => {
   });
 });
 
-describe('Scan integration', () => {
+/**
+ * Gated behind FERRET_E2E=1 (CI sets this after build step).
+ * These tests perform real full scans against fixtures and are slow/heavy.
+ */
+const runE2E = process.env['FERRET_E2E'] === '1';
+
+if (!runE2E) {
+  it.skip('Scan integration tests skipped — set FERRET_E2E=1 to run', () => {});
+}
+
+// Use d() instead of describe() so the block is properly skipped when FERRET_E2E is unset.
+const d = runE2E ? describe : describe.skip;
+
+d('Scan integration', () => {
   it('should scan fixtures and produce findings', async () => {
     logger.configure({ level: 'silent' });
     const fixturesPath = resolve(process.cwd(), 'test', 'fixtures');

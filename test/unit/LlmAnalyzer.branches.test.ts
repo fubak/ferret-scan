@@ -10,15 +10,15 @@ import type { AnalyzerContext } from '../../src/scanner/IAnalyzer.js';
 import type { DiscoveredFile } from '../../src/types.js';
 import { DEFAULT_CONFIG } from '../../src/types.js';
 import { LlmAnalyzer, type LlmRuntime } from '../../src/scanner/analyzers/LlmAnalyzer.js';
-import type { LlmProvider } from '../../src/features/llmAnalysis.js';
+import type { LlmProvider } from '../../src/features/llm/index.js';
 
 // Mock analyzeWithLlm so we can control exactly what it returns
-jest.mock('../../src/features/llmAnalysis.js', () => ({
+jest.mock('../../src/features/llm/index.js', () => ({
   analyzeWithLlm: jest.fn(),
   createLlmProvider: jest.fn().mockReturnValue(null),
 }));
 
-import { analyzeWithLlm } from '../../src/features/llmAnalysis.js';
+import { analyzeWithLlm } from '../../src/features/llm/index.js';
 const mockAnalyzeWithLlm = analyzeWithLlm as jest.MockedFunction<typeof analyzeWithLlm>;
 
 function makeFile(): DiscoveredFile {

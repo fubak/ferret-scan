@@ -3,7 +3,7 @@
  * Tests for createLlmProvider, createOpenAICompatibleProvider, and analyzeWithLlm
  */
 
-import { createLlmProvider, createOpenAICompatibleProvider, analyzeWithLlm } from '../features/llmAnalysis.js';
+import { createLlmProvider, createOpenAICompatibleProvider, analyzeWithLlm } from '../features/llm/index.js';
 import type { LlmScanConfig } from '../types.js';
 
 function makeConfig(overrides: Partial<LlmScanConfig> = {}): LlmScanConfig {
@@ -127,7 +127,7 @@ describe('createOpenAICompatibleProvider', () => {
       'http://localhost:11434/v1/chat/completions',
       expect.objectContaining({
         method: 'POST',
-        headers: expect.objectContaining({ 'content-type': 'application/json' }),
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
       })
     );
   });
