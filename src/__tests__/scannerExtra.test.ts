@@ -357,6 +357,7 @@ describe('Scanner error paths and MCP trust coverage', () => {
 describe('Deeper Scanner integration scenarios (analyzer errors & MCP trust)', () => {
   it('continues scan and records error when one analyzer throws', async () => {
     // Temporarily make the McpAnalyzer throw to simulate real error path
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const McpAnalyzerMock = require('../scanner/analyzers/McpAnalyzer.js').McpAnalyzer;
     McpAnalyzerMock.mockImplementationOnce(() => ({
       analyze: jest.fn().mockRejectedValue(new Error('MCP analyzer exploded')),

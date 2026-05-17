@@ -121,7 +121,7 @@ export function createOpenAICompatibleProvider(config: LlmScanConfig): LlmProvid
           const status = typeof e?.status === 'number' ? e.status : null;
 
           // Graceful fallback for providers that reject response_format / json mode
-          const errorMessage = e?.message || (e?.error && e.error.message) || String(e);
+          const errorMessage = e?.message ?? e?.error?.message ?? String(e);
           if (useResponseFormat && status && status >= 400 && status < 500 &&
               (looksLikeUnsupportedResponseFormat(e) || /json_validate_failed|response_format/i.test(errorMessage))) {
             useResponseFormat = false;
