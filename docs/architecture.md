@@ -16,7 +16,10 @@ Ferret is a CLI security scanner for AI assistant configuration files. The scann
 - **Custom Rules** (`src/features/customRules.ts`): load user-defined rules from `.ferret/rules.*` or `--custom-rules`. All patterns RE2-validated before load.
 - **MITRE ATLAS Catalog** (`src/mitre/atlasCatalog.ts`): optional cached download of the official STIX bundle for up-to-date technique metadata.
 - **Remediation** (`src/remediation/*`): safe auto-fix and quarantine helpers (path-traversal hardened; quarantine dir mode 0700 on POSIX).
-- **Reporters** (`src/reporters/*`): console, JSON, SARIF (with MCP trust summary), HTML, and CSV outputs. Secrets are redacted by default.
+- **Reporters** (`src/reporters/*`): console, JSON, SARIF (with MCP trust summary), HTML, CSV, and SBOM/AIBOM outputs.
+- **Language Server** (`lsp/`): Standalone `ferret-lsp` package providing diagnostics, hover, completion, and code actions via the Language Server Protocol.
+- **Runtime Monitor** (`src/features/runtimeMonitor.ts`): Lightweight real-time prompt scanning for injection/credential/exfiltration detection during LLM CLI execution.
+- **Community Rules Support** (`src/features/customRules.ts`): GitHub shorthand resolution (`github:owner/repo`), remote rule fetching, and ID shadowing protection.
 
 ## Data Flow (Scan)
 

@@ -14,15 +14,23 @@ npx ferret-lsp
 
 ## Usage
 
-Most editors will launch the server automatically when configured.
+You can start the server in two ways:
 
-### Manual / Testing
+### Via the main Ferret CLI (recommended)
+
+```bash
+ferret lsp
+```
+
+### Standalone
 
 ```bash
 ferret-lsp
 # or
-node node_modules/ferret-lsp/dist/server.js
+npx ferret-lsp
 ```
+
+Most editors will launch the server automatically when configured via their LSP settings.
 
 The server communicates over stdio using the Language Server Protocol.
 

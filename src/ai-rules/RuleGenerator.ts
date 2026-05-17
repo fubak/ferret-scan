@@ -11,7 +11,7 @@
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 
 import type { Rule, ThreatCategory, Severity} from '../types.js';
-import { createLlmProvider, type LlmProvider } from '../features/llmAnalysis.js';
+import { createLlmProvider, type LlmProvider } from '../features/llm/index.js';
 import logger from '../utils/logger.js';
 
 export interface ThreatReport {

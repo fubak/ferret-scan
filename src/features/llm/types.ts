@@ -18,6 +18,8 @@ export const LlmFindingSchema = z.object({
   match: z.string().min(1).max(2000),
   remediation: z.string().min(1).max(5000),
   confidence: z.number().min(0).max(1),
+  mitre_atlas: z.array(z.string()).optional(),
+  notes: z.string().optional(),
 });
 
 export const LlmResponseSchema = z.object({

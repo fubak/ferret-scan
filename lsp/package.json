@@ -1,30 +1,48 @@
 {
   "name": "ferret-lsp",
   "version": "0.2.0",
-  "description": "Language Server Protocol implementation for Ferret security scanner (VS Code, Neovim, Emacs, Zed, etc.)",
-  "type": "module",
-  "main": "dist/server.js",
-  "bin": {
-    "ferret-lsp": "bin/ferret-lsp.js"
-  },
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch",
-    "start": "node bin/ferret-lsp.js",
-    "test": "node --test test/**/*.test.mjs",
-    "test:handshake": "node test-handshake.mjs",
-    "package": "vsce package"
-  },
+  "description": "Language Server Protocol (LSP) server for Ferret security scanner. Provides real-time diagnostics, hover info, completions, and code actions for AI CLI/agent configurations in any LSP-capable editor.",
   "keywords": [
     "lsp",
     "language-server",
     "security",
     "ai-security",
+    "prompt-injection",
     "ferret",
-    "ferret-scan"
+    "ferret-scan",
+    "vscode",
+    "neovim",
+    "zed",
+    "emacs"
   ],
-  "author": "Ferret Security Team",
+  "homepage": "https://github.com/fubak/ferret-scan/tree/main/lsp",
+  "bugs": {
+    "url": "https://github.com/fubak/ferret-scan/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fubak/ferret-scan.git",
+    "directory": "lsp"
+  },
   "license": "MIT",
+  "author": "Ferret Security Team",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "ferret-lsp": "bin/ferret-lsp.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node bin/ferret-lsp.js",
+    "test": "node --test test/**/*.test.mjs",
+    "prepublishOnly": "npm run build"
+  },
   "dependencies": {
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.11"
@@ -35,5 +53,9 @@
   },
   "engines": {
     "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }

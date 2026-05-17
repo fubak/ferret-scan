@@ -28,6 +28,23 @@ docker run --rm \
 
 ### Report Output
 
+You can also generate SBOM/AIBOM output in Docker:
+
+```bash
+docker run --rm -v $(pwd):/workspace \
+  ghcr.io/fubak/ferret-scan scan /workspace --format aibom -o /workspace/aibom.json
+```
+
+## Language Server (LSP)
+
+The `ferret-lsp` package can be installed globally or used via `ferret lsp`. It is not currently distributed as a Docker image (use the main `ferret-scan` image and run `ferret lsp` inside it if needed).
+
+## Runtime Monitoring
+
+`ferret monitor` is designed to wrap LLM CLIs and is typically used locally rather than in CI/Docker environments.
+
+## Report Output
+
 ```bash
 docker run --rm \
   -v $(pwd):/workspace:ro \

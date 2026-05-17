@@ -8,166 +8,20 @@ import { resolve, basename, dirname } from 'node:path';
 import type { Finding, Severity, ThreatCategory } from '../types.js';
 import logger from '../utils/logger.js';
 
-/**
- * Capability types that AI agents can have
- */
-export type CapabilityType =
-  | 'file_read'
-  | 'file_write'
-  | 'file_delete'
-  | 'code_execution'
-  | 'shell_access'
-  | 'network_access'
-  | 'browser_automation'
-  | 'mcp_tools'
-  | 'system_info'
-  | 'process_management'
-  | 'credential_access'
-  | 'clipboard_access'
-  | 'notification'
-  | 'database_access'
-  | 'api_access'
-  | 'git_operations'
-  | 'docker_access'
-  | 'environment_variables';
+import { AI_CLI_CONFIGS, CAPABILITY_RISKS } from './capabilities/data.js';
+import type {
+  CapabilityType,
+  PermissionLevel,
+  CapabilityAssessment,
+  AgentCapabilityProfile,
+} from './capabilities/types.js';
 
-/**
- * Capability permission level
- */
-export type PermissionLevel = 'allowed' | 'restricted' | 'denied' | 'unknown';
+// Re-export types for backward compatibility (importers of these from 'capabilityMapping' continue to work)
+export type { CapabilityType, PermissionLevel, CapabilityAssessment, AgentCapabilityProfile };
 
-/**
- * Individual capability assessment
- */
-export interface CapabilityAssessment {
-  type: CapabilityType;
-  permission: PermissionLevel;
-  scope?: string | undefined;
-  riskLevel: 'critical' | 'high' | 'medium' | 'low';
-  description: string;
-  source: string;
-}
+// Data tables moved to ./capabilities/data.ts for maintainability.
+// Types live in ./capabilities/types.ts (source of truth).
 
-/**
- * Agent capability profile
- */
-export interface AgentCapabilityProfile {
-  agentType: string;
-  configFile: string;
-  capabilities: CapabilityAssessment[];
-  overallRisk: 'critical' | 'high' | 'medium' | 'low';
-  recommendations: string[];
-}
-
-/**
- * Known AI CLI configuration patterns
- */
-const AI_CLI_CONFIGS: Record<string, {
-  name: string;
-  patterns: string[];
-  capabilityKeys: Record<string, CapabilityType>;
-}> = {
-  'claude-code': {
-    name: 'Claude Code',
-    patterns: ['.claude', 'claude.json', 'CLAUDE.md'],
-    capabilityKeys: {
-      'allowedTools': 'mcp_tools',
-      'bash': 'shell_access',
-      'read': 'file_read',
-      'write': 'file_write',
-      'edit': 'file_write',
-      'glob': 'file_read',
-      'grep': 'file_read',
-      'webfetch': 'network_access',
-      'websearch': 'network_access',
-      'notebookedit': 'file_write',
-      'task': 'code_execution',
-    },
-  },
-  'cursor': {
-    name: 'Cursor',
-    patterns: ['.cursorrules', '.cursor', 'cursor.json'],
-    capabilityKeys: {
-      'terminalAccess': 'shell_access',
-      'fileAccess': 'file_read',
-      'networkAccess': 'network_access',
-      'codeExecution': 'code_execution',
-    },
-  },
-  'windsurf': {
-    name: 'Windsurf',
-    patterns: ['.windsurfrules', 'windsurf.json'],
-    capabilityKeys: {
-      'shell': 'shell_access',
-      'files': 'file_read',
-      'network': 'network_access',
-    },
-  },
-  'continue': {
-    name: 'Continue',
-    patterns: ['.continuerc', 'continue.json', '.continue/config.json'],
-    capabilityKeys: {
-      'contextProviders': 'file_read',
-      'slashCommands': 'code_execution',
-      'models': 'api_access',
-    },
-  },
-  'aider': {
-    name: 'Aider',
-    patterns: ['.aider.conf.yml', 'aider.conf.yml', '.aiderignore'],
-    capabilityKeys: {
-      'auto-commits': 'git_operations',
-      'edit-format': 'file_write',
-      'lint-cmd': 'shell_access',
-      'test-cmd': 'shell_access',
-    },
-  },
-  'cline': {
-    name: 'Cline',
-    patterns: ['.clinerules', 'cline.json'],
-    capabilityKeys: {
-      'commands': 'shell_access',
-      'fileOps': 'file_write',
-      'browser': 'browser_automation',
-    },
-  },
-  'mcp': {
-    name: 'MCP Server',
-    patterns: ['.mcp.json', 'mcp.json'],
-    capabilityKeys: {
-      'tools': 'mcp_tools',
-      'resources': 'file_read',
-      'prompts': 'code_execution',
-    },
-  },
-};
-
-/**
- * Capability risk assessment
- */
-const CAPABILITY_RISKS: Record<CapabilityType, {
-  baseRisk: 'critical' | 'high' | 'medium' | 'low';
-  description: string;
-}> = {
-  file_read: { baseRisk: 'low', description: 'Can read files from the filesystem' },
-  file_write: { baseRisk: 'high', description: 'Can modify or create files' },
-  file_delete: { baseRisk: 'critical', description: 'Can delete files' },
-  code_execution: { baseRisk: 'critical', description: 'Can execute arbitrary code' },
-  shell_access: { baseRisk: 'critical', description: 'Can execute shell commands' },
-  network_access: { baseRisk: 'high', description: 'Can make network requests' },
-  browser_automation: { baseRisk: 'high', description: 'Can control web browsers' },
-  mcp_tools: { baseRisk: 'medium', description: 'Can use MCP tools' },
-  system_info: { baseRisk: 'low', description: 'Can read system information' },
-  process_management: { baseRisk: 'high', description: 'Can manage system processes' },
-  credential_access: { baseRisk: 'critical', description: 'Can access stored credentials' },
-  clipboard_access: { baseRisk: 'medium', description: 'Can read/write clipboard' },
-  notification: { baseRisk: 'low', description: 'Can send notifications' },
-  database_access: { baseRisk: 'high', description: 'Can access databases' },
-  api_access: { baseRisk: 'medium', description: 'Can make API calls' },
-  git_operations: { baseRisk: 'medium', description: 'Can perform git operations' },
-  docker_access: { baseRisk: 'critical', description: 'Can access Docker' },
-  environment_variables: { baseRisk: 'medium', description: 'Can read environment variables' },
-};
 
 /**
  * Detect AI CLI type from file path

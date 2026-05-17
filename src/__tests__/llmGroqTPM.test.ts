@@ -3,7 +3,7 @@
  * Tests for the Groq-specific TPM throttling in createOpenAICompatibleProvider
  */
 
-import { createOpenAICompatibleProvider } from '../features/llmAnalysis.js';
+import { createOpenAICompatibleProvider } from '../features/llm/index.js';
 import type { LlmScanConfig } from '../types.js';
 
 function makeGroqConfig(overrides: Partial<LlmScanConfig> = {}): LlmScanConfig {

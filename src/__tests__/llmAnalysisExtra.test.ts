@@ -3,7 +3,7 @@
  * Covers cache behavior, groq provider, and more analyzeWithLlm scenarios
  */
 
-import { createLlmProvider, analyzeWithLlm } from '../features/llmAnalysis.js';
+import { createLlmProvider, analyzeWithLlm } from '../features/llm/index.js';
 import type { LlmScanConfig } from '../types.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';

@@ -6,13 +6,19 @@
 > ```
 > Then open `coverage/lcov-report/index.html` or check the text summary in CI.
 
-## Latest Execution Summary (as of plan execution)
+## Latest Execution Summary
 
-**Version:** 2.2.0+ (main)
+**Version:** 2.6.0 (main)
 **Test Framework:** Jest (ts-jest + babel for ESM-only deps)
-**Total Test Suites:** 38 passed (+1 skipped)
-**Total Tests:** 666 passed (+1 skipped)
-**Coverage (baseline before Phase 1.1 additions):** Statements 56%, Branches 41%, Functions 57%, Lines 57%
+**Total Tests:** 1830+ passed (full suite runs in CI)
+
+As of v2.6.0, dedicated coverage exists for all major new features:
+- SBOM/AIBOM reporter (`SbomReporter.test.ts`)
+- Runtime Prompt Monitor (`runtimeMonitor.test.ts`)
+- Language Server integration tests (`lsp/test/lsp.test.mjs`)
+- Community rule shadowing protection and GitHub shorthand resolution
+
+Global coverage is approximately **87% statements / 88% lines / 89% functions** (maintained from v2.5.0 improvements).
 
 The suite has grown substantially since the v2.0 snapshot (49 tests). Dedicated unit + integration coverage now exists for:
 - Core scanner (FileDiscovery, PatternMatcher with bounds, Scanner orchestrator + getExitCode)

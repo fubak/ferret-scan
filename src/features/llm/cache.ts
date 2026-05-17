@@ -21,7 +21,7 @@ export function cachePath(cacheDir: string, key: string): string {
   return resolve(cacheDir, `${key}.json`);
 }
 
-export function readCache(path: string, ttlHours: number): unknown | null {
+export function readCache(path: string, ttlHours: number): unknown {
   try {
     if (!existsSync(path)) return null;
     const stats = statSync(path);

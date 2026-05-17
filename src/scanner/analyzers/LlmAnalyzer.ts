@@ -1,6 +1,6 @@
 import type { Finding } from '../../types.js';
 import type { IAnalyzer, AnalyzerContext } from '../IAnalyzer.js';
-import { analyzeWithLlm, type LlmProvider } from '../../features/llmAnalysis.js';
+import { analyzeWithLlm, type LlmProvider } from '../../features/llm/index.js';
 import logger from '../../utils/logger.js';
 
 export interface LlmRuntime {

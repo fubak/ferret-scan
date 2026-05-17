@@ -30,14 +30,15 @@ const config = {
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  // Target: 60%+ global coverage with real integrated tests (achieved ~55% in current push).
-  // Long-term stretch: 80%+ on core logic.
+  // 80%+ global coverage target aligned with project standards (CLAUDE.md / ECC rules).
+  // Branches kept at 70 (current ~76% achieved; some complex paths in TUI/LLM/retry remain).
+  // Per-file overrides retained for high-risk modules.
   coverageThreshold: {
     global: {
-      branches:   40,
-      functions:  52,
-      lines:      58,
-      statements: 58,
+      branches:   70,
+      functions:  80,
+      lines:      80,
+      statements: 80,
     },
     './src/scanner/Scanner.ts': {
       lines: 80,

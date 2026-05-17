@@ -33,7 +33,11 @@
     "bench": "npm run build && node scripts/bench.mjs",
     "bench:json": "npm run build && node scripts/bench.mjs --json",
     "bench:compare": "node scripts/bench-compare.mjs",
-    "docs:api": "typedoc"
+    "docs:api": "typedoc",
+    "audit:prod": "npm audit --production",
+    "quality": "node scripts/quality-check.mjs",
+    "quality:json": "node scripts/quality-check.mjs --json",
+    "quality:fix": "npm run lint:fix"
   },
   "keywords": [
     "ai-cli",

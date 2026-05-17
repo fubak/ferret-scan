@@ -4,8 +4,9 @@
 
  
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
- 
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 
 import type { LlmScanConfig } from '../../types.js';
 import type { LlmProvider } from './types.js';
@@ -38,7 +39,8 @@ export function parseRetryAfterMs(value: string | null): number | null {
 }
 
 export function looksLikeUnsupportedResponseFormat(err: unknown): boolean {
-  const msg = String(err || '').toLowerCase();
+  // eslint-disable-next-line @typescript-eslint/no-base-to-string
+  const msg = String(err ?? '').toLowerCase();
   return msg.includes('response_format') || msg.includes('json mode');
 }
 
@@ -57,50 +59,97 @@ export function createOpenAICompatibleProvider(config: LlmScanConfig): LlmProvid
       };
       if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
 
-      const body: any = {
-        model: config.model,
-        messages: [
-          { role: 'system', content: prompt.system },
-          { role: 'user', content: prompt.user },
-        ],
-        temperature: config.temperature ?? 0.2,
-        max_tokens: config.maxOutputTokens ?? 2000,
+      const requestOnce = async (useResponseFormat: boolean): Promise<string> => {
+        const body: any = {
+          model: config.model,
+          messages: [
+            { role: 'system', content: prompt.system },
+            { role: 'user', content: prompt.user },
+          ],
+          temperature: config.temperature ?? 0.2,
+          max_tokens: config.maxOutputTokens ?? 2000,
+        };
+
+        if (useResponseFormat) {
+          body.response_format = { type: 'json_object' };
+        }
+
+        const controller = new AbortController();
+        const timeout = setTimeout(() => { controller.abort(); }, config.timeoutMs ?? 45000);
+
+        try {
+          const res = await fetch(config.baseUrl, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(body),
+            signal: controller.signal,
+          });
+
+          clearTimeout(timeout);
+
+          if (!res.ok) {
+            const text = await res.text().catch(() => '');
+            const err: any = new Error(`LLM HTTP ${res.status}: ${text.slice(0, 300)}`);
+            err.status = res.status;
+            const retryAfterMs = parseRetryAfterMs(res.headers.get('retry-after'));
+            if (retryAfterMs !== null) err.retryAfterMs = retryAfterMs;
+            throw err;
+          }
+
+          const json: any = await res.json();
+          const content = json?.choices?.[0]?.message?.content;
+          if (typeof content !== 'string') {
+            const err: any = new Error('Unexpected LLM response shape (missing choices[0].message.content)');
+            err.status = 500;
+            throw err;
+          }
+          return content;
+        } catch (err: any) {
+          if (err.name === 'AbortError') {
+            throw new Error('LLM request timed out');
+          }
+          throw err;
+        }
       };
 
-      if (config.jsonMode) {
-        body.response_format = { type: 'json_object' };
-      }
+      let attempt = 0;
+      let useResponseFormat = config.jsonMode;
+      while (true) {
+        try {
+          return await requestOnce(useResponseFormat);
+        } catch (e: any) {
+          const status = typeof e?.status === 'number' ? e.status : null;
 
-      const controller = new AbortController();
-      const timeout = setTimeout(() => { controller.abort(); }, config.timeoutMs ?? 45000);
+          // Graceful fallback for providers that reject response_format / json mode
+          const errorMessage = e?.message || (e?.error && e.error.message) || String(e);
+          if (useResponseFormat && status && status >= 400 && status < 500 &&
+              (looksLikeUnsupportedResponseFormat(e) || /json_validate_failed|response_format/i.test(errorMessage))) {
+            useResponseFormat = false;
+            continue;
+          }
 
-      try {
-        const res = await fetch(config.baseUrl, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        });
+          if (!status || !isRetryableStatus(status) || attempt >= (config.maxRetries ?? 2)) {
+            throw e;
+          }
 
-        clearTimeout(timeout);
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          throw new Error(`LLM HTTP ${res.status}: ${text.slice(0, 300)}`);
+          const backoff = Math.min(
+            config.retryMaxBackoffMs ?? 30000,
+            Math.max(0, config.retryBackoffMs ?? 250) * Math.pow(2, attempt)
+          );
+          const retryAfterMs = typeof e?.retryAfterMs === 'number' ? e.retryAfterMs : null;
+          const delay = retryAfterMs !== null ? Math.min(config.retryMaxBackoffMs ?? 30000, retryAfterMs) : backoff;
+          attempt += 1;
+          await sleep(delay);
         }
-
-        const json: any = await res.json();
-        return json.choices?.[0]?.message?.content || '';
-      } catch (err: any) {
-        if (err.name === 'AbortError') {
-          throw new Error('LLM request timed out');
-        }
-        throw err;
       }
     },
   };
 }
 
 export function createLlmProvider(config: LlmScanConfig): LlmProvider | null {
+  // Preserve original behavior: unknown providers return null
+  if (config.provider && config.provider !== 'openai-compatible') {
+    return null;
+  }
   return createOpenAICompatibleProvider(config);
 }

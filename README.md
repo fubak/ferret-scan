@@ -95,17 +95,18 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.5.0
+## What's New in v2.6.0
 
-- **`ferret scan --self`**: New dogfooding mode that scans Ferret’s own source + malicious test fixtures (`evil-hook.sh`, `malicious-skill.md`, etc.). Includes dedicated CI job.
-- **Major architecture improvements**:
-  - Scanner core refactored (pure reporting logic extracted to `reporting.ts`, documentation dampening to `docDampening.ts`)
-  - 800+ LOC `llmAnalysis.ts` cleanly split into `src/features/llm/` module
-- **Real integrated test expansion**: Hundreds of new real e2e tests (no mocks). Global coverage now **~87% statements / 88% lines / 89% functions**.
-- **VS Code extension parity**: New settings for `--thorough`, `--llm-analysis`, `--mitre-atlas`, `--semantic-analysis`.
-- **Documentation**: High-quality Mermaid diagrams added to `architecture.md`; `TEST_RESULTS.md` refreshed.
+This is a major feature release with four significant new capabilities:
 
-See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
+- **Full Language Server Protocol (LSP) Support** — `ferret lsp` launches a real LSP server with diagnostics, hover information, completions, and code actions. Works in VS Code, Neovim, Zed, Emacs, Helix, and more. A dedicated `ferret-lsp` npm package is available.
+- **SBOM + AIBOM Generation** — Export CycloneDX 1.5 Software Bills of Materials and AI-specific AIBOMs using `ferret scan --sbom` or `--format aibom`.
+- **Lightweight Runtime Monitoring** — `ferret monitor --stdio` or `--target <cli>` for real-time detection of prompt injection, credential leaks, and exfiltration during LLM CLI usage (alerting-only by default).
+- **Community Rule Sharing** — Load rules from GitHub using `github:owner/repo/path` shorthand. New commands: `ferret rules fetch`, `install`, and `validate`, with built-in protection against shadowing core rules.
+
+See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com/fubak/ferret-scan/releases/tag/v2.6.0) for details.
+
+**Previous notable release (v2.5.0)** included `ferret scan --self` dogfooding, major architecture refactoring, and significant test coverage improvements.
 
 ## Advanced Features
 
@@ -117,20 +118,20 @@ See [`CHANGELOG.md`](./CHANGELOG.md) for full release history.
 - **Cross-file correlation**: Detect multi-file attack chains
 - **Entropy analysis**: Secret detection via Shannon entropy
 - **Threat intelligence**: Local indicator database matching
+- **Runtime Prompt Monitoring**: Real-time detection of injection, credential leaks, and exfiltration while using LLM CLIs (`ferret monitor`)
 
 **IDE Integration**
-- **Language Server Protocol (LSP)**: Full LSP server (`ferret lsp`) with diagnostics, hover (rule details), completion, and code actions. Works with VS Code, Neovim, Zed, Emacs, Helix, etc.
-- **VS Code Extension**: Real-time security scanning with inline diagnostics and quick fixes (supports both direct mode and LSP mode)
+- **Language Server Protocol (LSP)**: Run `ferret lsp` for real-time diagnostics, hover, completions, and code actions in any LSP-capable editor (VS Code, Neovim, Zed, Emacs, Helix, etc.).
+- **VS Code Extension**: Supports both classic CLI mode and full LSP mode.
 
-**Implemented (v2.6+)**
-- **SBOM + AIBOM** — `ferret scan --sbom --format aibom`
-- **Community rule sharing** — `ferret rules fetch github:owner/repo/path`, `validate`, `install` with GitHub shorthand and shadowing protection
-- **LSP server** — `ferret lsp` + standalone `ferret-lsp` package (diagnostics, hover, completion for any editor)
-- **Runtime prompt monitor** — `ferret monitor --target claude` / `--stdio` for live injection/credential detection during LLM CLI use (alerting-only by default)
+**New in v2.6+**
+- **SBOM + AIBOM Generation** (`ferret scan --sbom` / `--format aibom`)
+- **Community Rule Sharing** (`ferret rules fetch github:owner/repo/path`, `validate`, `install`)
+- **Runtime Prompt Monitoring** (`ferret monitor --stdio` / `--target <cli>`)
 
 **Still Planned**
 - IntelliJ / JetBrains plugin
-- Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
+- Full compliance framework packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
 - Optional curated community rules index repository
 
 ---
@@ -867,15 +868,12 @@ Export findings as an ATLAS Navigator layer:
 ferret scan . --thorough --format atlas -o atlas-layer.json
 ```
 
-## Planned Features
+## Planned / Future Features
 
-- MCP server trust scoring and package provenance verification
-- SBOM/AIBOM generation for AI configurations
-- Language Server Protocol (LSP) for Neovim, Emacs, Sublime Text
-- IntelliJ plugin for JetBrains IDEs
-- Runtime behavior monitoring and anomaly detection (tool is currently static analysis only)
-- Compliance framework assessments (SOC2, ISO 27001, GDPR)
-- Community rule sharing platform
+- IntelliJ / JetBrains plugin
+- Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
+- Optional curated community rules index repository
+- Deeper runtime behavior monitoring and anomaly detection (beyond prompt-level scanning)
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
 - Threat intel feeds from external sources (currently local DB only)

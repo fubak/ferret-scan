@@ -38,6 +38,45 @@ Add to your VS Code `settings.json`:
 }
 ```
 
+### Language Server Mode (Recommended)
+
+Ferret includes a full **Language Server** (`ferret-lsp`) for the best editor experience:
+
+- Real-time diagnostics
+- Hover with detailed rule information and remediation steps
+- Intelligent completions (rule IDs, severities, categories)
+- Code actions (e.g., "Ignore this finding" with one click)
+
+#### Enable LSP Mode
+
+```json
+{
+  "ferret.useLanguageServer": true
+}
+```
+
+#### Requirements
+
+1. Install the language server:
+   ```bash
+   npm install -g ferret-lsp
+   ```
+
+2. (Optional) Specify a custom path:
+   ```json
+   {
+     "ferret.languageServerPath": "/path/to/ferret-lsp"
+   }
+   ```
+
+#### Features
+
+- A status bar item shows whether you are in **Classic** or **LSP** mode.
+- Use **Ferret: Toggle Language Server Mode** to switch instantly.
+- If `ferret-lsp` cannot be found, the extension will show a helpful error and offer to fall back to Classic mode.
+
+> **Tip**: LSP mode is strongly recommended for Neovim, Zed, and other editors, and provides a significantly better experience even in VS Code.
+
 ## Usage
 
 The extension automatically scans supported file types:
