@@ -50,18 +50,17 @@ import { logger } from '../dist/utils/logger.js';
 
 // New feature imports
 import { installHooks, uninstallHooks, getHookStatus } from '../dist/features/gitHooks.js';
-import { loadCustomRules, validateCustomRulesFile, loadCustomRulesSource, resolveRuleSource, isHttpUrl } from '../dist/features/customRules.js';
-import { analyzeEntropy, entropyFindingsToFindings } from '../dist/features/entropyAnalysis.js';
+import { validateCustomRulesFile, loadCustomRulesSource, resolveRuleSource, isHttpUrl } from '../dist/features/customRules.js';
 import { validateMcpConfig, findAndValidateMcpConfigs, mcpAssessmentsToFindings } from '../dist/features/mcpValidator.js';
 import { scoreMcpServer } from '../dist/features/mcpTrustScore.js';
 import { compareScanResults, formatComparisonReport, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
 import { sendWebhook, detectWebhookType } from '../dist/features/webhooks.js';
 import { analyzeDependencies, dependencyAssessmentsToFindings, findAndAnalyzeDependencies } from '../dist/features/dependencyRisk.js';
-import { analyzeCapabilities, findAndAnalyzeCapabilities, generateCapabilityReport } from '../dist/features/capabilityMapping.js';
+import { findAndAnalyzeCapabilities, generateCapabilityReport } from '../dist/features/capabilityMapping.js';
 import { loadPolicy, evaluatePolicy, formatPolicyResult, initPolicy, findPolicyFile, DEFAULT_POLICY } from '../dist/features/policyEnforcement.js';
 import { parseIgnoreComments, filterIgnoredFindings, generateIgnoreComment } from '../dist/features/ignoreComments.js';
-import { determineExitCode, generateExitCodeSummary, formatExitCodeForCI, DEFAULT_EXIT_CODES } from '../dist/features/exitCodes.js';
-import { startInteractiveSession, displayFindings } from '../dist/features/interactiveTui.js';
+import { determineExitCode } from '../dist/features/exitCodes.js';
+import { startInteractiveSession } from '../dist/features/interactiveTui.js';
 import { redactScanResult } from '../dist/utils/redaction.js';
 
 const __filename = fileURLToPath(import.meta.url);
