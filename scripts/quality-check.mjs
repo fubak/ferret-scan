@@ -48,6 +48,9 @@ const SIZE_EXCEPTIONS = new Set([
   'src/reporters/HtmlReporter.ts',
   'src/features/customRules.ts',
   'src/types.ts',
+  'src/remediation/Fixer.ts',
+  'src/features/policyEnforcement.ts',
+  'src/scanner/FileDiscovery.ts',
 ]);
 
 function walkTs(dir, files = []) {

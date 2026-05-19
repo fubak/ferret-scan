@@ -51,15 +51,14 @@ import { logger } from '../dist/utils/logger.js';
 // New feature imports
 import { installHooks, uninstallHooks, getHookStatus } from '../dist/features/gitHooks.js';
 import { validateCustomRulesFile, loadCustomRulesSource, resolveRuleSource, isHttpUrl } from '../dist/features/customRules.js';
-import { validateMcpConfig, findAndValidateMcpConfigs, mcpAssessmentsToFindings } from '../dist/features/mcpValidator.js';
+import { findAndValidateMcpConfigs } from '../dist/features/mcpValidator.js';
 import { scoreMcpServer } from '../dist/features/mcpTrustScore.js';
 import { compareScanResults, formatComparisonReport, saveScanResult, loadScanResult } from '../dist/features/scanDiff.js';
 import { sendWebhook, detectWebhookType } from '../dist/features/webhooks.js';
-import { analyzeDependencies, dependencyAssessmentsToFindings, findAndAnalyzeDependencies } from '../dist/features/dependencyRisk.js';
+import { analyzeDependencies } from '../dist/features/dependencyRisk.js';
 import { findAndAnalyzeCapabilities, generateCapabilityReport } from '../dist/features/capabilityMapping.js';
 import { loadPolicy, evaluatePolicy, formatPolicyResult, initPolicy, findPolicyFile, DEFAULT_POLICY } from '../dist/features/policyEnforcement.js';
-import { parseIgnoreComments, filterIgnoredFindings, generateIgnoreComment } from '../dist/features/ignoreComments.js';
-import { determineExitCode } from '../dist/features/exitCodes.js';
+
 import { startInteractiveSession } from '../dist/features/interactiveTui.js';
 import { redactScanResult } from '../dist/utils/redaction.js';
 
