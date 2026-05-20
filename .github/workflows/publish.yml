@@ -1,0 +1,400 @@
+name: Publish to npm
+# Refreshed workflow_dispatch support (2026-05-20)
+# Force re-registration attempt for manual dispatch - 2026-05-20 15:xx
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (leave empty to use package.json version)'
+        required: false
+        type: string
+      dry_run:
+        description: 'Dry run (do not actually publish)'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: 'Skip all tests (use only for emergency re-publish of the same version)'
+        required: false
+        default: false
+        type: boolean
+      publish_main:
+        description: 'Publish the main ferret-scan package'
+        required: false
+        default: true
+        type: boolean
+      publish_lsp:
+        description: 'Publish the ferret-lsp package'
+        required: false
+        default: true
+        type: boolean
+      create_release:
+        description: 'Automatically create GitHub Release after successful publish'
+        required: false
+        default: true
+        type: boolean
+      draft_release:
+        description: 'Create the GitHub Release as a draft (recommended)'
+        required: false
+        default: true
+        type: boolean
+      attach_vscode_extension:
+        description: 'Build and attach the VS Code .vsix file to the release'
+        required: false
+        default: true
+        type: boolean
+
+jobs:
+  test-unit:
+    name: Unit Tests + Typecheck + Build
+    if: ${{ github.event_name == 'push' || github.event.inputs.skip_tests != 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+      - name: Run unit tests
+        run: npm test -- --testPathIgnorePatterns="e2e|integration|cli.test"
+
+  test-e2e:
+    name: E2E / CLI Integration Tests (non-blocking)
+    if: ${{ github.event_name == 'push' || github.event.inputs.skip_tests != 'true' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Run E2E tests (FERRET_E2E=1)
+        run: npm test
+        env:
+          FERRET_E2E: '1'
+
+  publish:
+    name: Publish ferret-scan
+    needs: [test-unit]
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_main != 'false') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build
+
+      - name: Update version (manual dispatch only)
+        if: inputs.version != ''
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: npm version "$INPUT_VERSION" --no-git-tag-version
+
+      - name: Publish (dry run)
+        if: inputs.dry_run == true
+        run: npm publish --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to npm
+        if: inputs.dry_run != true
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get package info
+        if: inputs.dry_run != true
+        id: package
+        run: |
+          echo "name=$(jq -r .name package.json)" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Summary
+        if: inputs.dry_run != true
+        env:
+          PKG_NAME: ${{ steps.package.outputs.name }}
+          PKG_VERSION: ${{ steps.package.outputs.version }}
+        run: |
+          {
+            echo "## 📦 Published to npm"
+            echo ""
+            echo "**Package:** $PKG_NAME"
+            echo "**Version:** $PKG_VERSION"
+            echo ""
+            echo "Install with:"
+            echo "\`\`\`bash"
+            echo "npm install -g ${PKG_NAME}@${PKG_VERSION}"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publish-lsp:
+    name: Publish ferret-lsp
+    needs: [test-unit]
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_lsp != 'false') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'lsp/package-lock.json'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies (LSP)
+        working-directory: lsp
+        run: npm ci
+
+      - name: Build LSP
+        working-directory: lsp
+        run: npm run build
+
+      - name: Publish ferret-lsp (dry run)
+        if: inputs.dry_run == true
+        working-directory: lsp
+        run: npm publish --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish ferret-lsp
+        if: inputs.dry_run != true
+        working-directory: lsp
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Get LSP package info
+        if: inputs.dry_run != true
+        id: lsp-package
+        working-directory: lsp
+        run: |
+          echo "name=$(jq -r .name package.json)" >> "$GITHUB_OUTPUT"
+          echo "version=$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: LSP Summary
+        if: inputs.dry_run != true
+        env:
+          PKG_NAME: ${{ steps.lsp-package.outputs.name }}
+          PKG_VERSION: ${{ steps.lsp-package.outputs.version }}
+        run: |
+          {
+            echo "## 📦 Published to npm"
+            echo ""
+            echo "**Package:** $PKG_NAME"
+            echo "**Version:** $PKG_VERSION"
+            echo ""
+            echo "Install with:"
+            echo "\`\`\`bash"
+            echo "npm install -g ${PKG_NAME}@${PKG_VERSION}"
+            echo "\`\`\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build-vscode-extension:
+    name: Build VS Code Extension
+    needs: [publish, publish-lsp]
+    if: ${{ always() && 
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+           (github.event_name == 'push' || github.event.inputs.attach_vscode_extension != 'false') &&
+           (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'extensions/vscode/package-lock.json'
+
+      - name: Install & Build Extension
+        working-directory: extensions/vscode
+        run: |
+          npm install --legacy-peer-deps
+          npm run compile
+          npx @vscode/vsce package
+
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ferret-security-extension
+          path: extensions/vscode/*.vsix
+          retention-days: 7
+
+  create-release:
+    name: Create GitHub Release
+    needs: [publish, publish-lsp, build-vscode-extension]
+    if: ${{ always() && 
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+           (github.event_name == 'push' || github.event.inputs.create_release != 'false') &&
+           (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Determine version and tag
+        id: version
+        run: |
+          if [ "${{ github.event.inputs.version }}" != "" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Download VS Code Extension Artifact (if available)
+        id: download-vsix
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: ferret-security-extension
+          path: ./
+
+      - name: Check if release already exists
+        id: check_release
+        run: |
+          if gh release view "${{ steps.version.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        if: steps.check_release.outputs.exists == 'false'
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Smart release notes extraction
+          NOTES=$(node -e '
+            const fs = require("fs");
+            try {
+              const changelog = fs.readFileSync("CHANGELOG.md", "utf8");
+              const version = process.env.VERSION;
+              const regex = new RegExp(`^## \\\\[${version}\\\\][^]*?(?=^## \\\\[|$)`, "m");
+              const match = changelog.match(regex);
+              if (match && match[0]) {
+                let notes = match[0].replace(/^## \\[.*?\\].*?\\n/, "").trim();
+                console.log(notes);
+              } else {
+                console.log("");
+              }
+            } catch (e) {
+              console.log("");
+            }
+          ' 2>/dev/null || echo "")
+
+          if [ -z "$NOTES" ]; then
+            NOTES="See the [CHANGELOG](https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md) for full details."
+          fi
+
+          # Build a polished release body
+          RELEASE_BODY="## Ferret v${VERSION}
+
+${NOTES}
+
+---
+
+**📦 Packages Published**
+- [ferret-scan](https://www.npmjs.com/package/ferret-scan) v${VERSION}
+- [ferret-lsp](https://www.npmjs.com/package/ferret-lsp) (see package for matching version)
+
+**🚀 Quick Install**
+\`\`\`bash
+npm install -g ferret-scan@${VERSION}
+\`\`\`
+
+**📝 Full Changelog**
+https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md"
+
+          # Detect pre-release vs regular
+          PRERELEASE_FLAG=""
+          if [[ "$VERSION" == *"-alpha"* || "$VERSION" == *"-beta"* || "$VERSION" == *"-rc"* ]]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          # Draft flag: default to true for safety (both manual and tag triggers)
+          DRAFT_FLAG="--draft"
+          if [ "${{ github.event.inputs.draft_release }}" == "false" ]; then
+            DRAFT_FLAG=""
+          fi
+
+          gh release create "$TAG" \
+            --title "Ferret v${VERSION}" \
+            --notes "$RELEASE_BODY" \
+            $PRERELEASE_FLAG \
+            $DRAFT_FLAG \
+            --repo "$GITHUB_REPOSITORY"
+
+          if [ "${{ github.event.inputs.draft_release }}" == "true" ]; then
+            echo "✅ Created **Draft** GitHub Release: $TAG (review and publish when ready)"
+          else
+            echo "✅ Created GitHub Release: $TAG"
+          fi
+
+          # Attach VS Code Extension if the artifact was built
+          if [ -f ./*.vsix ]; then
+            echo "📎 Attaching VS Code extension..."
+            gh release upload "$TAG" *.vsix --repo "$GITHUB_REPOSITORY" --clobber
+            echo "✅ VS Code extension attached"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.version.outputs.version }}
