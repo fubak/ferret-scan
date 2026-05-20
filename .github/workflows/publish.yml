@@ -49,7 +49,7 @@ on:
 jobs:
   test-unit:
     name: Unit Tests + Typecheck + Build
-    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.skip_tests != 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -75,7 +75,7 @@ jobs:
 
   test-e2e:
     name: E2E / CLI Integration Tests (non-blocking)
-    if: ${{ github.event.inputs.skip_tests != 'true' }}
+    if: ${{ github.event_name == 'push' || github.event.inputs.skip_tests != 'true' }}
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
@@ -102,7 +102,7 @@ jobs:
   publish:
     name: Publish ferret-scan
     needs: [test-unit]
-    if: ${{ always() && (needs.test-unit.result == 'success' || github.event.inputs.skip_tests == 'true') && (github.event.inputs.publish_main != 'false') }}
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_main != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -170,7 +170,7 @@ jobs:
   publish-lsp:
     name: Publish ferret-lsp
     needs: [test-unit]
-    if: ${{ always() && (needs.test-unit.result == 'success' || github.event.inputs.skip_tests == 'true') && (github.event.inputs.publish_lsp != 'false') }}
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_lsp != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -239,9 +239,9 @@ jobs:
     name: Build VS Code Extension
     needs: [publish, publish-lsp]
     if: ${{ always() && 
-           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event.inputs.skip_tests == 'true') &&
-           (github.event.inputs.attach_vscode_extension != 'false') &&
-           (github.event.inputs.dry_run != 'true') }}
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+           (github.event_name == 'push' || github.event.inputs.attach_vscode_extension != 'false') &&
+           (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -272,9 +272,9 @@ jobs:
     name: Create GitHub Release
     needs: [publish, publish-lsp, build-vscode-extension]
     if: ${{ always() && 
-           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event.inputs.skip_tests == 'true') &&
-           (github.event.inputs.create_release != 'false') &&
-           (github.event.inputs.dry_run != 'true') }}
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+           (github.event_name == 'push' || github.event.inputs.create_release != 'false') &&
+           (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
