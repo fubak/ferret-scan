@@ -5,7 +5,7 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased — Quality Gate Cleanup (v2.6.x)
+## [2.6.1] - 2026-05-20
 
 ### Changed
 - Raised global test coverage thresholds to true 80%+ (lines/statements/functions) with pragmatic 70% branch floor. All existing per-file overrides retained.
@@ -18,6 +18,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Improved
 - Self-scan, coverage, and size hygiene now have automated enforcement beyond CI.
 - The project itself now better exemplifies the security standards it scans for.
+
+### Quality & Maintenance
+- Significant dead import cleanup in `bin/ferret.js`
+- Extracted HTML formatting helpers and CSS generation from `HtmlReporter.ts` into `src/reporters/html/`
+- Expanded `SIZE_EXCEPTIONS` in the quality gate script for the next tier of large modules
+
+## [2.6.0] - 2026-05-16
 
 ## [2.6.0] - 2026-05-16
 
