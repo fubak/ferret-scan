@@ -345,8 +345,9 @@ jobs:
             NOTES="See the [CHANGELOG](https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md) for full details."
           fi
 
-          # Build a polished release body
-          RELEASE_BODY="## Ferret v${VERSION}
+          # Build a polished release body using a temp file (robust quoting)
+          cat > /tmp/release-body.md << EOF
+## Ferret v${VERSION}
 
 ${NOTES}
 
@@ -362,7 +363,10 @@ npm install -g ferret-scan@${VERSION}
 \`\`\`
 
 **📝 Full Changelog**
-https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md"
+https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md
+EOF
+
+          RELEASE_BODY=$(cat /tmp/release-body.md)
 
           # Detect pre-release vs regular
           PRERELEASE_FLAG=""
@@ -378,7 +382,7 @@ https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md"
 
           gh release create "$TAG" \
             --title "Ferret v${VERSION}" \
-            --notes "$RELEASE_BODY" \
+            --notes-file /tmp/release-body.md \
             $PRERELEASE_FLAG \
             $DRAFT_FLAG \
             --repo "$GITHUB_REPOSITORY"
