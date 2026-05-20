@@ -1,4 +1,5 @@
 name: Publish to npm
+# Refreshed workflow_dispatch support (2026-05-20)
 
 on:
   push:
