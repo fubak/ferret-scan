@@ -1,5 +1,6 @@
 name: Publish to npm
 # Refreshed workflow_dispatch support (2026-05-20)
+# Force re-registration attempt for manual dispatch - 2026-05-20 15:xx
 
 on:
   push:
