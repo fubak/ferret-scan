@@ -345,28 +345,26 @@ jobs:
             NOTES="See the [CHANGELOG](https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md) for full details."
           fi
 
-          # Build a polished release body using a temp file (robust quoting)
-          cat > /tmp/release-body.md << EOF
-## Ferret v${VERSION}
-
-${NOTES}
-
----
-
-**📦 Packages Published**
-- [ferret-scan](https://www.npmjs.com/package/ferret-scan) v${VERSION}
-- [ferret-lsp](https://www.npmjs.com/package/ferret-lsp) (see package for matching version)
-
-**🚀 Quick Install**
-\`\`\`bash
-npm install -g ferret-scan@${VERSION}
-\`\`\`
-
-**📝 Full Changelog**
-https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md
-EOF
-
-          RELEASE_BODY=$(cat /tmp/release-body.md)
+          # Build release body safely (avoiding complex heredoc substitution)
+          {
+            echo "## Ferret v${VERSION}"
+            echo ""
+            echo "$NOTES"
+            echo ""
+            echo "---"
+            echo ""
+            echo "**📦 Packages Published**"
+            echo "- [ferret-scan](https://www.npmjs.com/package/ferret-scan) v${VERSION}"
+            echo "- [ferret-lsp](https://www.npmjs.com/package/ferret-lsp) (see package for matching version)"
+            echo ""
+            echo "**🚀 Quick Install**"
+            echo "\`\`\`bash"
+            echo "npm install -g ferret-scan@${VERSION}"
+            echo "\`\`\`"
+            echo ""
+            echo "**📝 Full Changelog**"
+            echo "https://github.com/fubak/ferret-scan/blob/main/CHANGELOG.md"
+          } > /tmp/release-body.md
 
           # Detect pre-release vs regular
           PRERELEASE_FLAG=""
