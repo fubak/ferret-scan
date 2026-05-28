@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Documentation & Maintenance
 - Added `docs/REPOSITORY_ANALYSIS.md` (architecture, landscape positioning, security
   scan, documentation review).
+- Removed patent-prosecution material (`docs/PATENT_ACTION_PLAN.md`,
+  `docs/PATENT_LANDSCAPE_ANALYSIS.md`, `docs/ip-submissions/`) from the public repo.
 - README: added an exit-code table and the full set of `FERRET_EXIT_*` overrides,
   documented `.ferretignore`, added the `check`/`mcp`/`deps`/`capabilities`/`policy`/
   `webhook` subcommands, fixed a broken `docs/RULES.md` link, pointed the security

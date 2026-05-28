@@ -14,9 +14,6 @@ Maintained documentation for Ferret.
 
 - [`REPOSITORY_ANALYSIS.md`](./REPOSITORY_ANALYSIS.md) — Architecture, landscape positioning, security scan, and documentation review
 - [`mcp-scan-comparison.md`](./mcp-scan-comparison.md) — Architectural comparison with Snyk's mcp-scan
-- [`PATENT_LANDSCAPE_ANALYSIS.md`](./PATENT_LANDSCAPE_ANALYSIS.md) — Patent landscape research
-- [`PATENT_ACTION_PLAN.md`](./PATENT_ACTION_PLAN.md) — Patent strategy roadmap
-- [`ip-submissions/`](./ip-submissions/) — Provisional patent submissions (5 inventions)
 
 ## Generated
 

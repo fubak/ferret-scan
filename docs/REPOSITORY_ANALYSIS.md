@@ -250,24 +250,27 @@ LRU-bounded content cache; clean production dependency tree.
 
 ---
 
-## 7. Appendix — patent material in a public MIT repo — **[Escalate; not edited]**
+## 7. Appendix — patent material removed from the public repo — **[Fixed here]**
 
-The repo ships, in a public MIT-licensed project: `docs/PATENT_LANDSCAPE_ANALYSIS.md`,
-`docs/PATENT_ACTION_PLAN.md`, and `docs/ip-submissions/` (five full provisional
-patent specification packages as HTML). `PATENT_ACTION_PLAN.md` includes commercial
-licensing tiers, ROI/acquisition projections, and named licensing/cross-licensing
-targets (including downstream consumers of the tool).
+The repo previously shipped, in a public MIT-licensed project:
+`docs/PATENT_LANDSCAPE_ANALYSIS.md`, `docs/PATENT_ACTION_PLAN.md`, and
+`docs/ip-submissions/` (five full provisional patent specification packages as
+HTML). `PATENT_ACTION_PLAN.md` included commercial licensing tiers,
+ROI/acquisition projections, and named licensing/cross-licensing targets
+(including downstream consumers of the tool).
 
-This was **not** modified here because it is a business/legal decision that should be
-made deliberately with counsel, not as a side effect of a code-quality pass. Points
-to weigh:
+This material has been **removed from the working tree** at the maintainer's
+direction. Reasons it did not belong in the public repo:
 
 - Publishing patent-prosecution material is a public disclosure that can affect
   prosecution strategy (it becomes prior art / defensive publication once public).
 - An aggressive monetization plan that names downstream consumers as licensing
   targets sits in tension with shipping under MIT and may chill adoption.
-- These read as internal documents rather than user/operator docs.
+- These read as internal business/legal documents rather than user/operator docs.
 
-**Recommendation:** decide explicitly whether this material belongs in the public
-repo; if not, relocate it to a private location. Escalate to the maintainer/legal
-owner.
+**Note on git history:** removing the files from `HEAD` stops them from shipping
+going forward, but they remain reachable in prior commits (they predate this
+branch). Fully purging them requires rewriting published history
+(`git filter-repo` + a coordinated force-push and re-clone), which is a
+destructive operation that should be performed deliberately by the maintainer —
+it is **not** done here.
