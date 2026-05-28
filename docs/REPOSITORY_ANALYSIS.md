@@ -273,4 +273,6 @@ going forward, but they remain reachable in prior commits (they predate this
 branch). Fully purging them requires rewriting published history
 (`git filter-repo` + a coordinated force-push and re-clone), which is a
 destructive operation that should be performed deliberately by the maintainer —
-it is **not** done here.
+it is **not** done here. A prepared runbook and guarded helper script are
+available: [`docs/patent-history-purge.md`](./patent-history-purge.md) and
+`scripts/purge-patent-history.sh`.
