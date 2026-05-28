@@ -81,7 +81,7 @@ program
   .command('scan')
   .description('Scan AI CLI configurations for security issues')
   .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
-  .option('-f, --format <format>', 'Output format: console, json, sarif, html, csv, atlas', 'console')
+  .option('-f, --format <format>', 'Output format: console, json, sarif, html, csv, atlas, sbom, aibom', 'console')
   .option('-s, --severity <levels>', 'Severity levels to report (comma-separated)', 'critical,high,medium,low,info')
   .option('-c, --categories <cats>', 'Categories to scan (comma-separated)')
   .option('--fail-on <severity>', 'Minimum severity to fail on', 'high')

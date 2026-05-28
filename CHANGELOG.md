@@ -5,6 +5,36 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+- **RE2 regex engine now actually loads.** `safeRegex.ts` used a bare `require('re2')`,
+  which always threw in the published ESM build (`require` is undefined under
+  `"type": "module"`), silently disabling the linear-time engine in every release.
+  Bridged via `createRequire(import.meta.url)` (isolated in `src/utils/esmRequire.ts`).
+  `isRE2Active()` now returns `true` in the CLI.
+- **Hardened the fallback ReDoS screener** to reject the family of catastrophic
+  patterns that previously slipped through (e.g. `(\d+)*$`, `(\w+)*`, `(.*a){20}`),
+  used when the native `re2` addon is unavailable.
+- **SSRF protection for remote custom-rule fetching** (`--allow-remote-rules`): URLs
+  that resolve to loopback/private/link-local/metadata addresses are rejected, and
+  redirects are followed manually and re-validated per hop.
+- **Secrets redacted in webhook payloads:** the generic webhook formatter no longer
+  egresses raw matched secret values.
+- **CSV formula-injection neutralization** in the CSV reporter (cells starting with
+  `= + - @` tab/CR are quoted as text).
+
+### Documentation & Maintenance
+- Added `docs/REPOSITORY_ANALYSIS.md` (architecture, landscape positioning, security
+  scan, documentation review).
+- README: added an exit-code table and the full set of `FERRET_EXIT_*` overrides,
+  documented `.ferretignore`, added the `check`/`mcp`/`deps`/`capabilities`/`policy`/
+  `webhook` subcommands, fixed a broken `docs/RULES.md` link, pointed the security
+  contact at `SECURITY.md`, and listed `sbom`/`aibom` as `--format` values.
+- Removed a dead, shadowed duplicate `self-scan` CI job; removed
+  `.github/workflows/publish.yml.bak`; fixed a duplicate `## [2.6.0]` CHANGELOG
+  header and the `typedoc.json` GitHub org link.
+
 ## [2.6.1] - 2026-05-20
 
 ### Changed
@@ -23,8 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Significant dead import cleanup in `bin/ferret.js`
 - Extracted HTML formatting helpers and CSS generation from `HtmlReporter.ts` into `src/reporters/html/`
 - Expanded `SIZE_EXCEPTIONS` in the quality gate script for the next tier of large modules
-
-## [2.6.0] - 2026-05-16
 
 ## [2.6.0] - 2026-05-16
 

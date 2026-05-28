@@ -3,6 +3,13 @@
  * Focuses on loadCustomRulesFile, loadCustomRulesSource, generateExampleRulesFile
  */
 
+// Keep remote-fetch tests hermetic: the SSRF guard resolves the URL host via
+// dns.lookup before fetching, so mock it to a public address instead of hitting
+// real DNS for example.com.
+jest.mock('node:dns/promises', () => ({
+  lookup: jest.fn().mockResolvedValue([{ address: '93.184.216.34', family: 4 }]),
+}));
+
 import {
   loadCustomRulesFile,
   loadCustomRulesSource,

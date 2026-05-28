@@ -11,6 +11,8 @@
 import { readFileSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve, extname } from 'node:path';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import type { Rule, ThreatCategory, Severity, FileType, ComponentType } from '../types.js';
@@ -118,16 +120,102 @@ function isCacheFresh(path: string, ttlHours: number): boolean {
   }
 }
 
+/**
+ * Returns true if an IP address is private, loopback, link-local, unique-local,
+ * or a cloud metadata endpoint — i.e. an SSRF target that a remote rules URL
+ * must never be allowed to reach.
+ */
+export function isBlockedIp(ip: string): boolean {
+  const v = isIP(ip);
+  if (v === 4) {
+    const p = ip.split('.').map(Number);
+    if (p.length !== 4 || p.some(n => Number.isNaN(n))) return true;
+    const a = p[0]!;
+    const b = p[1]!;
+    if (a === 127) return true;                         // loopback
+    if (a === 10) return true;                          // private
+    if (a === 172 && b >= 16 && b <= 31) return true;   // private
+    if (a === 192 && b === 168) return true;            // private
+    if (a === 169 && b === 254) return true;            // link-local + metadata (169.254.169.254)
+    if (a === 100 && b >= 64 && b <= 127) return true;  // CGNAT
+    if (a === 0) return true;                           // "this host"
+    return false;
+  }
+  if (v === 6) {
+    const lower = ip.toLowerCase();
+    if (lower === '::1' || lower === '::') return true;       // loopback / unspecified
+    if (lower.startsWith('fe80')) return true;                // link-local
+    if (lower.startsWith('fc') || lower.startsWith('fd')) return true; // unique-local
+    if (lower.startsWith('::ffff:')) return isBlockedIp(lower.slice(7)); // IPv4-mapped
+    return false;
+  }
+  return true; // not a valid IP literal — caller resolves the hostname instead
+}
+
+/**
+ * Validate a remote-rules URL against SSRF: https/http only, and the host must
+ * not resolve to a private/loopback/link-local/metadata address. Throws on a
+ * blocked target. Returns the resolved IP so the caller can pin the connection.
+ */
+export async function assertSafeRemoteUrl(rawUrl: string): Promise<void> {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error(`Invalid remote rules URL: ${rawUrl}`);
+  }
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    throw new Error(`Blocked remote rules URL scheme '${parsed.protocol}' (only http/https allowed)`);
+  }
+  const host = parsed.hostname.replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+
+  // Literal IP in the URL — check directly without DNS.
+  if (isIP(host)) {
+    if (isBlockedIp(host)) {
+      throw new Error(`Blocked remote rules URL: ${host} resolves to a private/metadata address`);
+    }
+    return;
+  }
+
+  if (host.toLowerCase() === 'localhost' || host.toLowerCase().endsWith('.localhost')) {
+    throw new Error(`Blocked remote rules URL: ${host} is a loopback host`);
+  }
+
+  // Resolve all A/AAAA records and reject if ANY is internal (DNS-rebind safe-ish).
+  const addrs = await lookup(host, { all: true });
+  for (const a of addrs) {
+    if (isBlockedIp(a.address)) {
+      throw new Error(`Blocked remote rules URL: ${host} resolves to internal address ${a.address}`);
+    }
+  }
+}
+
 async function fetchText(url: string, timeoutMs: number): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+    // Follow redirects manually so each hop is re-validated against SSRF rules;
+    // `fetch`'s default redirect:'follow' would let an allowed host 302 to the
+    // metadata service or an internal endpoint.
+    let current = url;
+    for (let hop = 0; hop < 5; hop++) {
+      await assertSafeRemoteUrl(current);
+      const res = await fetch(current, { signal: controller.signal, redirect: 'manual' });
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get('location');
+        if (!location) {
+          throw new Error(`HTTP ${res.status}: redirect with no Location header`);
+        }
+        current = new URL(location, current).toString();
+        continue;
+      }
+      if (!res.ok) {
+        const text = await res.text().catch(() => '');
+        throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
+      }
+      return await res.text();
     }
-    return await res.text();
+    throw new Error('Too many redirects while fetching remote rules');
   } finally {
     clearTimeout(timeout);
   }
