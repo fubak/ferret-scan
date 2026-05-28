@@ -81,6 +81,22 @@ describe('safeRegex', () => {
       }
     });
 
+    it('accepts safe optional groups containing inner quantifiers', () => {
+      // Making a quantified-body group OPTIONAL is linear, not catastrophic, and
+      // is common in real rules (e.g. the Fixer builtin
+      // `ignore\s+(previous\s+)?instructions?`). These must NOT be rejected by
+      // the hardened screener even when RE2 is unavailable.
+      const safeOptional = [
+        '(\\d+)?',
+        '(previous\\s+)?',
+        'ignore\\s+(previous\\s+)?instructions?',
+        '(v\\d+)?\\.json',
+      ];
+      for (const pattern of safeOptional) {
+        expect(compileSafePattern(pattern)).not.toBeNull();
+      }
+    });
+
     it('does not hang on a catastrophic pattern + pathological input', () => {
       // The key security property regardless of which engine is active:
       // - RE2 present  -> linear-time match, returns fast

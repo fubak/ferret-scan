@@ -90,11 +90,13 @@ export function compileSafePattern(raw: string, flags = 'gi'): RegExp | null {
     /(\(.*\|.*\)\*)/,     // Alternation inside quantified group: (a|b)*
     /(\(.*\|.*\)\{)/,     // Alternation inside bounded group: (a|b){2,}
     // Broad catch: any group whose body contains an inner quantifier (+ * {…})
-    // and which is itself followed by a quantifier (+ * ? {…}). The forms above
-    // miss common catastrophic patterns like `(\d+)*$`, `(\w+)*`, `(.*a){20}`,
-    // and `([ab]+){2,}`; this rejects the whole family.
-    /\([^)]*[+*}][^)]*\)\s*[+*?{]/,
-    /\([^)]*\([^)]*\)[^)]*\)\s*[+*?{]/,  // nested-group body, then outer quantifier
+    // and which is itself REPEATED (+ * {…}). The forms above miss common
+    // catastrophic patterns like `(\d+)*$`, `(\w+)*`, `(.*a){20}`, and
+    // `([ab]+){2,}`; this rejects the whole family. Note: `?` is deliberately
+    // excluded — making such a group OPTIONAL (e.g. `(\d+)?`, `(previous\s+)?`)
+    // is linear, not catastrophic, and is extremely common in real rules.
+    /\([^)]*[+*}][^)]*\)\s*[+*{]/,
+    /\([^)]*\([^)]*\)[^)]*\)\s*[+*{]/,  // nested-group body, then outer quantifier
   ];
 
   for (const redos of redosPatterns) {
