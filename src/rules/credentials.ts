@@ -142,14 +142,17 @@ export const credentialRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects markdown instructions to collect or expose credentials',
     patterns: [
-      /collect[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
-      /extract[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
-      /find[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
-      /show[ \t]+(me[ \t]+)?(the[ \t]+)?[^\n]{0,50}(api[\s_-]?key|token|secret|password|credential)/gi,
-      /output[ \t]+[^\n]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      // Use [^\n.] so a verb and a credential noun must occur within the same sentence,
+      // avoiding false matches that stitch together unrelated clauses in prose/READMEs
+      // (e.g. "extract structured data ... . credential management").
+      /collect[ \t]+[^\n.]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /extract[ \t]+[^\n.]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /find[ \t]+[^\n.]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /show[ \t]+(me[ \t]+)?(the[ \t]+)?[^\n.]{0,50}(api[\s_-]?key|token|secret|password|credential)/gi,
+      /output[ \t]+[^\n.]{0,100}(api[\s_-]?key|token|secret|password|credential)/gi,
       // Natural-language action verbs for credential harvesting
-      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,100}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
-      /\b(?:dump|export|reveal|expose|list|retrieve|get|fetch)\b[ \t]+[^\n]{0,80}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n.]{0,100}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
+      /\b(?:dump|export|reveal|expose|list|retrieve|get|fetch)\b[ \t]+[^\n.]{0,80}(?:api[\s_-]?key|token|secret|password|credential)[s]?\b/gi,
       /\b(?:email|e-mail|send|forward|share|give|report)\b[ \t]+[^\n]{0,60}\b(?:all|every|each)\b[^\n]{0,40}(?:key|secret|password|credential|token)[s]?\b/gi,
     ],
     fileTypes: ['md'],
@@ -186,7 +189,10 @@ export const credentialRules: Rule[] = [
     patterns: [
       /security\s+find-generic-password/gi,
       /security\s+find-internet-password/gi,
-      /keychain/gi,
+      // Require an access/exfiltration verb near "keychain" so that benign mentions
+      // (e.g. "macOS Keychain integration") in markdown/docs are not flagged.
+      /\b(?:access|read|dump|extract|unlock|export|steal|exfiltrate|copy|open|reveal)\b[^\n]{0,30}keychain/gi,
+      /keychain[^\n]{0,30}\b(?:password|credential|dump|export|extract|secret|unlock)\b/gi,
       /secret-tool/gi,
       /pass\s+show/gi,
     ],

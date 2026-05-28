@@ -46,6 +46,9 @@ function getFileType(filePath: string): FileType | null {
   const ext = extname(filePath).toLowerCase().slice(1);
   const fileTypeMap: Record<string, FileType> = {
     'md': 'md',
+    // Cursor's modern rules format (.cursor/rules/*.mdc) is markdown-with-frontmatter.
+    // Treat it as markdown so all markdown-targeting rules (injection, credentials, etc.) apply.
+    'mdc': 'md',
     'sh': 'sh',
     'bash': 'bash',
     'zsh': 'zsh',
@@ -99,10 +102,14 @@ function detectComponentType(filePath: string): ComponentType {
   }
 
   // Rules files (Cursor, Windsurf, Cline)
+  // Includes Cursor's modern format: .cursor/rules/*.mdc
   if (
     fileName === '.cursorrules' ||
     fileName === '.windsurfrules' ||
-    fileName === '.clinerules'
+    fileName === '.clinerules' ||
+    fileName.endsWith('.mdc') ||
+    normalizedPath.includes('/.cursor/rules/') ||
+    normalizedPath.includes('\\.cursor\\rules\\')
   ) {
     return 'rules-file';
   }
@@ -235,6 +242,11 @@ function isAnalyzableFile(filePath: string, options: DiscoveryOptions): boolean 
         return true;
       }
       return false;
+    }
+
+    // Cursor: modern rules live under .cursor/rules/*.mdc (high signal).
+    if (p.includes('/.cursor/') || p.includes('\\.cursor\\')) {
+      return true;
     }
 
     // OpenClaw: focus on config and operational JSON/YAML/env under known folders.

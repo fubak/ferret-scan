@@ -262,6 +262,16 @@ export const aiSpecificRules: Rule[] = [
       /security\s+scanner/gi,
       /documentation|readme|docs/gi,
     ],
+    // Benign human-facing install/setup instructions ("add it to your mcp.json", "you can add
+    // ... to settings.json", "add it to a file called ...") are not agent self-modification.
+    // Filter these common documentation phrasings to avoid flagging every MCP server's README.
+    excludePatterns: [
+      /\badd (?:it|this|that|them|the following|the above|the below|the snippet|the config(?:uration)?)\b/i,
+      /\b(?:you can|to) add\b/i,
+      /\badd .{0,40}\bto your\b/i,
+      /\badd .{0,40}\bto (?:a|the) (?:file|config(?:uration)?|section)\b/i,
+      /\bfile (?:called|named)\b/i,
+    ],
   },
 ];
 

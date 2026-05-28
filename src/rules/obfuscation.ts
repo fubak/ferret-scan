@@ -49,9 +49,17 @@ export const obfuscationRules: Rule[] = [
     severity: 'HIGH',
     description: 'Detects invisible zero-width characters that may hide content',
     patterns: [
-      /[\u200B-\u200D\uFEFF]/g,
-      /[\u2060-\u2064]/g,
-      /[\u180E]/g,
+      /\u200B/g, // zero-width space
+      /\u2060/g, // word joiner
+      /[\u2061-\u2064]/g, // invisible math operators
+      /\u180E/g, // Mongolian vowel separator
+      // ZWNJ (U+200C) and ZWJ (U+200D) are legitimate, required characters in Arabic, Persian,
+      // and Indic scripts (and emoji sequences). Only flag them when embedded directly within
+      // ASCII/Latin alphanumerics - the hidden-instruction / homoglyph-smuggling case - to avoid
+      // false positives on normal non-Latin text.
+      /[A-Za-z0-9][\u200C\u200D]|[\u200C\u200D][A-Za-z0-9]/g,
+      // Zero-width no-break space (BOM) is legitimate only at the very start of a file.
+      /(?<!^)\uFEFF/g,
     ],
     fileTypes: ['md', 'json', 'yaml', 'yml'],
     components: ['skill', 'agent', 'ai-config-md', 'settings', 'mcp'],
