@@ -1,0 +1,12 @@
+name: "ferret-scan CodeQL config"
+
+# ferret-scan is a security scanner: its test suites intentionally contain
+# malicious and pathological fixtures (e.g. catastrophic-backtracking regexes
+# fed into the ReDoS-defense code under test, plus the evil hook/skill fixtures
+# in test/fixtures). Scanning that code with the security queries produces
+# false positives on inputs that are deliberately "vulnerable" by design, so we
+# exclude test directories from analysis. Production code under src/ (excluding
+# tests) is still fully analyzed.
+paths-ignore:
+  - test
+  - src/__tests__
