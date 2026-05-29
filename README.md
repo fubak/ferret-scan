@@ -973,7 +973,7 @@ Build from source:
 cd extensions/vscode
 npm install
 npm run compile
-# Install locally: code --install-extension ferret-security-1.0.0.vsix
+# Install locally: code --install-extension ferret-security-1.2.0.vsix
 ```
 
 **Features:**
