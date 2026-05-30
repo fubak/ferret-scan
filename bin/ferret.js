@@ -589,13 +589,8 @@ async function fetchRulesToFile(source, { output, force } = {}) {
   }
 
   const outPath = output || resolve(process.cwd(), '.ferret', 'rules.yml');
-  const { writeFileSync, existsSync, mkdirSync } = await import('node:fs');
+  const { writeFileSync, mkdirSync } = await import('node:fs');
   const { dirname } = await import('node:path');
-
-  if (existsSync(outPath) && !force) {
-    console.error(`File already exists: ${outPath}. Use --force to overwrite.`);
-    process.exit(1);
-  }
 
   mkdirSync(dirname(outPath), { recursive: true });
 
@@ -613,7 +608,7 @@ async function fetchRulesToFile(source, { output, force } = {}) {
         `    severity: ${r.severity}`,
         `    description: ${JSON.stringify(r.description)}`,
         '    patterns:',
-        ...r.patterns.map(p => `      - "${p.source.replace(/"/g, '\\"')}"`),
+        ...r.patterns.map(p => `      - ${JSON.stringify(p.source)}`),
         `    fileTypes: [${r.fileTypes.join(', ')}]`,
         `    components: [${r.components.join(', ')}]`,
         `    remediation: ${JSON.stringify(r.remediation)}`,
@@ -621,7 +616,17 @@ async function fetchRulesToFile(source, { output, force } = {}) {
     }),
   ].join('\n');
 
-  writeFileSync(outPath, yaml, 'utf-8');
+  // Atomic create: 'wx' fails if the file already exists (avoids a TOCTOU
+  // existsSync check); 'w' overwrites when --force is given.
+  try {
+    writeFileSync(outPath, yaml, { encoding: 'utf-8', flag: force ? 'w' : 'wx' });
+  } catch (err) {
+    if (err && err.code === 'EEXIST') {
+      console.error(`File already exists: ${outPath}. Use --force to overwrite.`);
+      process.exit(1);
+    }
+    throw err;
+  }
   return { outPath, count: loaded.rules.length };
 }
 
