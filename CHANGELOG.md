@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.7.0] - 2026-05-29
 
+### Fixed
+- **`ferret rules install` now actually installs.** It previously only printed the
+  equivalent `rules fetch` command without writing anything; it now fetches,
+  validates, and writes the rules to `.ferret/rules.yml` (shared logic with
+  `rules fetch`, honoring `--force`).
+
 ### Security
 - **RE2 regex engine now actually loads.** `safeRegex.ts` used a bare `require('re2')`,
   which always threw in the published ESM build (`require` is undefined under
