@@ -189,6 +189,12 @@ jobs:
           cache-dependency-path: 'lsp/package-lock.json'
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Install dependencies (root)
+        run: npm ci
+
+      - name: Build root project (the LSP compiles against its output at ../../dist)
+        run: npm run build
+
       - name: Install dependencies (LSP)
         working-directory: lsp
         run: npm ci
