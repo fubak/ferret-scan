@@ -636,7 +636,7 @@ rulesCmd
 
 rulesCmd
   .command('install')
-  .description('Fetch + validate remote rules and install them into .ferret/rules.yml')
+  .description('Convenience alias: prints the equivalent "rules fetch ... --output .ferret/rules.yml" command (does not install on its own yet)')
   .argument('<source>', 'URL or github:owner/repo/path shorthand')
   .option('--force', 'Overwrite without confirmation')
   .action(async (source, options) => {

@@ -107,7 +107,7 @@ This is a **security hardening** release:
 
 See the full [CHANGELOG](./CHANGELOG.md) for details.
 
-**Previous release (v2.6.0)** added full Language Server Protocol support (`ferret lsp`), SBOM + AIBOM generation, lightweight runtime monitoring (`ferret monitor`), and community rule sharing (`github:owner/repo/path` with `ferret rules fetch`/`install`/`validate`). **v2.5.0** added `ferret scan --self` dogfooding and major test-coverage improvements.
+**Previous release (v2.6.0)** added full Language Server Protocol support (`ferret lsp`), SBOM + AIBOM generation, lightweight runtime monitoring (`ferret monitor`), and community rule sharing — fetch and validate rules via the `github:owner/repo/path` shorthand (`ferret rules fetch` / `ferret rules validate`). **v2.5.0** added `ferret scan --self` dogfooding and major test-coverage improvements.
 
 ## Feature Highlights
 
@@ -587,8 +587,8 @@ ferret rules list --category injection # Filter by category
 ferret rules show CRED-005             # Show rule details
 ferret rules stats                     # Rule statistics
 ferret rules validate <source>         # Validate a custom/community rules file or URL
-ferret rules fetch github:owner/repo/path/rules.yml   # Fetch community rules
-ferret rules install github:owner/repo/path/rules.yml # Fetch + validate + install locally
+ferret rules fetch github:owner/repo/path/rules.yml   # Fetch community rules to .ferret/rules.yml
+ferret rules install github:owner/repo/path/rules.yml # Convenience alias: prints the equivalent 'rules fetch' command
 ```
 
 ### `ferret baseline`
@@ -965,7 +965,7 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 - IntelliJ / JetBrains plugin
 - Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
-- A *curated* community-rules index repository (ad-hoc `github:owner/repo/path` fetch/install already works today — see `ferret rules fetch`/`install`)
+- A *curated* community-rules index repository (ad-hoc `github:owner/repo/path` rule *fetching* already works today via `ferret rules fetch`; `ferret rules install` is currently only a guidance alias)
 - Deeper runtime behavior monitoring and anomaly detection (beyond prompt-level scanning)
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
