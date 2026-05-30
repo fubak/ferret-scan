@@ -574,6 +574,57 @@ rulesCmd
     }
   });
 
+// Shared helper: fetch + validate community rules and write them to a YAML file.
+// Used by both `rules fetch` (explicit --output) and `rules install` (conventional
+// .ferret/rules.yml). Returns the written path and rule count; exits on error.
+async function fetchRulesToFile(source, { output, force } = {}) {
+  const resolved = resolveRuleSource(source);
+  console.log(`📥 Fetching rules from: ${resolved}`);
+
+  const loaded = await loadCustomRulesSource(resolved);
+  if (loaded.errors.length > 0) {
+    console.error('❌ Failed to fetch/validate remote rules:');
+    loaded.errors.forEach(e => console.error(`  - ${e}`));
+    process.exit(1);
+  }
+
+  const outPath = output || resolve(process.cwd(), '.ferret', 'rules.yml');
+  const { writeFileSync, existsSync, mkdirSync } = await import('node:fs');
+  const { dirname } = await import('node:path');
+
+  if (existsSync(outPath) && !force) {
+    console.error(`File already exists: ${outPath}. Use --force to overwrite.`);
+    process.exit(1);
+  }
+
+  mkdirSync(dirname(outPath), { recursive: true });
+
+  // Write a minimal valid YAML wrapper
+  const yaml = [
+    'version: "1"',
+    `description: "Community rules fetched from ${resolved}"`,
+    'rules:',
+    ...loaded.rules.map(r => {
+      // Very basic YAML emission (sufficient for Ferret consumption)
+      return [
+        `  - id: ${r.id}`,
+        `    name: ${JSON.stringify(r.name)}`,
+        `    category: ${r.category}`,
+        `    severity: ${r.severity}`,
+        `    description: ${JSON.stringify(r.description)}`,
+        '    patterns:',
+        ...r.patterns.map(p => `      - "${p.source.replace(/"/g, '\\"')}"`),
+        `    fileTypes: [${r.fileTypes.join(', ')}]`,
+        `    components: [${r.components.join(', ')}]`,
+        `    remediation: ${JSON.stringify(r.remediation)}`,
+      ].join('\n');
+    }),
+  ].join('\n');
+
+  writeFileSync(outPath, yaml, 'utf-8');
+  return { outPath, count: loaded.rules.length };
+}
+
 rulesCmd
   .command('fetch')
   .description('Fetch remote/community rules and save them locally')
@@ -582,51 +633,8 @@ rulesCmd
   .option('--force', 'Overwrite existing file without prompt')
   .action(async (source, options) => {
     try {
-      const resolved = resolveRuleSource(source);
-      console.log(`📥 Fetching rules from: ${resolved}`);
-
-      const loaded = await loadCustomRulesSource(resolved);
-      if (loaded.errors.length > 0) {
-        console.error('❌ Failed to fetch/validate remote rules:');
-        loaded.errors.forEach(e => console.error(`  - ${e}`));
-        process.exit(1);
-      }
-
-      const outPath = options.output || resolve(process.cwd(), '.ferret', 'rules.yml');
-      const { writeFileSync, existsSync, mkdirSync } = await import('node:fs');
-      const { dirname } = await import('node:path');
-
-      if (existsSync(outPath) && !options.force) {
-        console.error(`File already exists: ${outPath}. Use --force to overwrite.`);
-        process.exit(1);
-      }
-
-      mkdirSync(dirname(outPath), { recursive: true });
-
-      // Write a minimal valid YAML wrapper
-      const yaml = [
-        'version: "1"',
-        `description: "Community rules fetched from ${resolved}"`,
-        'rules:',
-        ...loaded.rules.map(r => {
-          // Very basic YAML emission (sufficient for Ferret consumption)
-          return [
-            `  - id: ${r.id}`,
-            `    name: ${JSON.stringify(r.name)}`,
-            `    category: ${r.category}`,
-            `    severity: ${r.severity}`,
-            `    description: ${JSON.stringify(r.description)}`,
-            '    patterns:',
-            ...r.patterns.map(p => `      - "${p.source.replace(/"/g, '\\"')}"`),
-            `    fileTypes: [${r.fileTypes.join(', ')}]`,
-            `    components: [${r.components.join(', ')}]`,
-            `    remediation: ${JSON.stringify(r.remediation)}`,
-          ].join('\n');
-        }),
-      ].join('\n');
-
-      writeFileSync(outPath, yaml, 'utf-8');
-      console.log(`✅ Fetched ${loaded.rules.length} rules and wrote to ${outPath}`);
+      const { outPath, count } = await fetchRulesToFile(source, { output: options.output, force: options.force });
+      console.log(`✅ Fetched ${count} rules and wrote to ${outPath}`);
       console.log('   Run "ferret scan" to use them (or add to .ferretrc customRules).');
     } catch (error) {
       console.error('Error fetching rules:', error instanceof Error ? error.message : String(error));
@@ -636,20 +644,18 @@ rulesCmd
 
 rulesCmd
   .command('install')
-  .description('Convenience alias: prints the equivalent "rules fetch ... --output .ferret/rules.yml" command (does not install on its own yet)')
+  .description('Fetch + validate remote rules and install them into .ferret/rules.yml')
   .argument('<source>', 'URL or github:owner/repo/path shorthand')
   .option('--force', 'Overwrite without confirmation')
   .action(async (source, options) => {
-    // Delegate to fetch with a conventional output path
-    const { execSync } = await import('node:child_process');
-    const args = ['rules', 'fetch', source, '--output', resolve(process.cwd(), '.ferret', 'rules.yml')];
-    if (options.force) args.push('--force');
-    // Re-use the fetch implementation by calling the action indirectly is messy.
-    // For simplicity in this increment we just print guidance.
-    console.log('ℹ️  "ferret rules install" is a convenience alias for:');
-    console.log(`   ferret rules fetch ${source} --output .ferret/rules.yml`);
-    console.log('   (Add --force to overwrite)');
-    // In a real follow-up we would call the same logic; for now this keeps the change small.
+    try {
+      const { outPath, count } = await fetchRulesToFile(source, { force: options.force });
+      console.log(`✅ Installed ${count} rules to ${outPath}`);
+      console.log('   Run "ferret scan" to use them (or add to .ferretrc customRules).');
+    } catch (error) {
+      console.error('Error installing rules:', error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
   });
 
 // LSP command (launches the separate ferret-lsp server if installed)

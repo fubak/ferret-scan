@@ -588,7 +588,7 @@ ferret rules show CRED-005             # Show rule details
 ferret rules stats                     # Rule statistics
 ferret rules validate <source>         # Validate a custom/community rules file or URL
 ferret rules fetch github:owner/repo/path/rules.yml   # Fetch community rules to .ferret/rules.yml
-ferret rules install github:owner/repo/path/rules.yml # Convenience alias: prints the equivalent 'rules fetch' command
+ferret rules install github:owner/repo/path/rules.yml # Fetch + validate + install to .ferret/rules.yml
 ```
 
 ### `ferret baseline`
@@ -965,7 +965,7 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 - IntelliJ / JetBrains plugin
 - Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
-- A *curated* community-rules index repository (ad-hoc `github:owner/repo/path` rule *fetching* already works today via `ferret rules fetch`; `ferret rules install` is currently only a guidance alias)
+- A *curated* community-rules index repository (ad-hoc `github:owner/repo/path` rule fetch/install already works today via `ferret rules fetch` / `ferret rules install`)
 - Deeper runtime behavior monitoring and anomaly detection (beyond prompt-level scanning)
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations

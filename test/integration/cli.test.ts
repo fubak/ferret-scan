@@ -594,6 +594,38 @@ d('rules', () => {
     expect(r.stdout).toMatch(/\d+/);
     expect(r.stdout.toLowerCase()).toMatch(/total|rules|category/i);
   });
+
+  it('rules install fetches, validates and writes .ferret/rules.yml', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ferret-install-'));
+    const src = join(dir, 'src-rules.yml');
+    writeFileSync(src, [
+      'version: "1"',
+      'description: "test"',
+      'rules:',
+      '  - id: CUSTOM-001',
+      '    name: "Test rule"',
+      '    category: injection',
+      '    severity: HIGH',
+      '    description: "a test rule"',
+      '    patterns:',
+      '      - "totally-evil-marker"',
+      '    fileTypes: [md]',
+      '    components: [ai-config-md]',
+      '    remediation: "remove it"',
+    ].join('\n'));
+
+    const r = ferret(['rules', 'install', src], { cwd: dir });
+    expect(r.status).toBe(0);
+    expect(r.stdout).toMatch(/Installed 1 rules/);
+    expect(existsSync(join(dir, '.ferret', 'rules.yml'))).toBe(true);
+
+    // A second run without --force must refuse to overwrite.
+    const again = ferret(['rules', 'install', src], { cwd: dir });
+    expect(again.status).not.toBe(0);
+    expect(again.stdout + again.stderr).toMatch(/already exists/i);
+
+    rmSync(dir, { recursive: true, force: true });
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
