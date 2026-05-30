@@ -60,6 +60,60 @@ describe('safeRegex', () => {
       }
     });
 
+    it('handles screener-bypassing ReDoS forms safely (regression)', () => {
+      // These exponential/polynomial patterns slipped past the original static
+      // screener (which only matched specific quantifier pairings). They must
+      // now be rejected by the hardened screener (no RE2) or compiled safely
+      // by RE2 (linear-time).
+      const sneaky = [
+        '(\\d+)*$',     // classic screener bypass — exponential on V8
+        '(\\w+)*',
+        '(.*a){20}',    // polynomial blowup
+        '([ab]+){2,}',
+      ];
+
+      for (const pattern of sneaky) {
+        if (re2Active) {
+          expect(() => compileSafePattern(pattern)).not.toThrow();
+        } else {
+          expect(compileSafePattern(pattern)).toBeNull();
+        }
+      }
+    });
+
+    it('accepts safe optional groups containing inner quantifiers', () => {
+      // Making a quantified-body group OPTIONAL is linear, not catastrophic, and
+      // is common in real rules (e.g. the Fixer builtin
+      // `ignore\s+(previous\s+)?instructions?`). These must NOT be rejected by
+      // the hardened screener even when RE2 is unavailable.
+      const safeOptional = [
+        '(\\d+)?',
+        '(previous\\s+)?',
+        'ignore\\s+(previous\\s+)?instructions?',
+        '(v\\d+)?\\.json',
+      ];
+      for (const pattern of safeOptional) {
+        expect(compileSafePattern(pattern)).not.toBeNull();
+      }
+    });
+
+    it('does not hang on a catastrophic pattern + pathological input', () => {
+      // The key security property regardless of which engine is active:
+      // - RE2 present  -> linear-time match, returns fast
+      // - RE2 absent   -> hardened screener rejects -> safeMatch returns null fast
+      // Either way this must complete well under the bounded-runtime budget and
+      // never block on native backtracking.
+      const evilInput = '9'.repeat(40) + '!';
+      const start = Date.now();
+      const result = safeMatch('(\\d+)*$', evilInput, 'g', { maxMs: 1000 });
+      const elapsed = Date.now() - start;
+
+      expect(elapsed).toBeLessThan(1000);
+      if (!re2Active) {
+        expect(result).toBeNull();
+      }
+    });
+
     it('rejects malformed patterns', () => {
       const malformedPatterns = [
         '[unclosed',

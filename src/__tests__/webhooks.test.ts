@@ -153,6 +153,26 @@ describe('sendWebhook', () => {
     expect(result.success).toBe(true);
   });
 
+  it('redacts secret-bearing match values in generic webhook payloads', async () => {
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      text: () => Promise.resolve(''),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof globalThis.fetch;
+
+    const secret = 'sk-livesecret1234567890abcd';
+    await sendWebhook(
+      makeScanResult([makeFinding({ match: `apiKey = "${secret}"` })]),
+      makeWebhookConfig({ type: 'generic', includeDetails: true })
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const body = (fetchMock.mock.calls[0]![1] as { body: string }).body;
+    expect(body).not.toContain(secret);
+    expect(body).toContain('<REDACTED');
+  });
+
   it('sends to discord type without error', async () => {
     mockFetch(200, true);
     const result = await sendWebhook(

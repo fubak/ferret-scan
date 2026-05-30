@@ -6,6 +6,7 @@
 
 import type { ScanResult, Severity } from '../types.js';
 import logger from '../utils/logger.js';
+import { redactSecretsInString } from '../utils/redaction.js';
 
 /**
  * Webhook configuration
@@ -231,7 +232,10 @@ function formatGenericMessage(result: ScanResult, config: WebhookConfig): object
           category: f.category,
           file: f.relativePath,
           line: f.line,
-          match: f.match,
+          // The matched text can contain the raw secret/credential that
+          // tripped the rule. Webhook payloads egress to an external URL, so
+          // redact before sending (reporters redact on their own path).
+          match: redactSecretsInString(f.match),
           remediation: f.remediation,
         }))
       : undefined,

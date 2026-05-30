@@ -2,7 +2,7 @@
   "name": "ferret-security",
   "displayName": "Ferret Security Scanner",
   "description": "Real-time security scanning for AI agent configurations",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "publisher": "ferret-security",
   "icon": "resources/icon.png",
   "repository": {
@@ -86,10 +86,20 @@
         },
         "ferret.severity": {
           "type": "array",
-          "default": ["CRITICAL", "HIGH", "MEDIUM"],
+          "default": [
+            "CRITICAL",
+            "HIGH",
+            "MEDIUM"
+          ],
           "items": {
             "type": "string",
-            "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"]
+            "enum": [
+              "CRITICAL",
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "INFO"
+            ]
           },
           "description": "Severity levels to show"
         },

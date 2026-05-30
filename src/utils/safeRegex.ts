@@ -7,6 +7,7 @@
  */
 
 import type { default as RE2Type } from 're2';
+import { nodeRequire } from './esmRequire.js';
 
 // Lazy-load RE2 so the module is still usable when re2 is not installed.
 let RE2: typeof RE2Type | null = null;
@@ -16,8 +17,10 @@ function getRE2(): typeof RE2Type | null {
   if (re2Attempted) return RE2;
   re2Attempted = true;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    RE2 = require('re2') as typeof RE2Type;
+    // Bare `require('re2')` would throw in native ESM (require is undefined),
+    // silently disabling RE2 in every published build. `nodeRequire` bridges to
+    // a working CommonJS require via createRequire(import.meta.url).
+    RE2 = nodeRequire('re2') as typeof RE2Type;
   } catch {
     RE2 = null;
   }
@@ -70,7 +73,12 @@ export function compileSafePattern(raw: string, flags = 'gi'): RegExp | null {
   }
 
   // Fallback: static screen for exponential-backtracking structures before
-  // handing the pattern to the native JS engine.
+  // handing the pattern to the native JS engine. This is a best-effort
+  // heuristic, NOT a sound ReDoS oracle — RE2 (above) is the real defense.
+  // Any group that contains an inner quantifier and is itself quantified can
+  // backtrack catastrophically, so we reject those broadly rather than
+  // enumerating specific quantifier pairings (the previous list missed common
+  // forms like `(\d+)*$`, `(\w+)*`, and `(.*a){20}`).
   const redosPatterns = [
     /(\?\+)/,             // Possessive quantifier abuse: a+?+
     /(\+\+)/,             // Double plus: a++
@@ -81,6 +89,14 @@ export function compileSafePattern(raw: string, flags = 'gi'): RegExp | null {
     /(\(.*\|.*\)\+)/,     // Alternation inside quantified group: (a|b)+
     /(\(.*\|.*\)\*)/,     // Alternation inside quantified group: (a|b)*
     /(\(.*\|.*\)\{)/,     // Alternation inside bounded group: (a|b){2,}
+    // Broad catch: any group whose body contains an inner quantifier (+ * {…})
+    // and which is itself REPEATED (+ * {…}). The forms above miss common
+    // catastrophic patterns like `(\d+)*$`, `(\w+)*`, `(.*a){20}`, and
+    // `([ab]+){2,}`; this rejects the whole family. Note: `?` is deliberately
+    // excluded — making such a group OPTIONAL (e.g. `(\d+)?`, `(previous\s+)?`)
+    // is linear, not catastrophic, and is extremely common in real rules.
+    /\([^)]*[+*}][^)]*\)\s*[+*{]/,
+    /\([^)]*\([^)]*\)[^)]*\)\s*[+*{]/,  // nested-group body, then outer quantifier
   ];
 
   for (const redos of redosPatterns) {

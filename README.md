@@ -628,6 +628,60 @@ ferret intel search "jailbreak"        # Search indicators
 ferret intel add --type pattern --value "malicious" --severity high
 ```
 
+### `ferret check <file>`
+
+Scan a single file (useful for editor integrations and quick checks):
+
+```bash
+ferret check .cursorrules              # Check one file
+ferret check .mcp.json --format json   # Machine-readable output
+```
+
+### `ferret mcp`
+
+Validate and audit MCP (Model Context Protocol) server configurations:
+
+```bash
+ferret mcp audit .                     # Trust + security audit of MCP servers
+ferret mcp validate .mcp.json          # Validate an MCP config file
+```
+
+### `ferret deps`
+
+Analyze dependency security risks (known-vuln, abandoned, typosquatting, postinstall hooks):
+
+```bash
+ferret deps analyze .                  # Analyze package.json in the given path
+```
+
+### `ferret capabilities` (alias `caps`)
+
+Map what an AI agent's configuration is allowed to do (filesystem, network, code execution, …):
+
+```bash
+ferret capabilities analyze .          # Map agent capability permissions
+```
+
+### `ferret policy`
+
+Define and enforce organizational security policies (policy violations exit with code `2`):
+
+```bash
+ferret policy init                     # Create a starter policy file
+ferret policy show                     # Show the active policy
+ferret policy check .                  # Check a scan against the policy
+```
+
+### `ferret webhook <url>`
+
+Send scan-result notifications to Slack, Discord, Microsoft Teams, or a generic endpoint:
+
+```bash
+ferret webhook https://hooks.slack.com/... --type slack --test
+```
+
+> Note: webhook payloads include redacted finding details only — matched secret values are redacted before sending.
+
 ### `ferret scan --self` (Dogfooding Mode)
 
 Special mode that scans Ferret’s own source code + the malicious test fixtures it ships. Highly recommended for contributors and before releasing.
@@ -691,6 +745,20 @@ fi
 echo "✅ Security scan passed"
 ```
 
+## Exit Codes
+
+In `--ci` mode Ferret returns a meaningful exit code so pipelines can branch on the outcome:
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — no blocking findings |
+| `1` | Findings at or above the `--fail-on` threshold were detected |
+| `2` | Policy violation (see `ferret policy`) |
+| `3` | Scan error (unexpected failure during scanning) |
+| `4` | Configuration error (invalid config or rules) |
+| `5` | Timeout |
+| `130` | Interrupted (SIGINT / Ctrl-C; 128 + 2) |
+
 ## Environment Variables
 
 | Variable | Description |
@@ -698,7 +766,12 @@ echo "✅ Security scan passed"
 | `NO_COLOR` | Disable all color output ([no-color.org](https://no-color.org)) |
 | `FERRET_EXIT_SUCCESS` | Override success exit code (default: 0) |
 | `FERRET_EXIT_FINDINGS` | Override findings exit code (default: 1) |
-| `FERRET_EXIT_ERROR` | Override error exit code (default: 3) |
+| `FERRET_EXIT_POLICY` | Override policy-violation exit code (default: 2) |
+| `FERRET_EXIT_ERROR` | Override scan-error exit code (default: 3) |
+| `FERRET_EXIT_CONFIG` | Override config-error exit code (default: 4) |
+| `FERRET_EXIT_TIMEOUT` | Override timeout exit code (default: 5) |
+
+All override values must be integers in the range `0`–`255`.
 
 ## Configuration
 
@@ -709,6 +782,17 @@ Ferret will auto-load config from (first found walking up from CWD):
 - `.ferret/config.json`
 
 You can also pass an explicit config path with `--config`.
+
+### Ignoring files (`.ferretignore`)
+
+Place a `.ferretignore` file at your project root to exclude paths from scanning. It uses the same syntax as `.gitignore` (one glob per line, `#` for comments, `!` to negate). This is in addition to the `ignore` globs in your config file and any inline `ferret-ignore` comments.
+
+```gitignore
+# .ferretignore
+node_modules/
+**/fixtures/**
+*.min.js
+```
 
 Example `.ferretrc.json`:
 
@@ -889,7 +973,7 @@ Build from source:
 cd extensions/vscode
 npm install
 npm run compile
-# Install locally: code --install-extension ferret-security-1.0.0.vsix
+# Install locally: code --install-extension ferret-security-1.2.0.vsix
 ```
 
 **Features:**
@@ -919,9 +1003,13 @@ npm run compile
 
 ## Documentation
 
-- Start here: `docs/README.md`
-- `docs/architecture.md`
-- `docs/deployment.md`
+- Start here: [`docs/README.md`](docs/README.md) — the full documentation index
+- [`docs/architecture.md`](docs/architecture.md) — how the scanner pipeline works
+- [`docs/deployment.md`](docs/deployment.md) — Docker, CI, and air-gapped use
+- [`docs/THREAT_MODEL.md`](docs/THREAT_MODEL.md) — what Ferret defends against (and what it does not)
+- [`docs/lsp.md`](docs/lsp.md) — Language Server setup for Neovim, Emacs, Zed, Helix, and more
+- [`docs/mcp-scan-comparison.md`](docs/mcp-scan-comparison.md) — how Ferret compares to mcp-scan
+- [`docs/REPOSITORY_ANALYSIS.md`](docs/REPOSITORY_ANALYSIS.md) — repo analysis, security scan, and landscape positioning
 
 ## Contributing
 
@@ -940,12 +1028,12 @@ npm run lint         # Lint check
 npm run build        # Build
 
 # Add a rule
-# See docs/RULES.md for the rule development guide
+# See the "Custom Rules (No Code Updates)" section above for the YAML rule format
 ```
 
 ### Reporting Security Issues
 
-Found a vulnerability? Please email security@ferret-scan.dev instead of opening a public issue.
+Found a vulnerability? Please follow the process in [SECURITY.md](SECURITY.md) (private disclosure) instead of opening a public issue.
 
 ## License
 
@@ -953,7 +1041,7 @@ MIT - see [LICENSE](LICENSE)
 
 ## Links
 
-- 📖 [Documentation](https://github.com/fubak/ferret-scan/wiki)
+- 📖 [Documentation](docs/README.md)
 - 📝 [Changelog](CHANGELOG.md)
 - 🐛 [Issue Tracker](https://github.com/fubak/ferret-scan/issues)
 - 💬 [Discussions](https://github.com/fubak/ferret-scan/discussions)

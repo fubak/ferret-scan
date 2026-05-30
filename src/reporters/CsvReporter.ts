@@ -20,10 +20,19 @@ const CSV_HEADERS = [
 ];
 
 function escapeCsv(value: string): string {
-  if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Neutralize spreadsheet formula injection: a cell beginning with =, +, -, @,
+  // or a tab/CR is interpreted as a formula by Excel/Sheets/LibreOffice. Scan
+  // findings (match text, paths, remediation) derive from attacker-controlled
+  // file content, so prefix such cells with a single quote to force text.
+  let safe = value;
+  if (/^[=+\-@\t\r]/.test(safe)) {
+    safe = `'${safe}`;
   }
-  return value;
+
+  if (safe.includes('"') || safe.includes(',') || safe.includes('\n') || safe.includes('\r')) {
+    return `"${safe.replace(/"/g, '""')}"`;
+  }
+  return safe;
 }
 
 function serializeFinding(finding: Finding): string {

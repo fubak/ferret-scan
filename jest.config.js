@@ -6,6 +6,10 @@ const config = {
   testMatch: ['**/*.test.ts'],
   moduleFileExtensions: ['ts', 'js', 'json'],
   moduleNameMapper: {
+    // The real esmRequire module uses import.meta (illegal once transpiled to
+    // CommonJS for the test runner); swap in a CommonJS stub. Must precede the
+    // generic .js → .ts rewrite below.
+    'esmRequire\\.js$': '<rootDir>/test/stubs/esmRequire.js',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   transform: {
@@ -27,6 +31,8 @@ const config = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
+    // ESM-only bridge (uses import.meta); stubbed in tests, so not measurable here.
+    '!src/utils/esmRequire.ts',
   ],
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
