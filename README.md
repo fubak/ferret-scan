@@ -95,20 +95,21 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.6.0
+## What's New in v2.7.0
 
-This is a major feature release with four significant new capabilities:
+This is a **security hardening** release:
 
-- **Full Language Server Protocol (LSP) Support** — `ferret lsp` launches a real LSP server with diagnostics, hover information, completions, and code actions. Works in VS Code, Neovim, Zed, Emacs, Helix, and more. A dedicated `ferret-lsp` npm package is available.
-- **SBOM + AIBOM Generation** — Export CycloneDX 1.5 Software Bills of Materials and AI-specific AIBOMs using `ferret scan --sbom` or `--format aibom`.
-- **Lightweight Runtime Monitoring** — `ferret monitor --stdio` or `--target <cli>` for real-time detection of prompt injection, credential leaks, and exfiltration during LLM CLI usage (alerting-only by default).
-- **Community Rule Sharing** — Load rules from GitHub using `github:owner/repo/path` shorthand. New commands: `ferret rules fetch`, `install`, and `validate`, with built-in protection against shadowing core rules.
+- **RE2 ReDoS protection now actually works** — the optional linear-time regex engine was silently never loading in published builds (a bare `require('re2')` always failed under the package's native ESM). It loads now, so the documented ReDoS defense is real instead of falling back to a weaker heuristic. The fallback screener was hardened too.
+- **SSRF protection for remote custom rules** (`--allow-remote-rules`) — URLs that resolve to loopback/private/link-local/cloud-metadata addresses are blocked, and redirects are re-validated per hop.
+- **Secret redaction in webhook payloads** — matched secret values are no longer sent to webhook endpoints.
+- **CSV formula-injection neutralization** in the CSV reporter.
+- Documentation accuracy pass; removed internal patent material from the repo.
 
-See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com/fubak/ferret-scan/releases/tag/v2.6.0) for details.
+See the full [CHANGELOG](./CHANGELOG.md) for details.
 
-**Previous notable release (v2.5.0)** included `ferret scan --self` dogfooding, major architecture refactoring, and significant test coverage improvements.
+**Previous release (v2.6.0)** added full Language Server Protocol support (`ferret lsp`), SBOM + AIBOM generation, lightweight runtime monitoring (`ferret monitor`), and community rule sharing (`github:owner/repo/path` with `ferret rules fetch`/`install`/`validate`). **v2.5.0** added `ferret scan --self` dogfooding and major test-coverage improvements.
 
-## Advanced Features
+## Feature Highlights
 
 **Analysis Engines** (all implemented, local/offline)
 - **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
@@ -124,15 +125,7 @@ See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com
 - **Language Server Protocol (LSP)**: Run `ferret lsp` for real-time diagnostics, hover, completions, and code actions in any LSP-capable editor (VS Code, Neovim, Zed, Emacs, Helix, etc.).
 - **VS Code Extension**: Supports both classic CLI mode and full LSP mode.
 
-**New in v2.6+**
-- **SBOM + AIBOM Generation** (`ferret scan --sbom` / `--format aibom`)
-- **Community Rule Sharing** (`ferret rules fetch github:owner/repo/path`, `validate`, `install`)
-- **Runtime Prompt Monitoring** (`ferret monitor --stdio` / `--target <cli>`)
-
-**Still Planned**
-- IntelliJ / JetBrains plugin
-- Full compliance framework packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
-- Optional curated community rules index repository
+See [Planned / Future Features](#planned--future-features) for what is not yet shipped.
 
 ---
 
@@ -391,11 +384,11 @@ Every LLM finding includes a confidence score:
 | **Claude Code** | `.claude/`, `CLAUDE.md`, `.mcp.json` | ✅ Full Support |
 | **Cursor** | `.cursor/`, `.cursorrules`, user settings (`~/.config/Cursor/User/…`) | ✅ Full Support |
 | **Windsurf** | `.windsurf/`, `.windsurfrules` | ✅ Full Support |
-| **Continue** | `.continue/`, `config.json` | ✅ Full Support |
-| **Aider** | `.aider/`, `.aider.conf.yml` | ✅ Full Support |
+| **Continue** | `.continue/` (configs within it) | ✅ Full Support |
+| **Aider** | `.aider/`, `.aider.conf.yml`, `.aiderignore` | ✅ Full Support |
 | **Cline** | `.cline/`, `.clinerules` | ✅ Full Support |
 | **OpenClaw** | `.openclaw/`, `openclaw.json`, `exec-approvals.json`, `secrets.env` | ✅ Full Support |
-| **Generic** | `.ai/`, `AI.md`, `AGENT.md` | ✅ Full Support |
+| **Generic / cross-tool** | `.ai/`, `AI.md`, `AGENT.md`, `AGENTS.md` | ✅ Full Support |
 
 ## Installation
 
@@ -509,7 +502,7 @@ If you run `ferret scan` with no path, Ferret scans common AI CLI config locatio
 .continue/        .aider/           .cline/           .ai/
 CLAUDE.md         AI.md             AGENT.md          openclaw.json
 .cursorrules      .windsurfrules    .clinerules       exec-approvals.json
-.mcp.json         config.json       settings.json     secrets.env
+.mcp.json         AGENTS.md         settings.json     secrets.env
 skills/           hooks/            agents/
 *.sh *.bash       *.md              *.json *.yaml
 ```
@@ -573,6 +566,19 @@ ferret scan . --ci --fail-on high      # CI mode with exit codes
 ferret scan . --watch                  # Watch mode
 ```
 
+Other useful `scan` flags (see `ferret scan --help` for the full list):
+
+```bash
+--redact                  # Redact secret values in output (for sharing reports)
+--no-doc-dampening        # Don't down-rank findings in documentation/example files
+--no-ignore-comments      # Ignore inline `ferret-ignore` / `ferret-disable` suppressions
+--baseline <file>         # Suppress findings recorded in a baseline
+--ignore-baseline         # Run as if no baseline existed
+--dependency-audit        # Also run `npm audit` (networked) during dependency analysis
+--auto-fix                # Apply safe auto-remediations after scanning
+--sbom-format <fmt>       # sbom (CycloneDX) | aibom (AI-extended); with --sbom-output <file>
+```
+
 ### `ferret rules`
 
 ```bash
@@ -580,6 +586,9 @@ ferret rules list                      # List all rules
 ferret rules list --category injection # Filter by category
 ferret rules show CRED-005             # Show rule details
 ferret rules stats                     # Rule statistics
+ferret rules validate <source>         # Validate a custom/community rules file or URL
+ferret rules fetch github:owner/repo/path/rules.yml   # Fetch community rules
+ferret rules install github:owner/repo/path/rules.yml # Fetch + validate + install locally
 ```
 
 ### `ferret baseline`
@@ -956,7 +965,7 @@ ferret scan . --thorough --format atlas -o atlas-layer.json
 
 - IntelliJ / JetBrains plugin
 - Full compliance packs (SOC2, ISO 27001, GDPR, NIST AI RMF)
-- Optional curated community rules index repository
+- A *curated* community-rules index repository (ad-hoc `github:owner/repo/path` fetch/install already works today — see `ferret rules fetch`/`install`)
 - Deeper runtime behavior monitoring and anomaly detection (beyond prompt-level scanning)
 - CI/CD plugins for Jenkins, Azure DevOps
 - REST API for third-party integrations
