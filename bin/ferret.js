@@ -34,7 +34,6 @@ import {
   needsUpdate
 } from '../dist/intelligence/ThreatFeed.js';
 import {
-  applyRemediation,
   applyRemediationBatch,
   previewRemediation,
   canAutoRemediate
