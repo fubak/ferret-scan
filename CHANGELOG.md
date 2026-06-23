@@ -5,6 +5,23 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **Ferret no longer scans its own working directories.** `.ferret-cache`,
+  `.ferret-backups`, and `.ferret-intel` are now always excluded from scanning
+  (alongside the existing `.ferret-quarantine`, `.git`, and `node_modules`).
+  These directories hold detected secrets / malicious content by design — cached
+  findings, backups of flagged files, and the threat-intel database — so
+  re-scanning a repository that had already run Ferret previously surfaced
+  false-positive findings on the scanner's own artifacts (e.g. a CRITICAL
+  `CRED-003` inside `.ferret-cache/llm/*.json`).
+
+### Changed
+- Deduplicated the documentation-dampening logic: `Scanner` now imports the
+  shared `features/docDampening` module instead of carrying a byte-for-byte copy,
+  so the two implementations can no longer drift. Behavior is unchanged.
+
 ## [2.7.1] - 2026-06-23
 
 ### Security
