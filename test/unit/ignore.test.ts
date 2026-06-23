@@ -29,6 +29,16 @@ describe('Ignore utilities', () => {
       expect(ig.ignores('.ferret-quarantine')).toBe(true);
     });
 
+    it("never scans Ferret's own working directories", () => {
+      // These dirs hold detected secrets / malicious content by design (caches,
+      // backups of flagged files, the threat-intel DB). Scanning them would
+      // surface false-positive findings on the scanner's own artifacts.
+      const ig = createIgnoreFilter(tmpDir);
+      expect(ig.ignores('.ferret-cache/llm/abc.json')).toBe(true);
+      expect(ig.ignores('.ferret-backups/some.file.bak')).toBe(true);
+      expect(ig.ignores('.ferret-intel/feed.json')).toBe(true);
+    });
+
     it('adds additional patterns from config', () => {
       const ig = createIgnoreFilter(tmpDir, ['*.log', 'dist']);
       expect(ig.ignores('app.log')).toBe(true);
