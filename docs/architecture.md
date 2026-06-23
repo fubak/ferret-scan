@@ -51,6 +51,9 @@ Ferret focuses on AI CLI configs plus related scripts:
 - `sarif`: GitHub code scanning integration
 - `html`: standalone report
 - `csv`: flat export for spreadsheets
+- `atlas`: MITRE ATLAS Navigator layer
+- `sbom`: CycloneDX 1.5 SBOM
+- `aibom`: AI-extended SBOM
 
 ## Extensibility
 
@@ -86,7 +89,7 @@ sequenceDiagram
 
     Dev->>CLI: ferret scan --self --ci
     CLI->>Fixtures: Discover + scan malicious examples
-    Fixtures->>Rules: Match against 80+ rules
+    Fixtures->>Rules: Match against 80 rules
     Rules-->>CLI: CRITICAL findings (expected)
     CLI-->>Dev: Pass (or fail build if rules regress)
 ```

@@ -65,7 +65,7 @@ This document enumerates the adversarial scenarios ferret-scan is designed to de
 - `validatePathWithinBase` and `isPathWithinBase` in `pathSecurity.ts` block traversal attempts
 - `maxFileSize` config (default 10 MB) prevents individual large file reads
 - `BoundedContentCache` caps in-memory content at 256 MB aggregate with LRU eviction
-- Worker concurrency capped at `min(cpuCount, 8)`
+- Worker concurrency defaults to `max(1, cpuCount - 2)`, configurable via `--concurrency`
 
 **Residual risk:** Symlink attacks from within the scanned tree are not fully blocked — Node's `readFile` follows symlinks by default. A malicious repo could create a symlink pointing outside the tree.
 

@@ -8,17 +8,22 @@
 
 ## Latest Execution Summary
 
-**Version:** 2.6.0 (main)
+**Version:** 2.7.1 (main)
 **Test Framework:** Jest (ts-jest + babel for ESM-only deps)
-**Total Tests:** 1830+ passed (full suite runs in CI)
+**Total Tests:** 1883 passed, 127 skipped (2010 total; full suite runs in CI)
 
-As of v2.6.0, dedicated coverage exists for all major new features:
+As of v2.7.1, dedicated coverage exists for all major features:
 - SBOM/AIBOM reporter (`SbomReporter.test.ts`)
 - Runtime Prompt Monitor (`runtimeMonitor.test.ts`)
 - Language Server integration tests (`lsp/test/lsp.test.mjs`)
 - Community rule shadowing protection and GitHub shorthand resolution
+- SSRF protection for remote rules and outbound fetches (`customRulesSSRF.test.ts`, `scannerSSRF.test.ts`)
+- Reporter version constant (`reporterVersion.test.ts`)
+- Zero-width / bidi-isolate evasion normalization (`zeroWidth-evasion.test.ts`)
+- Untrusted-content ignore-directive gate (`untrusted-suppression.test.ts`)
+- Bounded-concurrency determinism (`concurrency-determinism.test.ts`)
 
-Global coverage is approximately **87% statements / 88% lines / 89% functions** (maintained from v2.5.0 improvements).
+Global coverage is approximately **90% statements / 91% lines / 91% functions / 77% branches**.
 
 The suite has grown substantially since the v2.0 snapshot (49 tests). Dedicated unit + integration coverage now exists for:
 - Core scanner (FileDiscovery, PatternMatcher with bounds, Scanner orchestrator + getExitCode)

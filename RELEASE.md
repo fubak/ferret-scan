@@ -87,9 +87,8 @@ The following repository secrets must be configured:
 
 - Always update the `CHANGELOG.md` **before** tagging.
 - Use `skip_tests: true` only when you are confident the code is good (e.g., re-publishing after a workflow fix).
-- `draft_release` now defaults to `true` for both manual runs **and** tag pushes (releases are created as drafts by default for safety).
+- `draft_release` now defaults to `true` for both manual runs **and** tag pushes (releases are created as drafts by default for safety — review and publish from the GitHub Releases UI when ready).
 - `attach_vscode_extension` defaults to `true` — this automatically builds and attaches the VS Code `.vsix` to the GitHub Release.
-- `draft_release` now defaults to `true` for manual `workflow_dispatch` runs (safer — you can review before publishing). When pushing a version tag directly, releases are created as published by default.
 - The E2E test job (`test-e2e`) is intentionally non-blocking so that flaky tests do not prevent a release.
 - You can publish only one package by setting `publish_main: false` or `publish_lsp: false` during manual dispatch.
 
