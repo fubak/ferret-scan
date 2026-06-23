@@ -5,6 +5,42 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.1] - 2026-06-23
+
+### Security
+- **Zero-width / bidi evasion normalization.** Pattern rules are now also run on a
+  copy of each file with zero-width, BOM, soft-hyphen, bidi override/embedding, and
+  modern bidi-isolate characters (incl. U+2066-U+2069) stripped. An attacker can no
+  longer split a literal keyword (e.g. `ig<U+2066>nore previous instructions`) to
+  slip injection/jailbreak strings past the scanner while the LLM still acts on them.
+  Raw-content matching is preserved, so zero-width obfuscation rules (OBF) still fire.
+- **Inline ignore directives no longer honored in untrusted content by default.** A
+  malicious marketplace plugin or plugin-cache entry can no longer suppress detection
+  of its OWN findings with `<!-- ferret-disable -->` / `ferret-ignore`. Suppression is
+  skipped for clearly-untrusted paths (`.claude/plugins/marketplaces/`, `plugins/cache/`,
+  `.claude/plugins/`) unless the new `honorIgnoreInUntrusted` option is set. User-owned
+  config paths keep normal suppression behavior.
+
+### Fixed
+- **Reporters no longer leak the scanned project's version.** SARIF/SBOM/HTML reports
+  previously derived the tool version from the scanned project's `package.json` via
+  `process.cwd()`, so scanning an external repo reported THAT project's version. The
+  version is now baked in at build time as a constant (`src/generated/version.ts`,
+  generated from `package.json` by `scripts/sync-version.mjs`), guaranteeing reports
+  always emit Ferret's real version.
+- **Deterministic finding and error ordering under concurrency.** `sortFindings` is now
+  a total order (severity → risk score → path → line → rule id), and per-file findings
+  and errors are aggregated in discovery order, so scan output is byte-identical
+  regardless of how many files are scanned in parallel.
+
+### Added
+- **Bounded-concurrency scanning (`--concurrency <n>`).** Files are processed by an
+  in-process worker pool (no new dependency); default is `max(1, cpuCount - 2)`.
+  Per-file error isolation is preserved, and LLM-bearing scans are pinned to a single
+  worker to keep the shared LLM runtime counter race-free.
+- `version:sync` / `version:check` npm scripts; `version:sync` is run as part of
+  `build` and `prepublishOnly`.
+
 ## [2.7.0] - 2026-05-29
 
 ### Fixed

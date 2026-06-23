@@ -14,6 +14,7 @@ import type {
   ThreatCategory,
   McpTrustSummary,
   DiscoveredFile,
+  ScanError,
 } from '../types.js';
 import { SEVERITY_ORDER, SEVERITY_WEIGHTS } from '../types.js';
 import { discoverFiles } from './FileDiscovery.js';
@@ -29,7 +30,7 @@ import {
 import { getRulesForScan } from '../rules/index.js';
 import { loadCustomRules, loadCustomRulesSource } from '../features/customRules.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
-import { parseIgnoreComments, shouldIgnoreFinding, type FileIgnoreState } from '../features/ignoreComments.js';
+import { parseIgnoreComments, shouldIgnoreFinding, isUntrustedScannedPath, type FileIgnoreState } from '../features/ignoreComments.js';
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
 import { createLlmProvider, type LlmProvider } from '../features/llm/index.js';
@@ -181,6 +182,25 @@ function buildAnalyzers(llmProvider: LlmProvider | null, llmRuntime: LlmRuntime)
 }
 
 /**
+ * Zero-width / bidi / BOM characters that an LLM ignores but which can split a
+ * literal keyword (e.g. "ig<ZWSP>nore previous instructions") so that pattern
+ * rules miss the evaded text while the attack still lands on the model.
+ *
+ * Covers: BOM, soft hyphen, zero-width space/non-joiner/joiner, word joiner and
+ * invisible math operators, bidi overrides/embeddings (U+202A-U+202E), and the
+ * modern bidi isolates (U+2066-U+2069, LRI/RLI/FSI/PDI) that replaced them.
+ */
+const ZERO_WIDTH_BIDI_PATTERN = /[\u00AD\u200B-\u200D\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/;
+
+/**
+ * Strip zero-width / bidi / BOM characters. These are never newlines, so line
+ * numbers in the normalized copy map 1:1 to the raw content.
+ */
+function stripZeroWidth(content: string): string {
+  return content.replace(/[\u00AD\u200B-\u200D\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '');
+}
+
+/**
  * Scan a single file
  */
 async function scanFile(
@@ -201,11 +221,35 @@ async function scanFile(
       }
     }
 
-    // Regular pattern matching
+    // Regular pattern matching on the RAW content. Keeping this on raw content
+    // preserves OBF zero-width obfuscation detection and every existing finding.
     const patternFindings = matchRules(rules, file, content, {
       contextLines: config.contextLines,
     });
     allFindings.push(...patternFindings);
+
+    // Zero-width / bidi / BOM evasion: an attacker can split a literal keyword
+    // (e.g. "ig<ZWSP>nore previous instructions" or "rm<ZWSP> -rf /") so the
+    // pattern rules miss it, yet an LLM ignores the invisible char and the attack
+    // still lands. Re-run the SAME rules on a normalized copy with those chars
+    // stripped and merge any NEW findings. Zero-width chars are never newlines,
+    // so line numbers map 1:1 to the raw content and dedupe by ruleId+line is safe.
+    if (ZERO_WIDTH_BIDI_PATTERN.test(content)) {
+      const normalizedContent = stripZeroWidth(content);
+      const normalizedFindings = matchRules(rules, file, normalizedContent, {
+        contextLines: config.contextLines,
+      });
+      const seen = new Set<string>();
+      for (const f of allFindings) {
+        seen.add(`${f.ruleId}:${f.line}`);
+      }
+      for (const f of normalizedFindings) {
+        const key = `${f.ruleId}:${f.line}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        allFindings.push(f);
+      }
+    }
 
     // Run each analyzer in order via the registry
     const ctx: AnalyzerContext = { file, content, config, rules, existingFindings: allFindings };
@@ -390,40 +434,91 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     spinner = ora(`Scanning files... 0/${totalFiles}`).start();
   }
 
-  for (const file of discovery.files) {
+  // Per-file results are written into a position-indexed array so that the
+  // aggregated `allFindings` order is identical regardless of completion order.
+  const fileFindings: Finding[][] = new Array<Finding[]>(totalFiles);
+
+  // Per-file scan errors are likewise position-indexed (mirroring `fileFindings`)
+  // and flattened in discovery order below. Pushing them directly into the shared
+  // `errors` array from the pool would record them in completion order, which is
+  // non-deterministic and undercuts byte-identical output across concurrency levels.
+  const fileErrors: ScanError[][] = new Array<ScanError[]>(totalFiles);
+
+  // The shared `llmRuntime` (analyzed/maxFiles counter, disabled flag) is mutated
+  // across await points and is not safe to race. When LLM analysis is active we
+  // pin effective concurrency to 1; otherwise honor the configured concurrency.
+  const configuredConcurrency = Math.max(1, Math.floor(config.concurrency ?? 1));
+  const effectiveConcurrency = (config.llmAnalysis && llmProvider !== null)
+    ? 1
+    : Math.max(1, Math.min(configuredConcurrency, totalFiles || 1));
+
+  const processFile = async (index: number): Promise<void> => {
+    const file = discovery.files[index]!;
     logger.debug(`Scanning: ${file.relativePath}`);
-
-    // Update spinner text and yield periodically to let it animate
-    if (spinner) {
-      spinner.text = `Scanning ${scannedCount + 1}/${totalFiles}: ${file.relativePath.slice(-50)}${findingsCount > 0 ? ` (${findingsCount} findings)` : ''}`;
-
-      // Yield every 100ms to allow spinner animation
-      const now = Date.now();
-      if (now - lastYield >= 100) {
-        await yieldToEventLoop();
-        lastYield = Date.now();
-      }
-    }
 
     const result = await scanFile(file, config, rulesForScan, analyzers);
 
     if (result.errors && result.errors.length > 0) {
-      for (const err of result.errors) {
-        errors.push({
-          file: file.path,
-          message: err,
-          fatal: false,
-        });
-      }
+      fileErrors[index] = result.errors.map((err) => ({
+        file: file.path,
+        message: err,
+        fatal: false,
+      }));
     }
 
     if (result.ignoreState) {
       ignoreStates.set(file.path, result.ignoreState);
     }
 
-    allFindings.push(...result.findings);
+    fileFindings[index] = result.findings;
+
+    // Shared counters are updated on each completion. JS runs to completion
+    // between await points, so these increments are not interleaved.
     scannedCount++;
-    findingsCount = allFindings.length;
+    findingsCount += result.findings.length;
+
+    if (spinner) {
+      spinner.text = `Scanning ${scannedCount}/${totalFiles}: ${file.relativePath.slice(-50)}${findingsCount > 0 ? ` (${findingsCount} findings)` : ''}`;
+
+      // Per-completion micro-throttle: yield occasionally to let the spinner animate.
+      const now = Date.now();
+      if (now - lastYield >= 100) {
+        await yieldToEventLoop();
+        lastYield = Date.now();
+      }
+    }
+  };
+
+  // Bounded in-process pool: a fixed number of workers pull the next index off a
+  // shared cursor until all files are processed.
+  let nextIndex = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const index = nextIndex++;
+      if (index >= totalFiles) return;
+      await processFile(index);
+    }
+  };
+
+  if (totalFiles > 0) {
+    const workers: Promise<void>[] = [];
+    for (let w = 0; w < effectiveConcurrency; w++) {
+      workers.push(worker());
+    }
+    await Promise.all(workers);
+  }
+
+  // Flatten in discovery order to keep aggregation deterministic.
+  for (let i = 0; i < totalFiles; i++) {
+    const found = fileFindings[i];
+    if (found) allFindings.push(...found);
+  }
+
+  // Flatten per-file scan errors in discovery order so the final `errors` array
+  // is identical regardless of pool completion order.
+  for (let i = 0; i < totalFiles; i++) {
+    const errs = fileErrors[i];
+    if (errs) errors.push(...errs);
   }
 
   if (spinner) {
@@ -456,6 +551,17 @@ export async function scan(config: ScannerConfig): Promise<ScanResult> {
     for (const finding of filteredFindings) {
       const ignoreState = ignoreStates.get(finding.file);
       if (!ignoreState) {
+        kept.push(finding);
+        continue;
+      }
+
+      // Untrusted self-suppression guard: a malicious third-party file (e.g. a
+      // marketplace plugin or plugin-cache entry) must not be able to suppress
+      // detection of its OWN content via inline ferret-ignore / ferret-disable
+      // directives. Skip honoring these directives for clearly-untrusted paths
+      // unless explicitly opted in. The user's own config files (non-marketplace /
+      // non-plugin paths) retain current suppression behavior.
+      if (!config.honorIgnoreInUntrusted && isUntrustedScannedPath(finding.file)) {
         kept.push(finding);
         continue;
       }

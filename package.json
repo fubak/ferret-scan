@@ -1,6 +1,6 @@
 {
   "name": "ferret-scan",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "description": "Static security scanner for AI CLI and MCP configurations — detects credential leaks, prompt injection, jailbreaks, and supply chain risks",
   "type": "module",
   "main": "dist/index.js",
@@ -15,7 +15,9 @@
     "ferret": "bin/ferret.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "npm run version:sync && tsc",
+    "version:sync": "node scripts/sync-version.mjs",
+    "version:check": "node scripts/sync-version.mjs --check",
     "dev": "tsc --watch",
     "start": "node bin/ferret.js",
     "test": "jest",
@@ -27,7 +29,7 @@
     "prepare": "npm run build",
     "schema:generate": "node scripts/generate-json-schema.mjs",
     "schema:check": "node scripts/generate-json-schema.mjs --check",
-    "prepublishOnly": "npm run build && npm run schema:generate",
+    "prepublishOnly": "npm run version:sync && npm run build && npm run schema:generate",
     "scan": "node bin/ferret.js scan",
     "check:resources": "node -e \"console.log('RAM:', Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + 'MB')\"",
     "bench": "npm run build && node scripts/bench.mjs",
