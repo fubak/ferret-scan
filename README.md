@@ -804,6 +804,8 @@ node_modules/
 *.min.js
 ```
 
+Ferret always excludes `.git`, `node_modules`, and its own working directories — `.ferret-cache`, `.ferret-backups`, `.ferret-quarantine`, and `.ferret-intel` — regardless of configuration. These hold build artifacts or Ferret's own detected-secret / threat-intel data and are never scanned.
+
 Example `.ferretrc.json`:
 
 ```json
