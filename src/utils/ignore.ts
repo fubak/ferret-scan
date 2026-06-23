@@ -79,11 +79,18 @@ export function createIgnoreFilter(
     ig.add(additionalPatterns);
   }
 
-  // Always ignore certain patterns
+  // Always ignore certain patterns. This includes Ferret's own working
+  // directories, which by design hold detected secrets / malicious content
+  // (cached findings, backups of flagged files, quarantined files, the threat
+  // intel DB) and must never be re-scanned — doing so produces false-positive
+  // findings on the scanner's own artifacts.
   ig.add([
     '.git',
     'node_modules',
     '.ferret-quarantine',
+    '.ferret-cache',
+    '.ferret-backups',
+    '.ferret-intel',
   ]);
 
   return ig;
