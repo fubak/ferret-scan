@@ -1,0 +1,5 @@
+{
+  "//": "Build-only config: same as tsconfig.json but excludes test files so they are never emitted to dist/ or shipped in the npm package. tsconfig.json keeps tests included so eslint (type-aware) and `npm run typecheck` still cover them.",
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "dist", "test", "src/**/*.test.ts", "src/__tests__"]
+}

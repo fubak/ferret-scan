@@ -15,7 +15,7 @@
     "ferret": "bin/ferret.js"
   },
   "scripts": {
-    "build": "npm run version:sync && tsc",
+    "build": "npm run version:sync && tsc -p tsconfig.build.json",
     "version:sync": "node scripts/sync-version.mjs",
     "version:check": "node scripts/sync-version.mjs --check",
     "dev": "tsc --watch",
