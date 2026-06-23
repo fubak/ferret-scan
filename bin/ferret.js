@@ -130,6 +130,7 @@ program
   .option('--allow-remote-rules', 'Allow loading custom rules from remote URLs (required for URL sources)')
   .option('--baseline <file>', 'Path to baseline file for filtering known findings')
   .option('--ignore-baseline', 'Ignore baseline file and show all findings')
+  .option('--concurrency <n>', 'Max files scanned in parallel (default: CPU count - 2)', (v) => parseInt(v, 10))
   .action(async (path, options, command) => {
     try {
       // SIGINT handler for graceful shutdown
@@ -239,6 +240,12 @@ program
         allowRemoteRules: options.allowRemoteRules,
         config: options.config,
       });
+
+      // Bounded-concurrency override: thread the parsed --concurrency flag into
+      // the scanner config (default comes from DEFAULT_CONFIG: max(1, cpus - 2)).
+      if (options.concurrency !== undefined && Number.isFinite(options.concurrency)) {
+        config.concurrency = Math.max(1, Math.floor(options.concurrency));
+      }
 
       // Apply auto-fix if enabled
       const shouldAutoFix = options.autoFix || options.autoRemediation;
