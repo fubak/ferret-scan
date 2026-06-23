@@ -44,9 +44,12 @@ describe('safeRegex', () => {
         'a++',             // Double quantifiers
         'a**',             // Double quantifiers
         'a+?+',            // Possessive abuse
-        '(a|b|c)+',        // Alternation inside quantified group
-        '(foo|bar|baz)*',  // Alternation inside quantified group
-        '(x|y){2,}',       // Alternation inside bounded group
+        '(x+x+)+',         // Multi-atom nested quantifiers (hung the suite before)
+        '(a+b+)+',         // Multi-atom nested quantifiers
+        '(a+?)+',          // Lazy inner quantifier
+        '(a+?b+?)+',       // Multi-atom lazy inner quantifiers
+        '(\\p{L}+)+',      // Unicode-property atom inside quantified group
+        '((ab)*)*',        // Nested quantified groups
       ];
 
       for (const dangerous of dangerousPatterns) {
@@ -56,6 +59,20 @@ describe('safeRegex', () => {
         } else {
           // Static screener must reject them to prevent native engine ReDoS.
           expect(compileSafePattern(dangerous)).toBeNull();
+        }
+      }
+    });
+
+    it('handles benign single-level alternation+quantifier (RE2 compiles; native screener conservatively rejects)', () => {
+      // (a|b|c)+ etc. are actually linear-time safe. With RE2 active they compile. On the
+      // native fallback path the static screener errs on the side of rejection — admitting a
+      // catastrophic pattern is worse than over-rejecting a safe one — so these return null.
+      const benignButConservativelyRejected = ['(a|b|c)+', '(foo|bar|baz)*', '(x|y){2,}'];
+      for (const p of benignButConservativelyRejected) {
+        if (re2Active) {
+          expect(() => compileSafePattern(p)).not.toThrow();
+        } else {
+          expect(compileSafePattern(p)).toBeNull();
         }
       }
     });

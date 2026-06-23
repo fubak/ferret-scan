@@ -95,16 +95,20 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.6.0
+## What's New in v2.7.0
 
-This is a major feature release with four significant new capabilities:
+This release focuses on correctness, security hardening, and broader AI CLI file coverage:
 
-- **Full Language Server Protocol (LSP) Support** — `ferret lsp` launches a real LSP server with diagnostics, hover information, completions, and code actions. Works in VS Code, Neovim, Zed, Emacs, Helix, and more. A dedicated `ferret-lsp` npm package is available.
-- **SBOM + AIBOM Generation** — Export CycloneDX 1.5 Software Bills of Materials and AI-specific AIBOMs using `ferret scan --sbom` or `--format aibom`.
-- **Lightweight Runtime Monitoring** — `ferret monitor --stdio` or `--target <cli>` for real-time detection of prompt injection, credential leaks, and exfiltration during LLM CLI usage (alerting-only by default).
-- **Community Rule Sharing** — Load rules from GitHub using `github:owner/repo/path` shorthand. New commands: `ferret rules fetch`, `install`, and `validate`, with built-in protection against shadowing core rules.
+- **`--concurrency <n>` flag** — Bounded parallel scanning (default: `max(1, cpuCount - 2)`). Results and errors are now fully deterministically ordered regardless of worker scheduling.
+- **SSRF protection on all outbound fetches** — Custom rules, MITRE catalog updates, webhooks, and LLM calls are all guarded by `assertSafeUrl`, blocking loopback, RFC 1918, link-local, cloud-metadata, NAT64, and 6to4 addresses (HTTPS/HTTP only; redirects are not followed).
+- **Expanded file coverage** — `.cursorrules`, `.windsurfrules`, `.clinerules`, and `.aiderignore` were previously silently skipped; they are now fully scanned.
+- **Anti-evasion: zero-width / BOM / bidi normalization** — Unicode homoglyphs, zero-width joiners, BOMs, and bidirectional control characters are stripped before pattern matching so injection and credential rules catch obfuscated-keyword evasion.
+- **RE2 linear-time pattern matching** — The hot-path now routes through RE2 when available, with a one-time warning and a screened native fallback when RE2 is absent. The ReDoS screener rejects catastrophic patterns (including multi-atom alternations like `(x+x+)+`) while admitting all built-in rules.
+- **Build-time version constant** — Reporters now always emit Ferret's own version, not the scanned project's version (SARIF/SBOM/HTML version-string fix).
+- **Untrusted-content ignore-directive gate** — Inline `ferret-ignore` / `ferret-disable` directives are no longer honored inside marketplace or plugin files by default, preventing self-suppression by hostile content.
+- **CSV formula-injection neutralization** — Cell values starting with `=`, `+`, `-`, or `@` are prefixed with a single-quote to prevent spreadsheet formula execution.
 
-See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com/fubak/ferret-scan/releases/tag/v2.6.0) for details.
+See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com/fubak/ferret-scan/releases/tag/v2.7.0) for details.
 
 **Previous notable release (v2.5.0)** included `ferret scan --self` dogfooding, major architecture refactoring, and significant test coverage improvements.
 
@@ -114,11 +118,15 @@ See the full [CHANGELOG](./CHANGELOG.md) and [GitHub Release](https://github.com
 - **MITRE ATLAS mapping**: Every finding mapped to ATLAS adversary techniques
 - **MCP trust scoring**: `ferret mcp audit` rates `.mcp.json` servers on transport, package pinning, suspicious args, and known-bad patterns
 - **LLM-assisted analysis**: Optional AI-powered threat detection via OpenAI-compatible APIs (opt-in, networked)
-- **Semantic analysis**: TypeScript AST-based code analysis with RE2 (no ReDoS)
+- **Semantic analysis**: TypeScript AST-based code analysis
 - **Cross-file correlation**: Detect multi-file attack chains
 - **Entropy analysis**: Secret detection via Shannon entropy
 - **Threat intelligence**: Local indicator database matching
 - **Runtime Prompt Monitoring**: Real-time detection of injection, credential leaks, and exfiltration while using LLM CLIs (`ferret monitor`)
+
+**Security & Safety**
+- **SSRF protection**: All outbound fetches (custom rules, MITRE catalog, webhooks, LLM) are guarded by `assertSafeUrl` (`src/utils/urlSecurity.ts`), which blocks loopback, RFC 1918, link-local, cloud-metadata, NAT64, and 6to4 addresses and enforces HTTP(S)-only with no redirect following.
+- **RE2 linear-time matching**: The pattern-matching hot path uses RE2 (linear-time, no ReDoS) when available. When RE2 is absent, a one-time warning is emitted and a screened native-regex fallback is used. The ReDoS screener rejects catastrophic patterns (including multi-atom forms like `(x+x+)+`) while admitting all built-in rules.
 
 **IDE Integration**
 - **Language Server Protocol (LSP)**: Run `ferret lsp` for real-time diagnostics, hover, completions, and code actions in any LSP-capable editor (VS Code, Neovim, Zed, Emacs, Helix, etc.).
@@ -392,10 +400,12 @@ Every LLM finding includes a confidence score:
 | **Cursor** | `.cursor/`, `.cursorrules`, user settings (`~/.config/Cursor/User/…`) | ✅ Full Support |
 | **Windsurf** | `.windsurf/`, `.windsurfrules` | ✅ Full Support |
 | **Continue** | `.continue/`, `config.json` | ✅ Full Support |
-| **Aider** | `.aider/`, `.aider.conf.yml` | ✅ Full Support |
+| **Aider** | `.aider/`, `.aider.conf.yml`, `.aiderignore` | ✅ Full Support |
 | **Cline** | `.cline/`, `.clinerules` | ✅ Full Support |
 | **OpenClaw** | `.openclaw/`, `openclaw.json`, `exec-approvals.json`, `secrets.env` | ✅ Full Support |
 | **Generic** | `.ai/`, `AI.md`, `AGENT.md` | ✅ Full Support |
+
+> **New in v2.7.0:** `.cursorrules`, `.windsurfrules`, `.clinerules`, and `.aiderignore` are now fully scanned (previously silently skipped).
 
 ## Installation
 
@@ -510,7 +520,7 @@ If you run `ferret scan` with no path, Ferret scans common AI CLI config locatio
 CLAUDE.md         AI.md             AGENT.md          openclaw.json
 .cursorrules      .windsurfrules    .clinerules       exec-approvals.json
 .mcp.json         config.json       settings.json     secrets.env
-skills/           hooks/            agents/
+.aiderignore      skills/           hooks/            agents/
 *.sh *.bash       *.md              *.json *.yaml
 ```
 
@@ -571,6 +581,7 @@ ferret scan . --categories credentials # Filter by category
 ferret scan . --format sarif           # SARIF output for GitHub
 ferret scan . --ci --fail-on high      # CI mode with exit codes
 ferret scan . --watch                  # Watch mode
+ferret scan . --concurrency 4          # Use 4 parallel workers (default: max(1, cpuCount - 2))
 ```
 
 ### `ferret rules`
@@ -867,6 +878,14 @@ Export findings as an ATLAS Navigator layer:
 ```bash
 ferret scan . --thorough --format atlas -o atlas-layer.json
 ```
+
+## Experimental / Not-Yet-Wired Modules
+
+The following modules exist in the source tree as scaffolding but are **not invoked by the CLI or scan pipeline**:
+
+- **`src/monitoring/AgentMonitor.ts`** — resource/network/filesystem collectors are stubs; live runtime monitoring is in `src/features/runtimeMonitor.ts`.
+- **`src/marketplace/MarketplaceScanner.ts`** — `fetchPluginList`/`extractPluginSource` return mock data; live marketplace discovery is the `--marketplace` discovery-scope flag.
+- **`src/sandbox/SandboxValidator.ts`** — not connected to the scan pipeline; scaffolding for a future sandboxed execution feature.
 
 ## Planned / Future Features
 

@@ -35,18 +35,36 @@ const DEFAULT_WATCH_OPTIONS: WatchOptions = {
   ],
 };
 
+interface Debounced<T extends unknown[]> {
+  invoke: (...args: T) => void;
+  cancel: () => void;
+}
+
 /**
- * Debounce function calls
+ * Debounce function calls; cancel() clears any pending timer (for cleanup/tests).
  */
 function debounce<T extends unknown[]>(
   func: (...args: T) => void,
   wait: number
-): (...args: T) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: T) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => { func(...args); }, wait);
+): Debounced<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  const cancel = (): void => {
+    if (timeout !== undefined) {
+      clearTimeout(timeout);
+      timeout = undefined;
+    }
   };
+  const invoke = (...args: T): void => {
+    cancel();
+    timeout = setTimeout(() => {
+      timeout = undefined;
+      func(...args);
+    }, wait);
+    if (typeof timeout.unref === 'function') {
+      timeout.unref();
+    }
+  };
+  return { invoke, cancel };
 }
 
 /**
@@ -152,7 +170,7 @@ export async function startWatchMode(
     if (config.verbose) {
       logger.debug(`File added: ${path}`);
     }
-    debouncedScan();
+    debouncedScan.invoke();
   });
 
   watcher.on('change', (path) => {
@@ -160,7 +178,7 @@ export async function startWatchMode(
     if (config.verbose) {
       logger.debug(`File changed: ${path}`);
     }
-    debouncedScan();
+    debouncedScan.invoke();
   });
 
   watcher.on('unlink', (path) => {
@@ -168,7 +186,7 @@ export async function startWatchMode(
     if (config.verbose) {
       logger.debug(`File removed: ${path}`);
     }
-    debouncedScan();
+    debouncedScan.invoke();
   });
 
   watcher.on('error', (error) => {
@@ -185,6 +203,9 @@ export async function startWatchMode(
   // Handle graceful shutdown
   const cleanup = (): void => {
     logger.info('🛑 Stopping watch mode...');
+    debouncedScan.cancel();
+    process.removeListener('SIGINT', cleanup);
+    process.removeListener('SIGTERM', cleanup);
     void watcher.close();
   };
 
@@ -242,11 +263,14 @@ export function createChangeNotifier(
   watcher.on('all', (event, path) => {
     if (['add', 'change', 'unlink'].includes(event)) {
       changedFiles.push(path);
-      debouncedCallback();
+      debouncedCallback.invoke();
     }
   });
 
-  return () => { void watcher.close(); };
+  return () => {
+    debouncedCallback.cancel();
+    void watcher.close();
+  };
 }
 
 export default { startWatchMode, startEnhancedWatchMode, createChangeNotifier };

@@ -41,23 +41,35 @@ function getWatcherInstance(): MockWatcher {
 }
 
 describe('createChangeNotifier', () => {
+  const cleanups: (() => void)[] = [];
+
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+    cleanups.length = 0;
   });
 
   afterEach(() => {
+    for (const cleanup of cleanups.splice(0)) {
+      cleanup();
+    }
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
+  function trackCleanup(cleanup: () => void): () => void {
+    cleanups.push(cleanup);
+    return cleanup;
+  }
+
   it('returns a cleanup function', () => {
-    const cleanup = createChangeNotifier(['/tmp'], jest.fn(), { debounceMs: 100 });
+    const cleanup = trackCleanup(createChangeNotifier(['/tmp'], jest.fn(), { debounceMs: 100 }));
     expect(typeof cleanup).toBe('function');
     cleanup();
   });
 
   it('calls chokidar.watch with the given paths', () => {
-    createChangeNotifier(['/project', '/home'], jest.fn(), { debounceMs: 100 });
+    trackCleanup(createChangeNotifier(['/project', '/home'], jest.fn(), { debounceMs: 100 }));
     expect(mockWatch).toHaveBeenCalledWith(
       ['/project', '/home'],
       expect.any(Object)
@@ -66,19 +78,17 @@ describe('createChangeNotifier', () => {
 
   it('does not invoke callback before debounce period', () => {
     const callback = jest.fn();
-    createChangeNotifier(['/tmp'], callback, { debounceMs: 500 });
+    trackCleanup(createChangeNotifier(['/tmp'], callback, { debounceMs: 500 }));
 
     const watcher = getWatcherInstance();
     watcher.emit('all', 'change', '/tmp/file.md');
     // No time advance yet
     expect(callback).not.toHaveBeenCalled();
-    const cleanup = createChangeNotifier(['/tmp'], callback, { debounceMs: 500 });
-    cleanup();
   });
 
   it('invokes callback after debounce period with changed files', () => {
     const callback = jest.fn();
-    createChangeNotifier(['/tmp'], callback, { debounceMs: 500 });
+    trackCleanup(createChangeNotifier(['/tmp'], callback, { debounceMs: 500 }));
 
     const watcher = getWatcherInstance();
     watcher.emit('all', 'add', '/tmp/file1.md');
@@ -93,7 +103,7 @@ describe('createChangeNotifier', () => {
 
   it('ignores non-add/change/unlink events', () => {
     const callback = jest.fn();
-    createChangeNotifier(['/tmp'], callback, { debounceMs: 100 });
+    trackCleanup(createChangeNotifier(['/tmp'], callback, { debounceMs: 100 }));
 
     const watcher = getWatcherInstance();
     watcher.emit('all', 'ready', '/tmp');
@@ -105,7 +115,7 @@ describe('createChangeNotifier', () => {
 
   it('debounces rapid file changes', () => {
     const callback = jest.fn();
-    createChangeNotifier(['/tmp'], callback, { debounceMs: 300 });
+    trackCleanup(createChangeNotifier(['/tmp'], callback, { debounceMs: 300 }));
 
     const watcher = getWatcherInstance();
 
@@ -125,7 +135,7 @@ describe('createChangeNotifier', () => {
   });
 
   it('cleanup calls watcher.close()', () => {
-    const cleanup = createChangeNotifier(['/tmp'], jest.fn(), { debounceMs: 100 });
+    const cleanup = trackCleanup(createChangeNotifier(['/tmp'], jest.fn(), { debounceMs: 100 }));
     const watcher = getWatcherInstance();
     const closeSpy = jest.spyOn(watcher, 'close');
     cleanup();

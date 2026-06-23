@@ -48,28 +48,33 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
 
-    registerCommonCommands(context);
     registerModeStatusBar(context, useLanguageServer);
 
-    // Register code action provider
+    // Code action provider instance used by the ferret.fix command.
+    // The provider is registered for the editor (per selector) only in
+    // classic mode via startClassicMode(), since code actions are a
+    // classic-mode feature.
     const codeActionProvider = new FerretCodeActionProvider();
-    context.subscriptions.push(
-        vscode.languages.registerCodeActionsProvider(
-            { pattern: '**/*.{md,json,yaml,yml,sh,bash,ts,js}' },
-            codeActionProvider,
-            {
-                providedCodeActionKinds: FerretCodeActionProvider.providedCodeActionKinds
-            }
-        )
-    );
 
     // Register commands
     context.subscriptions.push(
         vscode.commands.registerCommand('ferret.scan', async () => {
+            if (useLanguageServer || !diagnosticProvider) {
+                vscode.window.showInformationMessage(
+                    'Ferret: Scanning is handled by the Language Server. Open or save a file to trigger a scan.'
+                );
+                return;
+            }
             await diagnosticProvider.scanWorkspace();
             treeDataProvider.refresh();
         }),
         vscode.commands.registerCommand('ferret.scanFile', async () => {
+            if (useLanguageServer || !diagnosticProvider) {
+                vscode.window.showInformationMessage(
+                    'Ferret: Scanning is handled by the Language Server. Open or save a file to trigger a scan.'
+                );
+                return;
+            }
             const editor = vscode.window.activeTextEditor;
             if (editor) {
                 await diagnosticProvider.scanDocument(editor.document);
@@ -95,55 +100,26 @@ export function activate(context: vscode.ExtensionContext) {
                 editor.selection = new vscode.Selection(position, position);
                 editor.revealRange(new vscode.Range(position, position));
             });
+        }),
+        vscode.commands.registerCommand('ferret.toggleLanguageServer', async () => {
+            const cfg = vscode.workspace.getConfiguration('ferret');
+            const current = cfg.get<boolean>('useLanguageServer', false);
+            await cfg.update('useLanguageServer', !current, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(
+                `Ferret Language Server ${!current ? 'enabled' : 'disabled'}. Reload the window to apply changes.`,
+                'Reload Window'
+            ).then(selection => {
+                if (selection === 'Reload Window') {
+                    vscode.commands.executeCommand('workbench.action.reloadWindow');
+                }
+            });
         })
     );
 
-    // File watchers (only in classic mode)
-    const fwConfig = vscode.workspace.getConfiguration('ferret');
-
-    if (fwConfig.get('scanOnSave')) {
-        context.subscriptions.push(
-            vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
-                if (diagnosticProvider.shouldScan(document)) {
-                    diagnosticProvider.scanDocument(document);
-                    treeDataProvider.refresh();
-                }
-            })
-        );
-    }
-
-    if (fwConfig.get('scanOnType')) {
-        let timeout: NodeJS.Timeout | undefined;
-        context.subscriptions.push(
-            vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
-                if (timeout) clearTimeout(timeout);
-                timeout = setTimeout(() => {
-                    if (diagnosticProvider.shouldScan(event.document)) {
-                        diagnosticProvider.scanDocument(event.document);
-                        treeDataProvider.refresh();
-                    }
-                }, 1000);
-            })
-        );
-    }
-
-    // Initial workspace scan
-    if (vscode.workspace.workspaceFolders) {
-        diagnosticProvider.scanWorkspace().then(() => {
-            treeDataProvider.refresh();
-        });
-    }
-
-    // Status bar
-    const statusBarItem = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Right,
-        100
-    );
-    statusBarItem.text = '$(shield) Ferret';
-    statusBarItem.command = 'ferret.scan';
-    statusBarItem.tooltip = 'Click to scan workspace';
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
+    // File watchers and the initial workspace scan are classic-mode only and
+    // are registered inside startClassicMode() (which also owns the
+    // diagnosticProvider instance). In LSP mode the language server handles
+    // file events, so nothing is registered here.
 }
 
 async function showRulesPanel(context: vscode.ExtensionContext) {
@@ -282,7 +258,7 @@ function startClassicMode(context: vscode.ExtensionContext) {
         );
     }
 
-    if (fileWatchConfig.get('scanOnType')) {
+    if (config.get('scanOnType')) {
         let timeout: NodeJS.Timeout | undefined;
         context.subscriptions.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
@@ -303,73 +279,6 @@ function startClassicMode(context: vscode.ExtensionContext) {
             treeDataProvider.refresh();
         });
     }
-}
-
-function registerCommonCommands(context: vscode.ExtensionContext) {
-    context.subscriptions.push(
-        vscode.commands.registerCommand('ferret.scan', async () => {
-            const config = vscode.workspace.getConfiguration('ferret');
-            if (config.get<boolean>('useLanguageServer')) {
-                vscode.window.showInformationMessage(
-                    'Workspace analysis in LSP mode is driven by file open/save. Use "Ferret: Scan Current File" or open relevant files.'
-                );
-            } else if (diagnosticProvider) {
-                await diagnosticProvider.scanWorkspace();
-                treeDataProvider.refresh();
-            }
-        }),
-        vscode.commands.registerCommand('ferret.scanFile', async () => {
-            const editor = vscode.window.activeTextEditor;
-            if (!editor) return;
-
-            const config = vscode.workspace.getConfiguration('ferret');
-            if (config.get<boolean>('useLanguageServer') && languageClient) {
-                // Trigger the server by forcing a document open notification
-                await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', editor.document.uri);
-                vscode.window.showInformationMessage('Analysis requested from Ferret Language Server.');
-            } else if (diagnosticProvider) {
-                await diagnosticProvider.scanDocument(editor.document);
-                treeDataProvider.refresh();
-            }
-        }),
-        vscode.commands.registerCommand('ferret.toggleLanguageServer', async () => {
-            const config = vscode.workspace.getConfiguration('ferret');
-            const current = config.get<boolean>('useLanguageServer', false);
-            await config.update('useLanguageServer', !current, vscode.ConfigurationTarget.Global);
-
-            vscode.window.showInformationMessage(
-                `Ferret Language Server ${!current ? 'enabled' : 'disabled'}. Reload the window to apply changes.`,
-                'Reload Window'
-            ).then(selection => {
-                if (selection === 'Reload Window') {
-                    vscode.commands.executeCommand('workbench.action.reloadWindow');
-                }
-            });
-        }),
-        vscode.commands.registerCommand('ferret.showRules', async () => {
-            await showRulesPanel(context);
-        }),
-        vscode.commands.registerCommand('ferret.clearFindings', () => {
-            diagnosticCollection.clear();
-            treeDataProvider.clear();
-        }),
-        vscode.commands.registerCommand('ferret.goToFinding', (uri: vscode.Uri, line: number) => {
-            vscode.window.showTextDocument(uri).then(editor => {
-                const position = new vscode.Position(line, 0);
-                editor.selection = new vscode.Selection(position, position);
-                editor.revealRange(new vscode.Range(position, position));
-            });
-        })
-    );
-}
-
-function registerStatusBar(context: vscode.ExtensionContext) {
-    const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-    statusBarItem.text = '$(shield) Ferret';
-    statusBarItem.command = 'ferret.scan';
-    statusBarItem.tooltip = 'Click to scan workspace';
-    statusBarItem.show();
-    context.subscriptions.push(statusBarItem);
 }
 
 export function deactivate() {

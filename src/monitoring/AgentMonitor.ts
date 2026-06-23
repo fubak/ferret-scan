@@ -1,6 +1,11 @@
 /**
  * Agent Behavior Monitoring System
  * Tracks runtime execution patterns and detects anomalies
+ *
+ * @experimental
+ * This module is NOT wired into the CLI. The resource, network, and filesystem
+ * collectors are stubs and do not perform real collection. The live runtime
+ * monitoring feature is implemented in src/features/runtimeMonitor.ts.
  */
 
  
@@ -66,6 +71,7 @@ export class AgentMonitor extends EventEmitter {
     private executions = new Map<string, AgentExecution>();
     private baselines = new Map<string, ExecutionBaseline>();
     private monitoring = false;
+    private resourceInterval: ReturnType<typeof setInterval> | null = null;
 
     async startMonitoring(config: MonitoringConfig): Promise<void> {
         if (this.monitoring) {
@@ -92,6 +98,10 @@ export class AgentMonitor extends EventEmitter {
     async stopMonitoring(): Promise<void> {
         logger.info('Stopping agent behavior monitoring');
         this.monitoring = false;
+        if (this.resourceInterval !== null) {
+            clearInterval(this.resourceInterval);
+            this.resourceInterval = null;
+        }
         this.executions.clear();
     }
 
@@ -223,11 +233,16 @@ export class AgentMonitor extends EventEmitter {
     }
 
     private startResourceMonitoring(): void {
-        // Monitor CPU and memory usage
-        setInterval(() => {
+        if (this.resourceInterval !== null) {
+            clearInterval(this.resourceInterval);
+        }
+        this.resourceInterval = setInterval(() => {
             if (!this.monitoring) return;
             // Resource monitoring implementation
         }, 1000);
+        if (typeof this.resourceInterval.unref === 'function') {
+            this.resourceInterval.unref();
+        }
     }
 
     private startNetworkMonitoring(): void {

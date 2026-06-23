@@ -19,11 +19,29 @@ const CSV_HEADERS = [
   'timestamp',
 ];
 
-function escapeCsv(value: string): string {
-  if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
-    return `"${value.replace(/"/g, '""')}"`;
+// Characters that, when leading a cell, can be interpreted as a formula by
+// spreadsheet applications (Excel, Google Sheets, LibreOffice). Prefixing such
+// values with a single quote forces them to be treated as plain text.
+const FORMULA_INJECTION_PREFIXES = ['=', '+', '-', '@', '\t', '\r'];
+
+function neutralizeFormula(value: string): string {
+  if (value.length > 0 && FORMULA_INJECTION_PREFIXES.includes(value.charAt(0))) {
+    return `'${value}`;
   }
   return value;
+}
+
+function escapeCsv(value: string): string {
+  const neutralized = neutralizeFormula(value);
+  if (
+    neutralized.includes('"') ||
+    neutralized.includes(',') ||
+    neutralized.includes('\n') ||
+    neutralized.includes('\r')
+  ) {
+    return `"${neutralized.replace(/"/g, '""')}"`;
+  }
+  return neutralized;
 }
 
 function serializeFinding(finding: Finding): string {

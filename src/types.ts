@@ -3,6 +3,8 @@
  * Security scanner for AI CLI configurations
  */
 
+import os from 'node:os';
+
 /** Severity levels for security findings */
 export type Severity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'INFO';
 
@@ -338,6 +340,13 @@ export interface ScannerConfig {
   capabilityMapping: boolean;
   /** Respect inline ignore directives (ferret-ignore / ferret-disable) */
   ignoreComments: boolean;
+  /**
+   * Honor inline ignore/disable directives even inside clearly-untrusted scanned
+   * content (e.g. marketplace plugin trees / plugin cache). Optional; when unset
+   * or false a malicious third-party file cannot suppress detection of its own
+   * content. Trusted (user-owned) paths always honor directives regardless.
+   */
+  honorIgnoreInUntrusted?: boolean;
   /** Annotate findings with MITRE ATLAS technique metadata */
   mitreAtlas: boolean;
   /** Optional MITRE ATLAS technique catalog auto-update (for latest technique metadata) */
@@ -366,6 +375,8 @@ export interface ScannerConfig {
   maxAstNodes?: number;
   /** Per-code-block deadline in ms within the file-scoped budget (default: 500) */
   maxBlockMs?: number;
+  /** Maximum number of files scanned concurrently (default: os.cpus().length - 2, min 1) */
+  concurrency?: number;
 }
 
 /** Supported output formats */
@@ -486,6 +497,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   dependencyAudit: false,
   capabilityMapping: false,
   ignoreComments: true,
+  honorIgnoreInUntrusted: false,
   mitreAtlas: true,
   mitreAtlasCatalog: {
     enabled: false,
@@ -527,6 +539,7 @@ export const DEFAULT_CONFIG: ScannerConfig = {
   format: 'console',
   verbose: false,
   ci: false,
+  concurrency: Math.max(1, os.cpus().length - 2),
 };
 
 export interface MitreAtlasCatalogConfig {

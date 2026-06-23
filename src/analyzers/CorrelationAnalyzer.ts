@@ -14,6 +14,23 @@ import type {
   ContextLine,
 } from '../types.js';
 import logger from '../utils/logger.js';
+import { compileSafePattern } from '../utils/safeRegex.js';
+import { BoundedContentCache } from '../utils/contentCache.js';
+
+/**
+ * Read a file through the per-pass cache so each path hits disk at most once
+ * within a single correlation analysis. Throws on read failure so callers can
+ * preserve their existing try/catch error handling.
+ */
+function readThrough(cache: BoundedContentCache, path: string): string {
+  const cached = cache.get(path);
+  if (cached !== undefined) {
+    return cached;
+  }
+  const content = readFileSync(path, 'utf-8');
+  cache.set(path, content);
+  return content;
+}
 
 const KNOWN_COMPONENT_TYPES = new Set([
   'skill',
@@ -146,7 +163,8 @@ function areFilesRelatedByNaming(file1: DiscoveredFile, file2: DiscoveredFile): 
  */
 function findCrossFilePatterns(
   relationships: FileRelationship[],
-  correlationRules: CorrelationRule[]
+  correlationRules: CorrelationRule[],
+  cache: BoundedContentCache
 ): CrossFileMatch[] {
   const matches: CrossFileMatch[] = [];
   const seen = new Set<string>();
@@ -179,7 +197,7 @@ function findCrossFilePatterns(
       if (matchingFiles.length < 2) continue; // Need at least 2 files for correlation
 
       // Find content patterns across files
-      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns);
+      const contentMatches = findContentPatternsAcrossFiles(matchingFiles, rule.contentPatterns, cache);
 
       if (contentMatches.length >= rule.contentPatterns.length) {
         // Ensure this is actually cross-file: require matches across at least 2 distinct files.
@@ -213,17 +231,22 @@ function findCrossFilePatterns(
  */
 function findContentPatternsAcrossFiles(
   files: DiscoveredFile[],
-  patterns: string[]
+  patterns: string[],
+  cache: BoundedContentCache
 ): { file: DiscoveredFile; pattern: string; line: number; match: string }[] {
   const matches: { file: DiscoveredFile; pattern: string; line: number; match: string }[] = [];
 
   for (const file of files) {
     try {
-      const content = readFileSync(file.path, 'utf-8');
+      const content = readThrough(cache, file.path);
       const lines = content.split('\n');
 
       for (const pattern of patterns) {
-        const regex = new RegExp(pattern, 'gi');
+        const regex = compileSafePattern(pattern, 'gi');
+        if (regex === null) {
+          logger.warn(`Skipping unsafe or invalid correlation pattern: ${pattern}`);
+          continue;
+        }
 
         for (let i = 0; i < lines.length; i++) {
           const line = lines[i] ?? '';
@@ -274,10 +297,11 @@ function calculateCorrelationStrength(
  */
 function createCorrelationContext(
   file: DiscoveredFile,
-  lineNumber: number
+  lineNumber: number,
+  cache: BoundedContentCache
 ): ContextLine[] {
   try {
-    const content = readFileSync(file.path, 'utf-8');
+    const content = readThrough(cache, file.path);
     const lines = content.split('\n');
     const contextLines = 3;
 
@@ -305,7 +329,8 @@ function createCorrelationContext(
  */
 function createCorrelationFindings(
   matches: CrossFileMatch[],
-  parentRule: Rule
+  parentRule: Rule,
+  cache: BoundedContentCache
 ): CorrelationFinding[] {
   const findings: CorrelationFinding[] = [];
 
@@ -314,7 +339,7 @@ function createCorrelationFindings(
     const primaryPattern = match.patterns[0];
     if (!primaryPattern) continue;
 
-    const context = createCorrelationContext(primaryPattern.file, primaryPattern.line);
+    const context = createCorrelationContext(primaryPattern.file, primaryPattern.line, cache);
     const riskVectors = generateRiskVectors(match);
 
     const finding: CorrelationFinding = {
@@ -408,20 +433,25 @@ export function analyzeCorrelations(
 
     logger.debug(`Cross-file correlation analysis with ${correlationRules.length} rules across ${files.length} files`);
 
+    // Read-through cache scoped to this pass: each file is read from disk at
+    // most once even though pattern matching and context extraction both need it.
+    const contentCache = new BoundedContentCache();
+
     // Build file relationships
     const relationships = buildFileRelationships(files);
 
     // Find cross-file patterns
     const matches = findCrossFilePatterns(
       relationships,
-      correlationRules.map(r => ({ ...r, parentRule: undefined }))
+      correlationRules.map(r => ({ ...r, parentRule: undefined })),
+      contentCache
     );
 
     // Convert to findings
     for (const match of matches) {
       const parentRule = correlationRules.find(r => r.id === match.rule.id)?.parentRule;
       if (parentRule) {
-        const correlationFindings = createCorrelationFindings([match], parentRule);
+        const correlationFindings = createCorrelationFindings([match], parentRule, contentCache);
         findings.push(...correlationFindings);
       }
     }

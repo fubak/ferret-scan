@@ -11,6 +11,7 @@ import { dirname } from 'node:path';
 import type { MitreAtlasTechnique } from './atlas.js';
 import type { MitreAtlasCatalogConfig } from '../types.js';
 import logger from '../utils/logger.js';
+import { assertSafeUrl } from '../utils/urlSecurity.js';
 
 function uniqueStrings(values: string[]): string[] {
   return Array.from(new Set(values));
@@ -31,7 +32,12 @@ async function fetchJson(url: string, timeoutMs: number): Promise<unknown> {
   const controller = new AbortController();
   const timeout = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    // SSRF protection: do not follow redirects — a guarded public URL could
+    // 3xx-redirect to a private/metadata target. Treat any 3xx as a failure.
+    const res = await fetch(url, { signal: controller.signal, redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400) {
+      throw new Error(`HTTP ${res.status}: refusing to follow redirect (SSRF protection)`);
+    }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
@@ -121,6 +127,8 @@ export async function loadMitreAtlasTechniqueCatalog(
   // Refresh if allowed.
   if (config.autoUpdate || config.forceRefresh) {
     try {
+      // SSRF protection: reject loopback, link-local/metadata, and private targets.
+      assertSafeUrl(config.sourceUrl);
       const json = await fetchJson(config.sourceUrl, config.timeoutMs);
       mkdirSync(dirname(cachePath), { recursive: true });
       writeFileSync(cachePath, JSON.stringify(json), 'utf-8');

@@ -11,6 +11,7 @@
 import type { LlmScanConfig } from '../../types.js';
 import type { LlmProvider } from './types.js';
 import logger from '../../utils/logger.js';
+import { assertSafeUrl } from '../../utils/urlSecurity.js';
 
 export function isLocalUrl(urlStr: string): boolean {
   try {
@@ -73,6 +74,11 @@ export function createOpenAICompatibleProvider(config: LlmScanConfig): LlmProvid
         if (useResponseFormat) {
           body.response_format = { type: 'json_object' };
         }
+
+        // Validate the user-configured endpoint scheme before creating any
+        // resources so that a rejection does not leak the AbortController timer.
+        // allowPrivate preserves local-LLM behavior (e.g. keyless localhost).
+        assertSafeUrl(config.baseUrl, { allowPrivate: true });
 
         const controller = new AbortController();
         const timeout = setTimeout(() => { controller.abort(); }, config.timeoutMs ?? 45000);

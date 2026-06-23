@@ -10,13 +10,14 @@
 
 import { readFileSync, existsSync, mkdirSync, writeFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { resolve, extname } from 'node:path';
+import { resolve, extname, dirname } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import type { Rule, ThreatCategory, Severity, FileType, ComponentType } from '../types.js';
 import { compileSafePattern } from '../utils/safeRegex.js';
 import { getAllRules } from '../rules/index.js';
 import logger from '../utils/logger.js';
+import { assertSafeUrl } from '../utils/urlSecurity.js';
 
 /**
  * Schema for custom rule definition in YAML/JSON
@@ -122,7 +123,12 @@ async function fetchText(url: string, timeoutMs: number): Promise<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => { controller.abort(); }, timeoutMs);
   try {
-    const res = await fetch(url, { signal: controller.signal });
+    // SSRF protection: do not follow redirects — a guarded public URL could
+    // 3xx-redirect to a private/metadata target. Treat any 3xx as a failure.
+    const res = await fetch(url, { signal: controller.signal, redirect: 'manual' });
+    if (res.status >= 300 && res.status < 400) {
+      throw new Error(`HTTP ${res.status}: refusing to follow redirect (SSRF protection)`);
+    }
     if (!res.ok) {
       const text = await res.text().catch(() => '');
       throw new Error(`HTTP ${res.status}: ${text.slice(0, 200)}`);
@@ -384,6 +390,9 @@ export async function loadCustomRulesSource(
     return loadCustomRulesFile(resolvedSource);
   }
 
+  // SSRF protection: reject loopback, link-local/metadata, and private targets.
+  assertSafeUrl(resolvedSource);
+
   const cacheDir = options.cacheDir ?? DEFAULT_REMOTE_CACHE_DIR;
   const cacheTtlHours = options.cacheTtlHours ?? DEFAULT_REMOTE_CACHE_TTL_HOURS;
   const timeoutMs = options.timeoutMs ?? DEFAULT_REMOTE_TIMEOUT_MS;
@@ -620,10 +629,75 @@ export function validateCustomRulesFile(filePath: string): {
   }
 }
 
+/**
+ * Serialize loaded rules to Ferret-compatible YAML.
+ */
+export function serializeCustomRulesToYaml(rules: Rule[], resolvedSource: string): string {
+  return [
+    'version: "1"',
+    `description: "Community rules fetched from ${resolvedSource}"`,
+    'rules:',
+    ...rules.map(r => {
+      return [
+        `  - id: ${r.id}`,
+        `    name: ${JSON.stringify(r.name)}`,
+        `    category: ${r.category}`,
+        `    severity: ${r.severity}`,
+        `    description: ${JSON.stringify(r.description)}`,
+        '    patterns:',
+        ...r.patterns.map(p => `      - "${p.source.replace(/"/g, '\\"')}"`),
+        `    fileTypes: [${r.fileTypes.join(', ')}]`,
+        `    components: [${r.components.join(', ')}]`,
+        `    remediation: ${JSON.stringify(r.remediation)}`,
+      ].join('\n');
+    }),
+  ].join('\n');
+}
+
+export type FetchCustomRulesResult =
+  | { ok: true; outPath: string; ruleCount: number; resolved: string }
+  | { ok: false; errors: string[] };
+
+/**
+ * Fetch remote/community rules, validate them, and write to a local YAML file.
+ */
+export async function fetchCustomRulesToFile(
+  source: string,
+  options: { output?: string; force?: boolean } = {}
+): Promise<FetchCustomRulesResult> {
+  const resolved = resolveRuleSource(source);
+  const loaded = await loadCustomRulesSource(resolved);
+
+  if (loaded.errors.length > 0) {
+    return { ok: false, errors: loaded.errors };
+  }
+
+  const outPath = options.output ?? resolve(process.cwd(), '.ferret', 'rules.yml');
+
+  if (existsSync(outPath) && !options.force) {
+    return {
+      ok: false,
+      errors: [`File already exists: ${outPath}. Use --force to overwrite.`],
+    };
+  }
+
+  mkdirSync(dirname(outPath), { recursive: true });
+  writeFileSync(outPath, serializeCustomRulesToYaml(loaded.rules, resolved), 'utf-8');
+
+  return {
+    ok: true,
+    outPath,
+    ruleCount: loaded.rules.length,
+    resolved,
+  };
+}
+
 export default {
   loadCustomRulesFile,
   loadCustomRulesSource,
   loadCustomRules,
   generateExampleRulesFile,
   validateCustomRulesFile,
+  fetchCustomRulesToFile,
+  serializeCustomRulesToYaml,
 };

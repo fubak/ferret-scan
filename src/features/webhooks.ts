@@ -6,6 +6,7 @@
 
 import type { ScanResult, Severity } from '../types.js';
 import logger from '../utils/logger.js';
+import { assertSafeUrl } from '../utils/urlSecurity.js';
 
 /**
  * Webhook configuration
@@ -276,6 +277,9 @@ export async function sendWebhook(
         break;
     }
 
+    // SSRF protection: reject loopback, link-local/metadata, and private targets.
+    assertSafeUrl(config.url);
+
     // Send request
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), config.timeout ?? 10000);
@@ -289,9 +293,18 @@ export async function sendWebhook(
         },
         body: JSON.stringify(body),
         signal: controller.signal,
+        // SSRF protection: do not follow redirects — a guarded public URL could
+        // 3xx-redirect to a private/metadata target.
+        redirect: 'manual',
       });
 
       clearTimeout(timeout);
+
+      if (response.status >= 300 && response.status < 400) {
+        const error = `HTTP ${response.status}: refusing to follow redirect (SSRF protection)`;
+        logger.error(`Webhook failed: ${error}`);
+        return { success: false, statusCode: response.status, error };
+      }
 
       if (response.ok) {
         logger.info(`Webhook sent successfully to ${config.type}`);

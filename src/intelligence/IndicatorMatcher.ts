@@ -14,6 +14,7 @@ import type {
   ContextLine
 } from '../types.js';
 import logger from '../utils/logger.js';
+import { compileSafePattern } from '../utils/safeRegex.js';
 
 /**
  * Threat intelligence finding
@@ -64,13 +65,15 @@ const patternCache = new Map<string, RegExp>();
  */
 function getCompiledPattern(pattern: string): RegExp {
   if (!patternCache.has(pattern)) {
-    try {
-      const regex = new RegExp(pattern, 'gi');
-      patternCache.set(pattern, regex);
-    } catch {
-      logger.warn(`Invalid regex pattern: ${pattern}`);
-      // Return a regex that never matches
+    // Route through RE2 (linear-time) when active, screened native fallback
+    // otherwise. compileSafePattern returns null for unsafe/invalid patterns.
+    const compiled = compileSafePattern(pattern, 'gi');
+    if (compiled === null) {
+      logger.warn(`Invalid or unsafe regex pattern: ${pattern}`);
+      // Cache a regex that never matches
       patternCache.set(pattern, /(?!.*)/);
+    } else {
+      patternCache.set(pattern, compiled);
     }
   }
 
@@ -149,10 +152,15 @@ function matchDomains(
     if (indicator.type !== 'domain') continue;
 
     const domain = indicator.value;
-    const regex = new RegExp(`\\b${domain.replace('.', '\\.')}\\b`, 'gi');
+    const regex = compileSafePattern(`\\b${domain.replace('.', '\\.')}\\b`, 'gi');
+    if (regex === null) {
+      logger.warn(`Skipping unsafe or invalid domain indicator: ${domain}`);
+      continue;
+    }
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const line = lines[lineIndex] ?? '';
+      regex.lastIndex = 0;
       const match = regex.test(line);
 
       if (match && findings.length < config.maxMatchesPerFile) {
@@ -249,6 +257,7 @@ function matchPatterns(
 
     for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
       const line = lines[lineIndex] ?? '';
+      regex.lastIndex = 0;
       const match = regex.test(line);
 
       if (match && findings.length < config.maxMatchesPerFile) {

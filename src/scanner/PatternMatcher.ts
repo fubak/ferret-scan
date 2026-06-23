@@ -12,6 +12,7 @@ import type {
 } from '../types.js';
 import { SEVERITY_WEIGHTS } from '../types.js';
 import logger from '../utils/logger.js';
+import { compileSafePattern, runBounded, safeTest } from '../utils/safeRegex.js';
 
 interface MatchOptions {
   contextLines: number;
@@ -108,35 +109,33 @@ function findMatches(
   const matches: PatternMatch[] = [];
 
   for (const pattern of patterns) {
-    // Check time budget before starting each pattern
-    if (Date.now() - startTime > opts.maxRuntimeMs) {
+    // PRESERVE the shared rule-level time budget: opts.maxRuntimeMs is shared
+    // across ALL patterns of the rule. Compute the remaining slice for this
+    // pattern; never reset the budget per pattern.
+    const remaining = opts.maxRuntimeMs - (Date.now() - startTime);
+    if (remaining <= 0) {
       logger.warn(`Regex matcher time budget exceeded (${opts.maxRuntimeMs}ms), stopping pattern processing`);
       return matches;
     }
 
-    // Create a new regex with global flag
-    const globalPattern = new RegExp(
-      pattern.source,
-      pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g'
-    );
+    // Compile through RE2 (linear-time) when active, native fallback otherwise.
+    // Force the 'g' flag so runBounded iterates all matches.
+    const flags = pattern.flags.includes('g') ? pattern.flags : pattern.flags + 'g';
+    const globalPattern = compileSafePattern(pattern.source, flags);
+    if (globalPattern === null) {
+      logger.warn(`Skipping unsafe or invalid pattern: ${pattern.source}`);
+      continue;
+    }
 
-    let match: RegExpExecArray | null;
-    while ((match = globalPattern.exec(content)) !== null) {
-      // Check time budget on each match
-      if (Date.now() - startTime > opts.maxRuntimeMs) {
-        logger.warn(`Regex matcher time budget exceeded (${opts.maxRuntimeMs}ms) during pattern processing`);
-        return matches;
-      }
+    const { matches: rawMatches } = runBounded(globalPattern, content, {
+      maxMs: remaining,
+      maxMatches: opts.maxMatches - matches.length,
+    });
 
-      // Check match count limit
-      if (matches.length >= opts.maxMatches) {
-        logger.warn(`Max match limit reached (${opts.maxMatches}), stopping pattern processing`);
-        return matches;
-      }
-
-      // Guard against zero-length matches to prevent infinite loops
+    for (const match of rawMatches) {
+      // runBounded already skips zero-length matches via lastIndex advance,
+      // but guard here to keep the original PatternMatch contract identical.
       if (match[0].length === 0) {
-        globalPattern.lastIndex += 1;
         continue;
       }
       const { line, column } = getLineAndColumn(content, match.index);
@@ -161,12 +160,10 @@ function shouldExcludeMatch(
   lineContent: string,
   contextLines: string[]
 ): boolean {
-  const safeTest = (re: RegExp, value: string): boolean => {
-    // Many rule regexes are authored with /g, but .test() with /g is stateful via lastIndex.
-    // Reset to ensure consistent behavior across matches/files.
-    if (re.global || re.sticky) re.lastIndex = 0;
-    return re.test(value);
-  };
+  // Route exclude/require tests through the shared RE2-backed safeTest, which
+  // is stateless (no lastIndex pitfalls) and linear-time when RE2 is active.
+  const testPattern = (re: RegExp, value: string): boolean =>
+    safeTest(re.source, value, re.flags);
 
   // Check minimum match length
   if (rule.minMatchLength && matchText.length < rule.minMatchLength) {
@@ -176,7 +173,7 @@ function shouldExcludeMatch(
   // Check exclude patterns (false positive filters)
   if (rule.excludePatterns) {
     for (const excludePattern of rule.excludePatterns) {
-      if (safeTest(excludePattern, lineContent)) {
+      if (testPattern(excludePattern, lineContent)) {
         logger.debug(`[${rule.id}] Excluded by excludePattern: ${lineContent.slice(0, 50)}`);
         return true;
       }
@@ -187,19 +184,32 @@ function shouldExcludeMatch(
   if (rule.excludeContext) {
     const fullContext = contextLines.join('\n');
     for (const excludeCtx of rule.excludeContext) {
-      if (safeTest(excludeCtx, fullContext)) {
+      if (testPattern(excludeCtx, fullContext)) {
         logger.debug(`[${rule.id}] Excluded by excludeContext`);
         return true;
       }
     }
   }
 
-  // Check require context (must be present)
+  // Check require context (must be present).
+  // Fail-open: if a requireContext pattern fails to compile, skip that entry
+  // rather than suppressing the finding (a missed detection is worse than a
+  // false positive in a security scanner).
   if (rule.requireContext && rule.requireContext.length > 0) {
     const fullContext = contextLines.join('\n');
     let hasRequiredContext = false;
     for (const reqCtx of rule.requireContext) {
-      if (safeTest(reqCtx, fullContext)) {
+      const compiled = compileSafePattern(reqCtx.source, reqCtx.flags);
+      if (compiled === null) {
+        // Pattern uncompilable — warn and treat requirement as satisfied so
+        // the finding is NOT suppressed (fail-open).
+        logger.warn(
+          `[${rule.id}] requireContext pattern failed to compile, treating as satisfied: ${reqCtx.source}`
+        );
+        hasRequiredContext = true;
+        break;
+      }
+      if (testPattern(reqCtx, fullContext)) {
         hasRequiredContext = true;
         break;
       }

@@ -108,7 +108,7 @@ class FindingTreeItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
         public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly contextValue: string,
+        public contextValue: string,
         public readonly resourceUri?: vscode.Uri,
         public readonly line?: number
     ) {

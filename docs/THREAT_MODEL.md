@@ -65,7 +65,7 @@ This document enumerates the adversarial scenarios ferret-scan is designed to de
 - `validatePathWithinBase` and `isPathWithinBase` in `pathSecurity.ts` block traversal attempts
 - `maxFileSize` config (default 10 MB) prevents individual large file reads
 - `BoundedContentCache` caps in-memory content at 256 MB aggregate with LRU eviction
-- Worker concurrency capped at `min(cpuCount, 8)`
+- Worker concurrency defaults to `max(1, cpuCount - 2)`, configurable via `--concurrency <n>`
 
 **Residual risk:** Symlink attacks from within the scanned tree are not fully blocked — Node's `readFile` follows symlinks by default. A malicious repo could create a symlink pointing outside the tree.
 
@@ -125,7 +125,7 @@ This document enumerates the adversarial scenarios ferret-scan is designed to de
 
 | Control | Location | What it prevents |
 |---------|----------|------------------|
-| `compileSafePattern` | `src/utils/safeRegex.ts` | ReDoS via nested quantifiers |
+| `compileSafePattern` | `src/utils/safeRegex.ts` | ReDoS via nested quantifiers (incl. multi-atom like `(x+x+)+`) |
 | `runBounded` | `src/utils/safeRegex.ts` | Runaway match execution |
 | `globToRegex` | `src/utils/glob.ts` | Glob-to-regex injection |
 | `safeParseJSON` + Zod schemas | `src/utils/schemas.ts` | Malformed config/data |
@@ -134,6 +134,10 @@ This document enumerates the adversarial scenarios ferret-scan is designed to de
 | Quarantine mode `0700` | `src/remediation/Quarantine.ts` | Secret leakage via world-readable dir |
 | AST time + node guard | `src/analyzers/AstAnalyzer.ts` | Main-thread monopolisation |
 | BUILTIN_FIXES startup validation | `src/remediation/Fixer.ts` | Bad patterns failing at first use |
+| `assertSafeUrl` | `src/utils/urlSecurity.ts` | SSRF via outbound fetches (custom rules, MITRE catalog, webhooks, LLM); blocks loopback/RFC1918/link-local/cloud-metadata/NAT64/6to4, HTTP(S)-only, redirect:`manual` |
+| Zero-width / BOM / bidi normalization | `src/scanner/PatternMatcher.ts` | Obfuscated-keyword evasion via Unicode homoglyphs, zero-width joiners, BOMs, and bidi control chars |
+| CSV formula-injection neutralization | `src/reporters/CsvReporter.ts` | Spreadsheet formula execution via `=`, `+`, `-`, `@` prefixed cell values |
+| Untrusted-content ignore-directive gate | `src/scanner/Scanner.ts` | Marketplace/plugin files cannot self-suppress findings via inline `ferret-ignore`/`ferret-disable` directives |
 
 ---
 
@@ -149,4 +153,4 @@ This document enumerates the adversarial scenarios ferret-scan is designed to de
 
 ---
 
-*Last updated: 2026-04-23. Maintained by the ferret-scan core team.*
+*Last updated: 2026-06-23. Maintained by the ferret-scan core team.*

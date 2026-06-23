@@ -13,6 +13,7 @@
 import type { Rule, ThreatCategory, Severity} from '../types.js';
 import { createLlmProvider, type LlmProvider } from '../features/llm/index.js';
 import logger from '../utils/logger.js';
+import { compileSafePattern } from '../utils/safeRegex.js';
 
 export interface ThreatReport {
     id: string;
@@ -119,7 +120,9 @@ Generate 1-3 specific detection rules.`
             category: r.category as ThreatCategory,
             severity: r.severity as Severity,
             description: r.description,
-            patterns: r.patterns.map((p: string) => new RegExp(p, 'gi')),
+            patterns: r.patterns
+                .map((p: string) => compileSafePattern(p, 'gi'))
+                .filter((re: RegExp | null): re is RegExp => re !== null),
             fileTypes: r.fileTypes,
             components: r.components,
             remediation: r.remediation,

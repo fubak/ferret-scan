@@ -43,35 +43,6 @@ jobs:
         env:
           FERRET_E2E: '1'
 
-  self-scan:
-    name: Self-Scan Dogfooding
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build
-        run: npm run build
-
-      - name: Run Ferret Self-Scan on its own source + evil fixtures
-        run: node bin/ferret.js scan --self --ci --fail-on high --format sarif -o ferret-self-scan.sarif || true
-
-      - name: Upload self-scan SARIF (for visibility)
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: ferret-self-scan.sarif
-
   benchmark:
     name: Benchmark
     runs-on: ubuntu-latest
@@ -122,7 +93,7 @@ jobs:
           retention-days: 30
 
   self-scan:
-    name: Self Scan
+    name: Self-Scan Dogfooding
     runs-on: ubuntu-latest
     needs: test
     permissions:
@@ -132,10 +103,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node.js
+      - name: Setup Node.js 22
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -145,10 +116,10 @@ jobs:
         run: npm run build
 
       - name: Run Ferret self-scan (SARIF)
-        run: node bin/ferret.js scan . --format sarif -o ferret-self-scan.sarif || true
+        run: node bin/ferret.js scan --self --ci --fail-on high --format sarif -o ferret-self-scan.sarif || true
 
       - name: Run Ferret self-scan (CI gate)
-        run: node bin/ferret.js scan . --ci
+        run: node bin/ferret.js scan --self --ci --fail-on high
 
       - name: Upload self-scan SARIF
         uses: github/codeql-action/upload-sarif@v4
@@ -160,7 +131,7 @@ jobs:
       - name: Summary
         run: |
           {
-            echo "## 🔍 Ferret Self-Scan Results"
+            echo "## Ferret Self-Scan Results"
             echo ""
-            echo "Ferret successfully scanned its own codebase for security issues."
+            echo "Dogfooding scan of Ferret source + test/fixtures (evil-hook.sh, malicious-skill.md)."
           } >> "$GITHUB_STEP_SUMMARY"

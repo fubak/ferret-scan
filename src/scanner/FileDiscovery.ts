@@ -43,6 +43,24 @@ function getFileType(filePath: string): FileType | null {
     return 'sh';
   }
 
+  // Cursor/Windsurf/Cline rules files are extensionless instruction text.
+  // Treat them as markdown-like so md-targeted rules (prompt injection, etc.) apply
+  // and detectComponentType can classify them as 'rules-file'.
+  if (
+    fileName === '.cursorrules' ||
+    fileName === '.windsurfrules' ||
+    fileName === '.clinerules'
+  ) {
+    return 'md';
+  }
+
+  // Aider's ignore file is extensionless (extname === '') and would otherwise
+  // resolve to null and be silently skipped, despite being a target/AI_CLI_PATTERNS
+  // file. It is gitignore/shell-glob style content, so treat it as shell-like.
+  if (fileName === '.aiderignore') {
+    return 'sh';
+  }
+
   const ext = extname(filePath).toLowerCase().slice(1);
   const fileTypeMap: Record<string, FileType> = {
     'md': 'md',
@@ -80,10 +98,12 @@ function detectComponentType(filePath: string): ComponentType {
   }
 
   // Hooks directory or hook files
+  // Anchor the bare-filename check so 'webhook-notes.md' does not match.
+  // 'hook' must appear as a whole word segment (start/end of basename or separated by - _ .).
   if (
     normalizedPath.includes('/hooks/') ||
     normalizedPath.includes('\\hooks\\') ||
-    fileName.includes('hook')
+    /(?:^|[-_.])hook(?:[-_.]|$)/.test(fileName)
   ) {
     return 'hook';
   }
@@ -108,10 +128,11 @@ function detectComponentType(filePath: string): ComponentType {
   }
 
   // Settings files
+  // Anchor 'config' so 'myconfigtool.json' does not match; require it to be a whole word segment.
   if (
     fileName === 'settings.json' ||
     fileName === 'settings.local.json' ||
-    fileName.includes('config')
+    /(?:^|[-_.])config(?:[-_.]|$)/.test(fileName)
   ) {
     return 'settings';
   }

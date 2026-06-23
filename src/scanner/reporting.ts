@@ -109,7 +109,12 @@ export function calculateSummary(findings: Finding[]): ScanSummary {
 }
 
 /**
- * Sort findings by severity (most severe first), then risk score, then file
+ * Sort findings into a total order: severity (most severe first), then risk
+ * score (descending), then file path, then line, then rule id.
+ *
+ * The trailing tiebreakers (line, ruleId) make the ordering fully deterministic
+ * so that output is byte-identical regardless of the order in which files were
+ * processed (e.g. under bounded-concurrency scanning).
  */
 export function sortFindings(findings: Finding[]): Finding[] {
   return [...findings].sort((a, b) => {
@@ -121,7 +126,14 @@ export function sortFindings(findings: Finding[]): Finding[] {
     if (a.riskScore !== b.riskScore) return b.riskScore - a.riskScore;
 
     // Then by file path
-    return a.relativePath.localeCompare(b.relativePath);
+    const pathDiff = a.relativePath.localeCompare(b.relativePath);
+    if (pathDiff !== 0) return pathDiff;
+
+    // Then by line (ascending)
+    if (a.line !== b.line) return a.line - b.line;
+
+    // Finally by rule id for a stable, total order
+    return a.ruleId.localeCompare(b.ruleId);
   });
 }
 

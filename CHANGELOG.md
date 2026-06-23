@@ -5,6 +5,35 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-06-23
+
+### Added
+- `--concurrency <n>` scan flag for bounded parallel scanning; default is `max(1, cpuCount - 2)`. Finding and error ordering is now fully deterministic across concurrent runs.
+- SSRF protection on all outbound fetches (custom rules, MITRE catalog updates, webhooks, LLM calls) via `assertSafeUrl` in `src/utils/urlSecurity.ts`. Blocks loopback, RFC 1918, link-local, cloud-metadata, NAT64, and 6to4 addresses; enforces HTTP(S)-only and `redirect: 'manual'`.
+- Detection of `.cursorrules`, `.windsurfrules`, `.clinerules`, and `.aiderignore` files (previously silently skipped).
+- Zero-width character, BOM, and bidirectional control character normalization before pattern matching to defeat obfuscated-keyword evasion.
+- Build-time version constant (`src/generated/version.ts`) so all reporters always emit Ferret's own version string.
+
+### Fixed
+- SARIF, SBOM, and HTML reporters emitted the scanned project's version instead of Ferret's own version.
+- Non-deterministic finding and error ordering under concurrency; results are now total-ordered.
+- RE2 routing in the pattern-matching hot path: RE2 (linear-time) is now used when available; a one-time warning is emitted when RE2 is absent and the screened native fallback is used. The ReDoS screener rejects catastrophic patterns including multi-atom alternations like `(x+x+)+` while admitting all built-in rules.
+- `requireContext` no longer suppresses findings when a context pattern fails to compile.
+- `CorrelationAnalyzer` performed redundant disk reads; eliminated.
+- `IndicatorMatcher` stateful `lastIndex` bug causing missed matches on repeated calls.
+- VS Code extension: LSP-mode crashes, duplicate status bar items/commands, and `treeView.ts` compile errors.
+- Reporter version-string inconsistencies across SARIF, SBOM, HTML, and console reporters.
+
+### Security
+- CSV report formula injection neutralized: cell values starting with `=`, `+`, `-`, or `@` are prefixed with a single-quote to prevent spreadsheet formula execution.
+- Inline `ferret-ignore` / `ferret-disable` directives are no longer honored in untrusted marketplace or plugin content by default, preventing hostile files from self-suppressing findings.
+
+### Testing
+- ~900 new tests; total test count now 2,400+.
+- Real integration tests added for CLI, analyzers, and reporters.
+- Coverage thresholds raised: lines, functions, and statements to 90%; branches to 78%.
+- Experimental/not-yet-wired modules documented to prevent misleading coverage gaps.
+
 ## [2.6.1] - 2026-05-20
 
 ### Changed

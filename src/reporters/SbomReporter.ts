@@ -9,6 +9,7 @@
 
 import type { ScanResult, Finding, Severity } from '../types.js';
 import { randomUUID } from 'node:crypto';
+import { getPackageVersion } from './SarifReporter.js';
 
 export interface SbomOptions {
   /** Include the full list of active rules in the BOM (default: false for size) */
@@ -174,7 +175,7 @@ function buildCycloneDxBom(result: ScanResult, opts: SbomOptions = {}): CycloneD
         {
           vendor: 'Ferret Security',
           name: 'ferret-scan',
-          version: (process.env as Record<string, string | undefined>)['npm_package_version'] ?? '2.5.0',
+          version: getPackageVersion(),
         },
       ],
       component: {

@@ -7,7 +7,7 @@
  * Fail fast on violations.
  */
 
-import { readdirSync, statSync, readFileSync } from 'node:fs';
+import { readdirSync, statSync, readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -69,6 +69,15 @@ function walkTs(dir, files = []) {
 
 function checkFileSizes() {
   log('🔍 Checking file sizes...');
+
+  const binPath = resolve(ROOT, 'bin', 'ferret.js');
+  if (existsSync(binPath)) {
+    const binLines = readFileSync(binPath, 'utf8').split('\n').length;
+    if (binLines > 30) {
+      fail(`bin/ferret.js has ${binLines} lines (must stay a thin wrapper ≤30)`);
+    }
+  }
+
   const files = walkTs(resolve(ROOT, 'src'));
   for (const f of files) {
     const content = readFileSync(f, 'utf8');

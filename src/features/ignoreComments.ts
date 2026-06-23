@@ -186,6 +186,26 @@ export function parseIgnoreComments(
 }
 
 /**
+ * Decide whether a scanned file path is "clearly untrusted" — i.e. third-party
+ * content that must not be allowed to suppress detection of its own findings via
+ * inline ignore/disable directives. Marketplace plugin trees and plugin caches
+ * are populated from external sources, so a malicious plugin could otherwise hide
+ * its own payload with a `<!-- ferret-disable -->` comment.
+ *
+ * Trust is derived purely from the path so callers can gate suppression without
+ * additional file metadata. The user's own config files (non-marketplace /
+ * non-plugin paths) are treated as trusted and keep current suppression behavior.
+ */
+export function isUntrustedScannedPath(filePath: string): boolean {
+  const p = filePath.replace(/\\/g, '/').toLowerCase();
+  return (
+    p.includes('/.claude/plugins/marketplaces/') ||
+    p.includes('/plugins/cache/') ||
+    p.includes('/.claude/plugins/')
+  );
+}
+
+/**
  * Check if a finding should be ignored based on comments
  */
 export function shouldIgnoreFinding(

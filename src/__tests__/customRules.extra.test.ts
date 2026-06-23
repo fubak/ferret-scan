@@ -10,6 +10,8 @@ import {
   generateExampleRulesFile,
   validateCustomRulesFile,
   resolveRuleSource,
+  fetchCustomRulesToFile,
+  serializeCustomRulesToYaml,
 } from '../features/customRules.js';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -361,5 +363,75 @@ describe('Custom rules ID shadowing protection', () => {
     expect(result.errors.some(e => e.includes('shadow') || e.includes('INJ-001'))).toBe(true);
 
     fs.rmSync(tmp, { recursive: true, force: true });
+  });
+});
+
+describe('fetchCustomRulesToFile', () => {
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ferret-fetch-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('writes local rules file to output path', async () => {
+    const sourcePath = path.join(tmpDir, 'source-rules.json');
+    fs.writeFileSync(sourcePath, VALID_RULE_JSON);
+    const outPath = path.join(tmpDir, 'installed', 'rules.yml');
+
+    const result = await fetchCustomRulesToFile(sourcePath, { output: outPath });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.ruleCount).toBe(1);
+    expect(fs.existsSync(result.outPath)).toBe(true);
+    expect(fs.readFileSync(result.outPath, 'utf-8')).toContain('CUSTOM-001');
+  });
+
+  it('refuses to overwrite without force', async () => {
+    const sourcePath = path.join(tmpDir, 'source-rules.json');
+    fs.writeFileSync(sourcePath, VALID_RULE_JSON);
+    const outPath = path.join(tmpDir, 'rules.yml');
+    fs.writeFileSync(outPath, 'existing');
+
+    const result = await fetchCustomRulesToFile(sourcePath, { output: outPath });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0]).toContain('already exists');
+  });
+
+  it('overwrites when force is true', async () => {
+    const sourcePath = path.join(tmpDir, 'source-rules.json');
+    fs.writeFileSync(sourcePath, VALID_RULE_JSON);
+    const outPath = path.join(tmpDir, 'rules.yml');
+    fs.writeFileSync(outPath, 'existing');
+
+    const result = await fetchCustomRulesToFile(sourcePath, { output: outPath, force: true });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(fs.readFileSync(outPath, 'utf-8')).toContain('CUSTOM-001');
+  });
+});
+
+describe('serializeCustomRulesToYaml', () => {
+  it('emits valid YAML structure for loaded rules', () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ferret-yaml-'));
+    const filePath = path.join(tmpDir, 'rules.json');
+    fs.writeFileSync(filePath, VALID_RULE_JSON);
+
+    const loaded = loadCustomRulesFile(filePath);
+    expect(loaded.success).toBe(true);
+
+    const yaml = serializeCustomRulesToYaml(loaded.rules, 'file://local');
+    expect(yaml).toContain('version: "1"');
+    expect(yaml).toContain('id: CUSTOM-001');
+    expect(yaml).toContain('patterns:');
+
+    fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 });

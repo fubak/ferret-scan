@@ -87,6 +87,23 @@ function makeConfig(overrides: Partial<ScannerConfig> = {}): ScannerConfig {
 
 // ── Tests ──────────────────────────────────────────────────────────────────
 
+const activeWatchCleanups: Array<() => void> = [];
+
+async function startWatchModeTracked(config: ScannerConfig): Promise<() => void> {
+  const cleanup = await startWatchMode(config);
+  activeWatchCleanups.push(cleanup);
+  return cleanup;
+}
+
+function drainWatchCleanups(): void {
+  while (activeWatchCleanups.length > 0) {
+    activeWatchCleanups.pop()?.();
+  }
+  process.removeAllListeners('SIGINT');
+  process.removeAllListeners('SIGTERM');
+  jest.clearAllTimers();
+}
+
 describe('WatchMode', () => {
   let consoleSpy: ReturnType<typeof jest.spyOn>;
 
@@ -98,6 +115,7 @@ describe('WatchMode', () => {
   });
 
   afterEach(() => {
+    drainWatchCleanups();
     jest.restoreAllMocks();
     jest.useRealTimers();
   });
@@ -105,7 +123,7 @@ describe('WatchMode', () => {
   describe('startWatchMode', () => {
     it('calls chokidar.watch with the configured paths', async () => {
       const config = makeConfig({ paths: ['/project/src', '/project/config'] });
-      await startWatchMode(config);
+      await startWatchModeTracked(config);
 
       expect(chokidar.watch).toHaveBeenCalledWith(
         ['/project/src', '/project/config'],
@@ -115,7 +133,7 @@ describe('WatchMode', () => {
 
     it('registers handlers for add, change, unlink, error, and ready events', async () => {
       const config = makeConfig();
-      await startWatchMode(config);
+      await startWatchModeTracked(config);
 
       expect(mockWatcher.on).toHaveBeenCalledWith('add', expect.any(Function));
       expect(mockWatcher.on).toHaveBeenCalledWith('change', expect.any(Function));
@@ -126,7 +144,7 @@ describe('WatchMode', () => {
 
     it('returns a cleanup function that closes the watcher', async () => {
       const config = makeConfig();
-      const cleanup = await startWatchMode(config);
+      const cleanup = await startWatchModeTracked(config);
 
       cleanup();
 
@@ -139,7 +157,7 @@ describe('WatchMode', () => {
       mockWatcher = createMockWatcher();
 
       const config = makeConfig();
-      await startWatchMode(config);
+      await startWatchModeTracked(config);
 
       expect(scan).toHaveBeenCalledWith(config);
     });
@@ -147,7 +165,7 @@ describe('WatchMode', () => {
     it('logs an error when a watch error occurs', async () => {
       const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
       const config = makeConfig();
-      await startWatchMode(config);
+      await startWatchModeTracked(config);
 
       const errorHandlers = mockWatcher._handlers.get('error') ?? [];
       expect(errorHandlers.length).toBeGreaterThan(0);
@@ -161,7 +179,7 @@ describe('WatchMode', () => {
     it('calls chokidar.watch with the specified paths', () => {
       const paths = ['/a', '/b'];
       const callback = jest.fn();
-      createChangeNotifier(paths, callback);
+      activeWatchCleanups.push(createChangeNotifier(paths, callback));
 
       expect(chokidar.watch).toHaveBeenCalledWith(
         paths,
@@ -171,6 +189,7 @@ describe('WatchMode', () => {
 
     it('returns a cleanup function', () => {
       const cleanup = createChangeNotifier(['/tmp'], jest.fn());
+      activeWatchCleanups.push(cleanup);
       expect(typeof cleanup).toBe('function');
       // Calling cleanup should close the watcher without throwing
       expect(() => cleanup()).not.toThrow();
@@ -180,7 +199,7 @@ describe('WatchMode', () => {
     it('batches change events and invokes callback after debounce delay', () => {
       jest.useFakeTimers();
       const callback = jest.fn<(files: string[]) => void>();
-      createChangeNotifier(['/tmp'], callback, { debounceMs: 200 });
+      activeWatchCleanups.push(createChangeNotifier(['/tmp'], callback, { debounceMs: 200 }));
 
       // Trigger three 'all' events in quick succession
       const allHandlers = mockWatcher._handlers.get('all') ?? [];
@@ -203,7 +222,7 @@ describe('WatchMode', () => {
     it('ignores events that are not add/change/unlink', () => {
       jest.useFakeTimers();
       const callback = jest.fn();
-      createChangeNotifier(['/tmp'], callback, { debounceMs: 50 });
+      activeWatchCleanups.push(createChangeNotifier(['/tmp'], callback, { debounceMs: 50 }));
 
       const allHandlers = mockWatcher._handlers.get('all') ?? [];
       allHandlers[0]?.('raw', '/tmp/something');
@@ -218,7 +237,7 @@ describe('WatchMode', () => {
       consoleSpy.mockRestore();
       const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
       const config = makeConfig();
-      await startWatchMode(config);
+      await startWatchModeTracked(config);
 
       expect(logSpy).toHaveBeenCalled();
     });
@@ -239,13 +258,14 @@ describe('WatchMode — verbose event handlers', () => {
   });
 
   afterEach(() => {
+    drainWatchCleanups();
     jest.restoreAllMocks();
     jest.useRealTimers();
   });
 
   it('logs debug messages for add/change/unlink when verbose=true', async () => {
     const config = makeConfig({ verbose: true });
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     // Trigger all three event types
     const addHandlers = mockWatcher._handlers.get('add') ?? [];
@@ -264,7 +284,7 @@ describe('WatchMode — verbose event handlers', () => {
 
   it('does not log debug when verbose=false', async () => {
     const config = makeConfig({ verbose: false });
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     const addHandlers = mockWatcher._handlers.get('add') ?? [];
     expect(() => addHandlers[0]?.('/tmp/new.sh')).not.toThrow();
@@ -276,7 +296,7 @@ describe('WatchMode — verbose event handlers', () => {
     mockedScan.mockClear();
 
     const config = makeConfig();
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     // Fire an 'add' event to trigger debouncedScan
     const addHandlers = mockWatcher._handlers.get('add') ?? [];
@@ -295,7 +315,7 @@ describe('WatchMode — verbose event handlers', () => {
     mockedScan.mockResolvedValue(mockScanResult);
 
     const config = makeConfig();
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     const callsBefore = mockedScan.mock.calls.length;
     const addHandlers = mockWatcher._handlers.get('add') ?? [];
@@ -312,7 +332,7 @@ describe('WatchMode — verbose event handlers', () => {
 
   it('watch mode registers all three event handlers (add, change, unlink)', async () => {
     const config = makeConfig();
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     expect(mockWatcher._handlers.has('add')).toBe(true);
     expect(mockWatcher._handlers.has('change')).toBe(true);
@@ -326,7 +346,7 @@ describe('WatchMode — verbose event handlers', () => {
     mockedScan.mockResolvedValue(mockScanResult);
 
     const config = makeConfig({ verbose: true });
-    await startWatchMode(config);
+    await startWatchModeTracked(config);
 
     const addHandlers = mockWatcher._handlers.get('add') ?? [];
     // Push > 5 events to exercise the "> 5 more" branch in verbose logging
@@ -347,22 +367,26 @@ describe('startEnhancedWatchMode', () => {
   });
 
   afterEach(() => {
+    drainWatchCleanups();
     jest.restoreAllMocks();
   });
 
   it('returns a cleanup function', async () => {
     const cleanup = await startEnhancedWatchMode(makeConfig());
+    activeWatchCleanups.push(cleanup);
     expect(typeof cleanup).toBe('function');
   });
 
   it('logs startup banner to console', async () => {
     const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
     await startEnhancedWatchMode(makeConfig({ paths: ['/my-project'] }));
+    drainWatchCleanups();
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('Ferret Watch Mode'));
   });
 
   it('passes options through to startWatchMode', async () => {
     await startEnhancedWatchMode(makeConfig(), { debounceMs: 500 });
+    drainWatchCleanups();
     expect(chokidar.watch).toHaveBeenCalled();
   });
 });

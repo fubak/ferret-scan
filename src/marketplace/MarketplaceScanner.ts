@@ -1,6 +1,11 @@
 /**
  * Marketplace Scanner
  * Scans AI agent marketplaces and repositories for security issues
+ *
+ * @experimental
+ * This module is NOT wired into the CLI. fetchPluginList and extractPluginSource
+ * return mock/stub data and do not contact real registries. The live marketplace
+ * discovery feature is the --marketplace flag on the scan command (discovery scope).
  */
 
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */

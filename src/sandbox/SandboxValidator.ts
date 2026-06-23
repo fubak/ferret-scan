@@ -1,6 +1,10 @@
 /**
  * Sandbox Integration
  * Pre-execution validation and runtime constraint enforcement
+ *
+ * @experimental
+ * This module is NOT wired into the CLI and is not invoked by the scan pipeline.
+ * It exists as scaffolding for a future sandboxed execution feature.
  */
 
  

@@ -71,16 +71,47 @@ export function compileSafePattern(raw: string, flags = 'gi'): RegExp | null {
 
   // Fallback: static screen for exponential-backtracking structures before
   // handing the pattern to the native JS engine.
+  //
+  // Catastrophic backtracking comes from a quantified group whose body is a
+  // single atom carrying its OWN quantifier (e.g. (a+)+, (.*)+, (a{1,2})+,
+  // (a?){20}) or from nested quantified groups (e.g. ((ab)*)*). The ambiguity
+  // is between the inner and outer quantifier over the same atom.
+  //
+  // A quantified group with plain literal/alternation branches — (a|b)+,
+  // (foo|bar)* — is linear and must be admitted, as must multi-atom bodies
+  // anchored by surrounding literals — (?:\x[0-9a-fA-F]{2}){10,}. Matching the
+  // single-atom shape (rather than "any inner quantifier") keeps those linear
+  // patterns admitted while rejecting the catastrophic ones.
+  //
+  // INNER_ATOM: one unicode property escape (\p{L}, \P{N}), one escaped class
+  //   (\w, \d, ...), one [..] class, '.', or a single literal char.
+  // INNER_QUANT: a +, *, ? or {n}/{n,}/{n,m}, optionally made lazy with a
+  //   trailing '?' (so (a+?)+ is screened, not just (a+)+).
+  const INNER_ATOM = '(?:\\\\[pP]\\{[^}]*\\}|\\\\[A-Za-z]|\\[[^\\]]*\\]|[A-Za-z0-9.])';
+  const INNER_QUANT = '(?:[+*?]|\\{[0-9]+(?:,[0-9]*)?\\})\\??';
   const redosPatterns = [
-    /(\?\+)/,             // Possessive quantifier abuse: a+?+
-    /(\+\+)/,             // Double plus: a++
-    /(\*\*)/,             // Double star: a**
-    /(\(.*\+\)\+)/,       // Nested quantifiers: (a+)+
-    /(\(.*\*\)\*)/,       // Nested quantifiers: (a*)*
-    /(\(.*\+\)\{)/,       // Quantified groups: (a+){2,}
-    /(\(.*\|.*\)\+)/,     // Alternation inside quantified group: (a|b)+
-    /(\(.*\|.*\)\*)/,     // Alternation inside quantified group: (a|b)*
-    /(\(.*\|.*\)\{)/,     // Alternation inside bounded group: (a|b){2,}
+    /(\?\+)/, // Possessive quantifier abuse: a+?+
+    /(\+\+)/, // Double plus: a++
+    /(\*\*)/, // Double star: a**
+    // Single-atom body with its own quantifier inside a quantified group:
+    // (a+)+, (.*)+, (a{1,2})+, (a?){20}
+    new RegExp('\\((?:\\?:)?' + INNER_ATOM + INNER_QUANT + '\\)[+*{]'),
+    // Two-or-more ADJACENT unbounded-quantified atoms inside a quantified group:
+    // (x+x+)+, (a+b+)+, (\w+\s*)+. Adjacent unbounded repeats let the same input
+    // be split many ways, and the outer quantifier makes that exponential. We
+    // require the inner quantifier to be UNBOUNDED (+, *, or {n,}) and the body to
+    // be two+ such atom-quant pairs, so bounded/anchored bodies like
+    // (?:,\s*0x[0-9a-fA-F]{2}){10,} (a literal ',' then a single \s*, anchored by
+    // required text) are NOT matched and stay admitted.
+    new RegExp('\\((?:\\?:)?(?:' + INNER_ATOM + '(?:[+*]|\\{[0-9]+,\\})\\??){2,}\\)[+*{]'),
+    // Alternation inside a quantified group: (a|b|c)+, (foo|bar)*, (x|y){2,}.
+    // The branches overlap on prefix, so an outer quantifier makes matching
+    // ambiguous and triggers catastrophic backtracking. A bare alternation
+    // without an outer quantifier — (env|config), password|secret — stays
+    // linear and is admitted because the trailing quantifier is required.
+    new RegExp('\\((?:\\?:)?[^()]*\\|[^()]*\\)(?:[+*]|\\{[0-9])'),
+    // Nested quantified groups: ((ab)*)*, ((x)*)*
+    /\(\([^()]*\)[^()]*\)[+*{]/,
   ];
 
   for (const redos of redosPatterns) {
