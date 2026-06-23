@@ -243,7 +243,7 @@ npm run lint:fix
 ### Before Submitting
 
 1. **Update Documentation**: Update relevant docs
-2. **Add Tests**: Ensure 100% test coverage for new code
+2. **Add Tests**: Ensure 80%+ test coverage for new code (project threshold)
 3. **Check Linting**: Run `npm run lint`
 4. **Run Tests**: All tests must pass
 5. **Update Changelog**: Add entry to CHANGELOG.md

@@ -15,7 +15,7 @@ The VS Code extension is published separately via `vsce`.
 
 ## Automated Publishing (Recommended)
 
-Publishing is triggered automatically when you create a new GitHub Release.
+Publishing is triggered automatically when a `v*.*.*` tag is pushed (via the GitHub Releases UI or `git push origin <tag>`) or via manual `workflow_dispatch`.
 
 ### Steps
 
@@ -80,7 +80,7 @@ npm run build
 npm publish --dry-run
 
 # Publish
-npm publish --access public
+npm publish --access public --provenance
 ```
 
 ### Publish VS Code Extension

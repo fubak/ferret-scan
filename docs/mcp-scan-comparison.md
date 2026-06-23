@@ -33,7 +33,7 @@ After analyzing Snyk's mcp-scan tool and comparing it with Ferret's current arch
 | **Primary Focus** | AI CLI configurations (Claude, Cursor, Windsurf, etc.) | Config file security |
 | **Detection Method** | Regex patterns + AST analysis | Pattern matching + code parsing |
 | **Scope** | Broad: configs, hooks, skills, agents, MCP, scripts | Multi-platform AI CLI security |
-| **Runtime Protection** | None (static analysis only) | Pre-deployment scanning |
+| **Runtime Protection** | `ferret monitor` — alerting-only prompt/credential/exfiltration monitor | Pre-deployment + lightweight runtime |
 | **External Dependencies** | None (fully local) | Privacy-first |
 | **Programming Language** | TypeScript/Node.js | - |
 | **Data Sharing** | Zero external data transmission | Complete privacy |
@@ -82,7 +82,7 @@ After analyzing Snyk's mcp-scan tool and comparing it with Ferret's current arch
    - Detects complex code patterns beyond simple regex
 
 4. **Rich Output Formats**
-   - SARIF (GitHub Security), HTML, CSV, JSON
+   - SARIF (GitHub Security), HTML, CSV, JSON, MITRE ATLAS Navigator layer, CycloneDX SBOM/AIBOM
    - Interactive reports
    - Baseline support for CI/CD
 
@@ -108,7 +108,7 @@ After analyzing Snyk's mcp-scan tool and comparing it with Ferret's current arch
 | **Zero-width obfuscation** | ✅ Byte detection | ❌ Unclear | ✅ Same |
 | **MCP rug pulls** | ❌ Not implemented | ✅ Hash tracking | ⚠️ Could add |
 | **Cross-origin escalation** | ❌ Not implemented | ✅ Primary feature | ⚠️ Could add |
-| **Runtime attacks** | ❌ Static only | ✅ Proxy mode | ❌ Static only |
+| **Runtime attacks** | ⚠️ Alerting monitor (`ferret monitor`) | ✅ Proxy mode | ⚠️ Alerting monitor |
 
 **Legend:**
 ✅ Strong capability | ⚠️ Partial capability | ❌ Not supported

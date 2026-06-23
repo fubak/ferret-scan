@@ -95,7 +95,7 @@ AI CLI configurations are a **new attack surface**. Traditional security scanner
 
 Ferret understands AI CLI structures and catches **AI-specific threats** that generic scanners miss.
 
-## What's New in v2.7.0
+## What's New in v2.7.1
 
 This is a **security hardening** release:
 
@@ -392,7 +392,7 @@ Every LLM finding includes a confidence score:
 
 ## Installation
 
-**Requirements:** Node.js 20+
+**Requirements:** Node.js >=20.0.0, npm >=9.0.0
 
 ```bash
 # Global install (recommended)
@@ -577,6 +577,7 @@ Other useful `scan` flags (see `ferret scan --help` for the full list):
 --dependency-audit        # Also run `npm audit` (networked) during dependency analysis
 --auto-fix                # Apply safe auto-remediations after scanning
 --sbom-format <fmt>       # sbom (CycloneDX) | aibom (AI-extended); with --sbom-output <file>
+--concurrency <n>         # Max files scanned in parallel (default: max(1, CPU count - 2))
 ```
 
 ### `ferret rules`
