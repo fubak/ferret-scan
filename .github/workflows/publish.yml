@@ -116,7 +116,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          # Trusted publishing (OIDC) requires Node >= 22.14 / npm >= 11.5.1.
+          node-version: '24'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
@@ -135,15 +136,9 @@ jobs:
       - name: Publish (dry run)
         if: inputs.dry_run == true
         run: npm publish --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish to npm
         if: inputs.dry_run != true
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Get package info
         if: inputs.dry_run != true
         id: package
@@ -184,7 +179,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          # Trusted publishing (OIDC) requires Node >= 22.14 / npm >= 11.5.1.
+          node-version: '24'
           cache: 'npm'
           cache-dependency-path: 'lsp/package-lock.json'
           registry-url: 'https://registry.npmjs.org'
@@ -207,16 +203,10 @@ jobs:
         if: inputs.dry_run == true
         working-directory: lsp
         run: npm publish --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Publish ferret-lsp
         if: inputs.dry_run != true
         working-directory: lsp
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Get LSP package info
         if: inputs.dry_run != true
         id: lsp-package
