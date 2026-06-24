@@ -34,7 +34,6 @@ import {
   needsUpdate
 } from '../dist/intelligence/ThreatFeed.js';
 import {
-  applyRemediation,
   applyRemediationBatch,
   previewRemediation,
   canAutoRemediate
@@ -1358,7 +1357,7 @@ mcpCmd
               flags: result.flags,
             });
           }
-        } catch (e) {
+        } catch {
           // ignore bad json
         }
       }
