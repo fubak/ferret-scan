@@ -282,7 +282,7 @@ function startClassicMode(context: vscode.ExtensionContext) {
         );
     }
 
-    if (fileWatchConfig.get('scanOnType')) {
+    if (config.get('scanOnType')) {
         let timeout: NodeJS.Timeout | undefined;
         context.subscriptions.push(
             vscode.workspace.onDidChangeTextDocument((event: vscode.TextDocumentChangeEvent) => {
