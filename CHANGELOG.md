@@ -5,7 +5,7 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.7.2] - 2026-06-23
+## [2.7.3] - 2026-06-24
 
 ### Fixed
 - **Ferret no longer scans its own working directories.** `.ferret-cache`,
@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Deduplicated the documentation-dampening logic: `Scanner` now imports the
   shared `features/docDampening` module instead of carrying a byte-for-byte copy,
   so the two implementations can no longer drift. Behavior is unchanged.
+- The published npm package no longer ships compiled test files. Test sources
+  are excluded from the build via a dedicated `tsconfig.build.json`, shrinking
+  the tarball from 369 to 175 files (~347 kB → ~221 kB).
 
 ## [2.7.1] - 2026-06-23
 
