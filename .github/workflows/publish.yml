@@ -133,11 +133,24 @@ jobs:
           INPUT_VERSION: ${{ inputs.version }}
         run: npm version "$INPUT_VERSION" --no-git-tag-version
 
+      - name: Check if this version is already on npm
+        id: published_check
+        if: inputs.dry_run != true
+        run: |
+          NAME=$(jq -r .name package.json)
+          VERSION=$(jq -r .version package.json)
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${NAME}@${VERSION} is already published to npm — skipping publish step (idempotent re-run)."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish (dry run)
         if: inputs.dry_run == true
         run: npm publish --dry-run
       - name: Publish to npm
-        if: inputs.dry_run != true
+        if: inputs.dry_run != true && steps.published_check.outputs.exists != 'true'
         run: npm publish --access public --provenance
       - name: Get package info
         if: inputs.dry_run != true
@@ -199,12 +212,26 @@ jobs:
         working-directory: lsp
         run: npm run build
 
+      - name: Check if this LSP version is already on npm
+        id: lsp_published_check
+        if: inputs.dry_run != true
+        working-directory: lsp
+        run: |
+          NAME=$(jq -r .name package.json)
+          VERSION=$(jq -r .version package.json)
+          if npm view "${NAME}@${VERSION}" version >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::notice::${NAME}@${VERSION} is already published to npm — skipping publish step (idempotent re-run)."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish ferret-lsp (dry run)
         if: inputs.dry_run == true
         working-directory: lsp
         run: npm publish --dry-run
       - name: Publish ferret-lsp
-        if: inputs.dry_run != true
+        if: inputs.dry_run != true && steps.lsp_published_check.outputs.exists != 'true'
         working-directory: lsp
         run: npm publish --access public --provenance
       - name: Get LSP package info
