@@ -45,7 +45,6 @@ export class FerretTreeDataProvider implements vscode.TreeDataProvider<FindingTr
                     uri
                 );
                 item.iconPath = new vscode.ThemeIcon('file');
-                item.contextValue = 'file';
                 items.push(item);
             }
 
@@ -71,7 +70,6 @@ export class FerretTreeDataProvider implements vscode.TreeDataProvider<FindingTr
                 );
 
                 item.iconPath = this.getSeverityIcon(finding.severity);
-                item.contextValue = 'finding';
 
                 item.command = {
                     command: 'ferret.goToFinding',
