@@ -150,6 +150,6 @@
     "zod-to-json-schema": "^3.25.2"
   },
   "optionalDependencies": {
-    "re2": "1.24.0"
+    "re2": "1.25.0"
   }
 }
