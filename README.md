@@ -382,7 +382,7 @@ Every LLM finding includes a confidence score:
 | AI CLI | Config Locations | Status |
 |--------|-----------------|--------|
 | **Claude Code** | `.claude/`, `CLAUDE.md`, `.mcp.json` | ✅ Full Support |
-| **Cursor** | `.cursor/`, `.cursorrules`, user settings (`~/.config/Cursor/User/…`) | ✅ Full Support |
+| **Cursor** | `.cursor/` (incl. the modern `.cursor/rules/*.mdc` format), `.cursorrules`, user settings (`~/.config/Cursor/User/…`) | ✅ Full Support |
 | **Windsurf** | `.windsurf/`, `.windsurfrules` | ✅ Full Support |
 | **Continue** | `.continue/` (configs within it) | ✅ Full Support |
 | **Aider** | `.aider/`, `.aider.conf.yml`, `.aiderignore` | ✅ Full Support |
@@ -504,7 +504,7 @@ CLAUDE.md         AI.md             AGENT.md          openclaw.json
 .cursorrules      .windsurfrules    .clinerules       exec-approvals.json
 .mcp.json         AGENTS.md         settings.json     secrets.env
 skills/           hooks/            agents/
-*.sh *.bash       *.md              *.json *.yaml
+*.sh *.bash       *.md *.mdc         *.json *.yaml
 ```
 
 ### Example Findings
