@@ -129,10 +129,17 @@ describe('applyDocumentationDampening', () => {
     expect(finding.severity).toBe('CRITICAL');
   });
 
-  it('only dampens CRITICAL severity, not lower CRED-001 hits', () => {
-    const finding = makeFinding({ severity: 'HIGH', riskScore: SEVERITY_WEIGHTS.HIGH });
-    applyDocumentationDampening([finding]);
-    expect(finding.severity).toBe('HIGH');
+  it('downgrades a target above its floor to the floor, but never escalates one already at/below it', () => {
+    // Generalized dampening downgrades any target finding more severe than its mapped
+    // floor (CRED-001 -> MEDIUM) — not just CRITICAL hits — and must never raise the
+    // severity of one already at or below the floor.
+    const high = makeFinding({ severity: 'HIGH', riskScore: SEVERITY_WEIGHTS.HIGH });
+    applyDocumentationDampening([high]);
+    expect(high.severity).toBe('MEDIUM');
+
+    const low = makeFinding({ severity: 'LOW', riskScore: SEVERITY_WEIGHTS.LOW });
+    applyDocumentationDampening([low]);
+    expect(low.severity).toBe('LOW');
   });
 
   it('only dampens the CRED-001 rule, not other rules in docs', () => {

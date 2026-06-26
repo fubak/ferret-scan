@@ -30,14 +30,23 @@ export function looksLikeDocumentationPath(filePath: string): boolean {
   return false;
 }
 
-export function applyDocumentationDampening(findings: Finding[]): void {
-  const fileCategories = new Map<string, Set<ThreatCategory>>();
-  for (const f of findings) {
-    const set = fileCategories.get(f.file) ?? new Set<ThreatCategory>();
-    set.add(f.category);
-    fileCategories.set(f.file, set);
-  }
+/**
+ * Rules prone to false positives on documentation/prose (READMEs, awesome-lists,
+ * tutorials) where credential/exfiltration vocabulary appears descriptively rather
+ * than as a live instruction. In a documentation path, and absent corroborating
+ * attack indicators from *other* (high-confidence) rules in the same file, these are
+ * downgraded to the mapped severity rather than dropped — preserving recall while
+ * cutting noise.
+ */
+const DOC_DAMPENING_TARGETS: Partial<Record<string, Severity>> = {
+  'CRED-001': 'MEDIUM',
+  'CRED-006': 'MEDIUM',
+  'CRED-007': 'MEDIUM',
+  'EXFIL-005': 'MEDIUM',
+  'AI-011': 'LOW',
+};
 
+export function applyDocumentationDampening(findings: Finding[]): void {
   const correlatedCategories: ThreatCategory[] = [
     // Only treat truly suspicious categories as correlation signals in documentation.
     // Many docs mention persistence/permissions changes (e.g., updating shell rc files),
@@ -46,19 +55,36 @@ export function applyDocumentationDampening(findings: Finding[]): void {
     'backdoors',
     'injection',
   ];
+  const correlatedSet = new Set<ThreatCategory>(correlatedCategories);
+
+  // Index findings per file for correlation checks.
+  const byFile = new Map<string, Finding[]>();
+  for (const f of findings) {
+    const arr = byFile.get(f.file) ?? [];
+    arr.push(f);
+    byFile.set(f.file, arr);
+  }
 
   for (const f of findings) {
-    if (f.ruleId !== 'CRED-001') continue;
-    if (f.severity !== 'CRITICAL') continue;
+    const to = DOC_DAMPENING_TARGETS[f.ruleId];
+    if (!to) continue;
     if (!looksLikeDocumentationPath(f.file)) continue;
+    // Never escalate: only downgrade when the finding is more severe than the target.
+    if (SEVERITY_WEIGHTS[f.severity] <= SEVERITY_WEIGHTS[to]) continue;
 
-    const cats = fileCategories.get(f.file);
-    const correlated = Boolean(cats && correlatedCategories.some((c) => cats.has(c)));
+    // A genuine attack is indicated when another, *non-dampening-prone* rule in a
+    // suspicious category also fired in this file. Two prose-prone rules do not
+    // corroborate one another.
+    const fileFindings = byFile.get(f.file) ?? [];
+    const correlated = fileFindings.some(
+      (g) =>
+        g.ruleId !== f.ruleId &&
+        !DOC_DAMPENING_TARGETS[g.ruleId] &&
+        correlatedSet.has(g.category)
+    );
     if (correlated) continue;
 
     const from = f.severity;
-    const to: Severity = 'MEDIUM';
-
     f.severity = to;
     f.riskScore = Math.min(f.riskScore, SEVERITY_WEIGHTS[to]);
     f.metadata = {

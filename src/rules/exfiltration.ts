@@ -88,15 +88,20 @@ export const exfiltrationRules: Rule[] = [
     severity: 'CRITICAL',
     description: 'Detects instructions in markdown files that direct Claude to exfiltrate data',
     patterns: [
-      /exfiltrate\s+.*(key|token|secret|credential|password|data)/gi,
-      /upload\s+.*(key|token|secret|credential|password)\s+to/gi,
-      /POST\s+.*containing\s+.*(environment|env|secret|key|token)/gi,
-      /transmit\s+.*(secret|key|token|credential)\s+to/gi,
-      /leak\s+.*(data|secret|key|token|credential)/gi,
-      // Natural-language exfiltration verbs
-      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n]{0,80}(?:key|token|secret|credential|password|api[\s_-]?key)[s]?\b[^\n]{0,40}\bto\b/gi,
-      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n]{0,80}\ball\b[^\n]{0,40}(?:key|token|secret|credential|password)[s]?\b/gi,
-      /\b(?:email|e-mail|send|forward)\b[^\n]{0,60}(?:key|token|secret|credential|password|api[\s_-]?key)[s]?\b/gi,
+      // Bound the distance between the verb and the credential noun so a single match
+      // cannot span unrelated prose (e.g. "leak hunting ... leaks(" in a tool description).
+      /exfiltrate\s+[^\n]{0,60}(key|token|secret|credential|password|data)/gi,
+      /upload\s+[^\n]{0,60}(key|token|secret|credential|password)\s+to/gi,
+      /POST\s+[^\n]{0,60}containing\s+[^\n]{0,60}(environment|env|secret|key|token)/gi,
+      /transmit\s+[^\n]{0,60}(secret|key|token|credential)\s+to/gi,
+      /leak\s+[^\n]{0,40}(data|secret|key|token|credential)/gi,
+      // Natural-language exfiltration verbs. Use [^\n.] so a match cannot cross a sentence
+      // boundary (avoids stitching together unrelated clauses like "email verification. API key").
+      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n.]{0,80}(?:key|token|secret|credential|password|api[\s_-]?key)[s]?\b[^\n.]{0,40}\bto\b/gi,
+      /\b(?:email|e-mail|send|forward|share|give|deliver|transfer|report)\b[^\n.]{0,80}\ball\b[^\n.]{0,40}(?:key|token|secret|credential|password)[s]?\b/gi,
+      // Require a strong credential noun (not a bare "key", which matches benign phrases
+      // like "send keys" or tool descriptions mentioning an "API key").
+      /\b(?:email|e-mail|send|forward)\b[^\n.]{0,60}(?:api[\s_-]?key|access[\s_-]?key|private[\s_-]?key|secret|credential|password|auth[\s_-]?token|token)[s]?\b/gi,
     ],
     fileTypes: ['md'],
     components: ['skill', 'agent', 'ai-config-md'],

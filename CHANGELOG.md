@@ -15,6 +15,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entirely. Also honored in `--config-only` mode, where `.cursor/rules` is
   treated as a high-signal location.
 
+### Changed
+- **Fewer documentation false positives.** Credential (`CRED-006`), exfiltration
+  (`EXFIL-005`), and keychain (`CRED-007`) rules now bound the distance between a
+  verb and its credential noun and stay within a sentence, so prose that mentions
+  the words across unrelated clauses is no longer flagged. The keychain rule
+  requires an access verb near "keychain" (e.g. "macOS Keychain integration" is no
+  longer flagged), and the agent self-modification rule (`AI-011`) ignores benign
+  install phrasing like "add it to your `mcp.json`".
+- **Zero-width detection is i18n-aware.** `OBF-003` now flags ZWNJ/ZWJ (`U+200C`/
+  `U+200D`) only when embedded between Latin alphanumerics — the smuggling case —
+  instead of blanket-flagging them, since they are required characters in Arabic,
+  Persian, and Indic scripts. A BOM (`U+FEFF`) is only flagged when it is not at
+  the start of the file.
+- **Documentation dampening is generalized.** Severity downgrading in
+  documentation paths now applies to a set of prose-prone rules (`CRED-001/006/007`,
+  `EXFIL-005`, `AI-011`) rather than only `CRED-001`, downgrades any such finding
+  above its mapped floor (never escalating), and only treats high-confidence,
+  non-prose rules as corroborating signals that cancel the downgrade.
+
 ## [2.7.3] - 2026-06-24
 
 ### Fixed
