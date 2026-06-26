@@ -65,7 +65,7 @@ export interface CorrelationRule {
 /** Remediation fix definition */
 export interface RemediationFix {
   /** Fix type */
-  type: 'replace' | 'remove' | 'quarantine' | 'permission-change';
+  type: 'replace' | 'remove' | 'quarantine';
   /** Fix description */
   description: string;
   /** Pattern to match for fix */

@@ -162,6 +162,55 @@ describe('discoverFiles - configOnly mode', () => {
     const workspaceFiles = result.files.filter(f => f.path.includes('workspace'));
     expect(workspaceFiles).toHaveLength(0);
   });
+
+  it('includes .windsurf/ files in configOnly mode', async () => {
+    const windsurfDir = path.join(tmpDir, '.windsurf', 'rules');
+    fs.mkdirSync(windsurfDir, { recursive: true });
+    fs.writeFileSync(path.join(windsurfDir, 'my-rules.md'), '# Windsurf rules');
+
+    const result = await discoverFiles([tmpDir], CONFIG_ONLY_OPTIONS);
+    const windsurfFiles = result.files.filter(f => f.path.includes('.windsurf'));
+    expect(windsurfFiles.length).toBeGreaterThan(0);
+  });
+
+  it('includes .windsurf/rules/*.md in configOnly mode', async () => {
+    const windsurfDir = path.join(tmpDir, '.windsurf', 'rules');
+    fs.mkdirSync(windsurfDir, { recursive: true });
+    fs.writeFileSync(path.join(windsurfDir, 'safety.md'), 'Always be safe.');
+    fs.writeFileSync(path.join(windsurfDir, 'coding.md'), 'Write clean code.');
+
+    const result = await discoverFiles([tmpDir], CONFIG_ONLY_OPTIONS);
+    const windsurfFiles = result.files.filter(f => f.path.includes('.windsurf'));
+    expect(windsurfFiles.length).toBe(2);
+  });
+
+  it('includes .github/copilot-instructions.md in configOnly mode', async () => {
+    const githubDir = path.join(tmpDir, '.github');
+    fs.mkdirSync(githubDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(githubDir, 'copilot-instructions.md'),
+      '# Copilot system prompt',
+    );
+
+    const result = await discoverFiles([tmpDir], CONFIG_ONLY_OPTIONS);
+    const copilotFiles = result.files.filter(f =>
+      f.path.includes('copilot-instructions'),
+    );
+    expect(copilotFiles.length).toBe(1);
+  });
+
+  it('does NOT include arbitrary .github/ markdown in configOnly mode', async () => {
+    const githubDir = path.join(tmpDir, '.github');
+    fs.mkdirSync(githubDir, { recursive: true });
+    fs.writeFileSync(path.join(githubDir, 'FUNDING.yml'), 'github: fubak');
+    fs.writeFileSync(path.join(githubDir, 'pull_request_template.md'), '## PR Description');
+
+    const result = await discoverFiles([tmpDir], CONFIG_ONLY_OPTIONS);
+    const prTemplate = result.files.filter(f =>
+      f.path.includes('pull_request_template'),
+    );
+    expect(prTemplate).toHaveLength(0);
+  });
 });
 
 describe('discoverFiles - marketplace mode variations', () => {

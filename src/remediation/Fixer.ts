@@ -264,11 +264,6 @@ function applyFix(
         break;
       }
 
-      case 'permission-change': {
-        // This would need file system operations, not content changes
-        logger.warn('Permission changes not implemented for content-based fixes');
-        return { success: false, newContent: content, linesModified: 0 };
-      }
     }
 
     return {

@@ -3,9 +3,12 @@
  * Tests parseSeverities, parseCategories, loadConfig, and default values
  */
 
-import { loadConfig } from '../utils/config.js';
+jest.mock('node:fs');
+
+import { loadConfig, loadConfigFile } from '../utils/config.js';
 import type { CliOptions } from '../types.js';
 import { DEFAULT_CONFIG } from '../types.js';
+import * as fs from 'node:fs';
 
 // ---------------------------------------------------------------------------
 // Since parseSeverities and parseCategories are not exported directly,
@@ -321,5 +324,38 @@ describe('loadConfig output file', () => {
   it('should not set outputFile by default', () => {
     const config = loadConfig({} as CliOptions);
     expect(config.outputFile).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadConfigFile
+// ---------------------------------------------------------------------------
+
+describe('loadConfigFile', () => {
+  let errorSpy: jest.SpyInstance;
+  const mockFs = fs as any;
+
+  beforeEach(() => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const logger = require('../utils/logger.js').default;
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    errorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    errorSpy?.mockRestore();
+    mockFs.readFileSync.mockReset();
+  });
+
+  it('logs an error when config file has invalid fields', () => {
+    const invalidConfig = JSON.stringify({ severity: 'not-an-array' });
+    mockFs.readFileSync.mockReturnValue(invalidConfig);
+
+    const result = loadConfigFile('/path/to/.ferretrc.json');
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Invalid config file at')
+    );
+    expect(result).toEqual({});
   });
 });

@@ -145,7 +145,7 @@ function runAllGates() {
     ['npm run schema:check', 'JSON Schema sync'],
     ['npm run test:coverage', 'Test coverage (new 80%+ thresholds)'],
     ['node bin/ferret.js scan --self --ci --fail-on high || true', 'Self-scan dogfooding (only evil fixtures should trigger — 0 on real source)'],
-    ['npm run audit:prod || true', 'Production dependency audit'],
+    ['npm run audit:prod', 'Production dependency audit'],
   ];
 
   let allPassed = true;
