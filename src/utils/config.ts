@@ -55,13 +55,16 @@ function findConfigFile(startDir: string): string | null {
 /**
  * Load configuration file with schema validation
  */
-function loadConfigFile(configPath: string): ConfigFile {
+export function loadConfigFile(configPath: string): ConfigFile {
   try {
     const content = readFileSync(configPath, 'utf-8');
     const result = safeParseJSON(content, ConfigFileSchema);
 
     if (!result.success) {
-      logger.warn(`Invalid config file format: ${result.error}`);
+      logger.error(
+        `Invalid config file at ${configPath}: ${result.error}\n` +
+        `Falling back to default configuration. Fix the above error to apply your settings.`
+      );
       return {};
     }
 
