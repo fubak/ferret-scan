@@ -104,6 +104,15 @@ export interface Rule {
   enabled: boolean;
   /** Patterns that exclude a match (false positive filters) */
   excludePatterns?: RegExp[];
+  /**
+   * Soft false-positive filters: when the finding's line matches one of these,
+   * the finding is DOWNGRADED to `dampenTo` (default INFO) instead of being
+   * dropped. Preserves recall — a hostile line phrased like benign documentation
+   * still surfaces (at lower priority) rather than being fully suppressed.
+   */
+  dampenPatterns?: RegExp[];
+  /** Target severity for a dampened match (default: INFO). Never escalates. */
+  dampenTo?: Severity;
   /** Context patterns that must also be present for a match */
   requireContext?: RegExp[];
   /** Context patterns that invalidate a match (documentation indicators) */

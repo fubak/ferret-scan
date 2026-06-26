@@ -5,6 +5,18 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- **`AI-011` benign install phrasing now dampens instead of suppressing.** The
+  filter for documentation phrasings like "add it to your `mcp.json`" previously
+  dropped the finding entirely, which a hostile line phrased the same way could
+  abuse to hide a real self-modification instruction. It now **downgrades the
+  finding to INFO** (still visible in a full scan) rather than removing it,
+  closing that evasion surface while keeping HIGH-severity noise off every MCP
+  server's README. Implemented as a general rule capability (`dampenPatterns` /
+  `dampenTo`) that any rule can use as a softer alternative to `excludePatterns`.
+
 ## [2.8.0] - 2026-06-26
 
 ### Added
