@@ -1,6 +1,6 @@
 {
   "name": "ferret-lsp",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Language Server Protocol (LSP) server for Ferret security scanner. Provides real-time diagnostics, hover info, completions, and code actions for AI CLI/agent configurations in any LSP-capable editor.",
   "keywords": [
     "lsp",

@@ -5,7 +5,7 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.8.0] - 2026-06-26
 
 ### Added
 - **Cursor `.cursor/rules/*.mdc` rule files are now scanned.** Cursor's modern
@@ -33,6 +33,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `EXFIL-005`, `AI-011`) rather than only `CRED-001`, downgrades any such finding
   above its mapped floor (never escalating), and only treats high-confidence,
   non-prose rules as corroborating signals that cancel the downgrade.
+
+### Fixed
+- **Releases no longer show a false failure when re-triggered.** The publish
+  workflow now skips `npm publish` for a version already on npm (for both
+  `ferret-scan` and `ferret-lsp`), so a manual dispatch followed by the release
+  tag push no longer fails the run on a duplicate-version error.
+
+### Maintenance
+- Removed dead code in `bin/ferret.js` (an unused import and catch binding).
+- CI dependency bumps: `actions/checkout` v7, `actions/upload-artifact` v7,
+  `actions/download-artifact` v8, and the dev-dependencies group.
 
 ## [2.7.3] - 2026-06-24
 

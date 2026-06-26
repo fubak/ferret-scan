@@ -1,6 +1,6 @@
 {
   "name": "ferret-scan",
-  "version": "2.7.3",
+  "version": "2.8.0",
   "description": "Static security scanner for AI CLI and MCP configurations — detects credential leaks, prompt injection, jailbreaks, and supply chain risks",
   "type": "module",
   "main": "dist/index.js",
