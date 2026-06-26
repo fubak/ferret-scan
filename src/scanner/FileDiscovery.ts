@@ -46,6 +46,9 @@ function getFileType(filePath: string): FileType | null {
   const ext = extname(filePath).toLowerCase().slice(1);
   const fileTypeMap: Record<string, FileType> = {
     'md': 'md',
+    // Cursor's modern rules format (.cursor/rules/*.mdc) is markdown-with-frontmatter.
+    // Treat it as markdown so all markdown-targeting rules (injection, credentials, etc.) apply.
+    'mdc': 'md',
     'sh': 'sh',
     'bash': 'bash',
     'zsh': 'zsh',
@@ -235,6 +238,11 @@ function isAnalyzableFile(filePath: string, options: DiscoveryOptions): boolean 
         return true;
       }
       return false;
+    }
+
+    // Cursor: modern rules live under .cursor/rules/*.mdc (high signal).
+    if (p.includes('/.cursor/') || p.includes('\\.cursor\\')) {
+      return true;
     }
 
     // OpenClaw: focus on config and operational JSON/YAML/env under known folders.
