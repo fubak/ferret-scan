@@ -258,6 +258,18 @@ export const aiSpecificRules: Rule[] = [
       'https://atlas.mitre.org/techniques/AML.T0081',
     ],
     enabled: true,
+    // Benign human-facing install/setup instructions ("add it to your mcp.json", "you can
+    // add ... to settings.json", "add it to a file called ...") are documentation, not agent
+    // self-modification. Filter these common phrasings to avoid flagging every MCP server's
+    // README. NOTE: excludePatterns are line-scoped, so a hostile line phrased exactly like
+    // benign install docs could evade AI-011 — an accepted noise/recall tradeoff for this rule.
+    excludePatterns: [
+      /\badd (?:it|this|that|them|the following|the above|the below|the snippet|the config(?:uration)?)\b/i,
+      /\b(?:you can|to) add\b/i,
+      /\badd .{0,40}\bto your\b/i,
+      /\badd .{0,40}\bto (?:a|the) (?:file|config(?:uration)?|section)\b/i,
+      /\bfile (?:called|named)\b/i,
+    ],
     excludeContext: [
       /security\s+scanner/gi,
       /documentation|readme|docs/gi,
