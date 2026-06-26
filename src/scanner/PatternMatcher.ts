@@ -214,6 +214,24 @@ function shouldExcludeMatch(
 }
 
 /**
+ * Whether the finding's line matches one of the rule's soft false-positive
+ * (dampen) patterns. Unlike excludePatterns, a match here downgrades the
+ * finding's severity instead of dropping it, so a line phrased like benign
+ * documentation still surfaces (just at lower priority).
+ */
+function shouldDampenMatch(rule: Rule, lineContent: string): boolean {
+  if (!rule.dampenPatterns) return false;
+  for (const pattern of rule.dampenPatterns) {
+    if (pattern.global || pattern.sticky) pattern.lastIndex = 0;
+    if (pattern.test(lineContent)) {
+      logger.debug(`[${rule.id}] Dampened by dampenPattern: ${lineContent.slice(0, 50)}`);
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Check if a rule applies to a file
  */
 function ruleApplies(rule: Rule, file: DiscoveredFile): boolean {
@@ -270,10 +288,19 @@ export function matchRule(
       continue;
     }
 
+    // Soft false-positive filter: dampen (downgrade) rather than drop, so a line
+    // phrased like benign documentation still surfaces — just at lower priority —
+    // and cannot be used to fully suppress an otherwise-real finding.
+    const dampenTo = rule.dampenTo ?? 'INFO';
+    const dampened =
+      shouldDampenMatch(rule, lineContent) &&
+      SEVERITY_WEIGHTS[dampenTo] < SEVERITY_WEIGHTS[rule.severity];
+    const severity: Severity = dampened ? dampenTo : rule.severity;
+
     const finding: Finding = {
       ruleId: rule.id,
       ruleName: rule.name,
-      severity: rule.severity,
+      severity,
       category: rule.category,
       file: file.path,
       relativePath: file.relativePath,
@@ -283,12 +310,20 @@ export function matchRule(
       context: contextForCheck,
       remediation: rule.remediation,
       timestamp: new Date(),
-      riskScore: calculateRiskScore(
-        rule.severity,
-        lineMatches.length,
-        file.component
-      ),
+      riskScore: calculateRiskScore(severity, lineMatches.length, file.component),
     };
+
+    if (dampened) {
+      finding.metadata = {
+        ...(finding.metadata ?? {}),
+        dampening: {
+          reason: 'Line matches a benign documentation/install phrasing pattern',
+          fromSeverity: rule.severity,
+          toSeverity: severity,
+          ruleId: rule.id,
+        },
+      };
+    }
 
     findings.push(finding);
     logger.debug(
