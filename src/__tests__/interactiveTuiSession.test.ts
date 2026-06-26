@@ -7,6 +7,11 @@ import { EventEmitter } from 'events';
 
 // Mock readline
 const mockRlInstance = new EventEmitter() as any;
+
+afterEach(() => {
+  mockRlInstance.removeAllListeners();
+});
+
 mockRlInstance.question = jest.fn();
 mockRlInstance.close = jest.fn(() => {
   mockRlInstance.emit('close');

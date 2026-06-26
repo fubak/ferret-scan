@@ -6,6 +6,11 @@
 import { EventEmitter } from 'events';
 
 const mockRlInstance2 = new EventEmitter() as any;
+
+afterEach(() => {
+  mockRlInstance2.removeAllListeners();
+});
+
 jest.mock('node:readline', () => ({
   createInterface: jest.fn().mockReturnValue(mockRlInstance2),
 }));
