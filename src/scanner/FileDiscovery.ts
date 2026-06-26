@@ -245,6 +245,20 @@ function isAnalyzableFile(filePath: string, options: DiscoveryOptions): boolean 
       return true;
     }
 
+    // Windsurf: rules directory mirrors .cursor/rules/ pattern.
+    if (p.includes('/.windsurf/') || p.includes('\\.windsurf\\')) {
+      return true;
+    }
+
+    // GitHub Copilot: system prompt at .github/copilot-instructions.md.
+    // (Other .github/ files like PR templates are excluded.)
+    if (
+      (p.includes('/.github/') || p.includes('\\.github\\')) &&
+      fileName === 'copilot-instructions.md'
+    ) {
+      return true;
+    }
+
     // OpenClaw: focus on config and operational JSON/YAML/env under known folders.
     if (p.includes('/.openclaw/') || p.includes('\\.openclaw\\')) {
       // Bulk/runtime state we generally don't want to scan by default.
