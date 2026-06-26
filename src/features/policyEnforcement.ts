@@ -166,6 +166,61 @@ export const DEFAULT_POLICY: PolicyConfig = {
   },
 };
 
+const STRICT_POLICY: PolicyConfig = {
+  ...DEFAULT_POLICY,
+  name: 'Strict Security Policy',
+  settings: {
+    ...DEFAULT_POLICY.settings,
+    maxCritical: 0,
+    maxHigh: 0,
+    maxMedium: 5,
+    maxTotal: 20,
+  },
+  rules: [
+    ...DEFAULT_POLICY.rules,
+    {
+      id: 'no-medium',
+      description: 'Warn on medium severity findings',
+      enabled: true,
+      action: 'warn' as const,
+      conditions: {
+        severities: ['MEDIUM' as const],
+      },
+      message: 'Medium severity issues detected',
+    },
+  ],
+};
+
+const MINIMAL_POLICY: PolicyConfig = {
+  name: 'Minimal Security Policy',
+  version: '1.0.0',
+  description: 'Minimal policy - only blocks critical issues',
+  rules: [
+    {
+      id: 'no-critical',
+      description: 'Block critical severity findings',
+      enabled: true,
+      action: 'block' as const,
+      conditions: {
+        severities: ['CRITICAL' as const],
+      },
+      message: 'Critical security issues must be resolved',
+    },
+  ],
+  settings: {
+    failOnBlock: true,
+    exitCodeOnBlock: 1,
+    exitCodeOnWarn: 0,
+    reportViolations: true,
+  },
+};
+
+const POLICY_TEMPLATES: Record<string, PolicyConfig> = {
+  default: DEFAULT_POLICY,
+  strict: STRICT_POLICY,
+  minimal: MINIMAL_POLICY,
+};
+
 /**
  * Load policy from file
  */
@@ -259,6 +314,103 @@ function findingMatchesConditions(
   return true;
 }
 
+function evaluateRules(
+  findings: Finding[],
+  rules: PolicyRule[]
+): { violations: PolicyViolation[]; passedRules: number; failedRules: number } {
+  const violations: PolicyViolation[] = [];
+  let passedRules = 0;
+  let failedRules = 0;
+
+  for (const rule of rules) {
+    if (!rule.enabled) {
+      passedRules++;
+      continue;
+    }
+
+    let matchingFindings: Finding[];
+    if (rule.conditions.maxFindings !== undefined) {
+      matchingFindings = findings.length > rule.conditions.maxFindings
+        ? findings.slice(0, 10)
+        : [];
+    } else {
+      matchingFindings = findings.filter(f => findingMatchesConditions(f, rule.conditions));
+    }
+
+    if (matchingFindings.length > 0) {
+      violations.push({
+        ruleId: rule.id,
+        ruleName: rule.description ?? rule.id,
+        action: rule.action,
+        message: rule.message ?? `Policy rule "${rule.id}" violated`,
+        findings: matchingFindings,
+        severity: rule.action === 'block' ? 'CRITICAL' : 'MEDIUM',
+      });
+      failedRules++;
+    } else {
+      passedRules++;
+    }
+  }
+
+  return { violations, passedRules, failedRules };
+}
+
+function evaluateSettings(
+  scanResult: ScanResult,
+  settings: PolicyConfig['settings']
+): PolicyViolation[] {
+  const violations: PolicyViolation[] = [];
+
+  if (settings.maxCritical !== undefined && scanResult.summary.critical > settings.maxCritical) {
+    violations.push({
+      ruleId: 'settings-max-critical',
+      ruleName: 'Maximum Critical Findings',
+      action: 'block',
+      message: `Found ${scanResult.summary.critical} critical findings (max: ${settings.maxCritical})`,
+      findings: scanResult.findings.filter(f => f.severity === 'CRITICAL'),
+      severity: 'CRITICAL',
+    });
+  }
+
+  if (settings.maxHigh !== undefined && scanResult.summary.high > settings.maxHigh) {
+    violations.push({
+      ruleId: 'settings-max-high',
+      ruleName: 'Maximum High Findings',
+      action: 'block',
+      message: `Found ${scanResult.summary.high} high severity findings (max: ${settings.maxHigh})`,
+      findings: scanResult.findings.filter(f => f.severity === 'HIGH').slice(0, 10),
+      severity: 'HIGH',
+    });
+  }
+
+  if (settings.maxTotal !== undefined && scanResult.summary.total > settings.maxTotal) {
+    violations.push({
+      ruleId: 'settings-max-total',
+      ruleName: 'Maximum Total Findings',
+      action: 'block',
+      message: `Found ${scanResult.summary.total} total findings (max: ${settings.maxTotal})`,
+      findings: scanResult.findings.slice(0, 10),
+      severity: 'HIGH',
+    });
+  }
+
+  if (settings.minOverallScore !== undefined) {
+    const invertedScore = 100 - scanResult.overallRiskScore;
+    if (invertedScore < settings.minOverallScore) {
+      violations.push({
+        ruleId: 'settings-min-score',
+        ruleName: 'Minimum Security Score',
+        action: 'block',
+        message: `Security score ${invertedScore} below minimum ${settings.minOverallScore}`,
+        findings: [],
+        severity: 'HIGH',
+      });
+    }
+  }
+
+  return violations;
+}
+
 /**
  * Evaluate scan result against policy
  */
@@ -266,127 +418,20 @@ export function evaluatePolicy(
   scanResult: ScanResult,
   policy: PolicyConfig
 ): PolicyEvaluationResult {
-  const violations: PolicyViolation[] = [];
-  const warnings: PolicyViolation[] = [];
-  const blockers: PolicyViolation[] = [];
+  const { violations: ruleViolations, passedRules, failedRules: ruleFailures } =
+    evaluateRules(scanResult.findings, policy.rules);
 
-  let passedRules = 0;
-  let failedRules = 0;
+  const settingsViolations = evaluateSettings(scanResult, policy.settings);
+  const violations = [...ruleViolations, ...settingsViolations];
+  const blockers = violations.filter(v => v.action === 'block');
+  const warnings = violations.filter(v => v.action === 'warn');
+  const failedRules = ruleFailures + settingsViolations.length;
 
-  // Evaluate each policy rule
-  for (const rule of policy.rules) {
-    if (!rule.enabled) {
-      passedRules++;
-      continue;
-    }
-
-    // Find matching findings
-    let matchingFindings: Finding[] = [];
-
-    if (rule.conditions.maxFindings !== undefined) {
-      // Special case: check total number of findings
-      if (scanResult.findings.length > rule.conditions.maxFindings) {
-        matchingFindings = scanResult.findings.slice(0, 10); // Sample for display
-      }
-    } else {
-      // Normal case: check individual findings
-      matchingFindings = scanResult.findings.filter(f =>
-        findingMatchesConditions(f, rule.conditions)
-      );
-    }
-
-    if (matchingFindings.length > 0) {
-      const violation: PolicyViolation = {
-        ruleId: rule.id,
-        ruleName: rule.description ?? rule.id,
-        action: rule.action,
-        message: rule.message ?? `Policy rule "${rule.id}" violated`,
-        findings: matchingFindings,
-        severity: rule.action === 'block' ? 'CRITICAL' : 'MEDIUM',
-      };
-
-      violations.push(violation);
-
-      if (rule.action === 'block') {
-        blockers.push(violation);
-      } else if (rule.action === 'warn') {
-        warnings.push(violation);
-      }
-
-      failedRules++;
-    } else {
-      passedRules++;
-    }
-  }
-
-  // Check global settings
-  const settings = policy.settings;
-
-  if (settings.maxCritical !== undefined && scanResult.summary.critical > settings.maxCritical) {
-    const violation: PolicyViolation = {
-      ruleId: 'settings-max-critical',
-      ruleName: 'Maximum Critical Findings',
-      action: 'block',
-      message: `Found ${scanResult.summary.critical} critical findings (max: ${settings.maxCritical})`,
-      findings: scanResult.findings.filter(f => f.severity === 'CRITICAL'),
-      severity: 'CRITICAL',
-    };
-    violations.push(violation);
-    blockers.push(violation);
-    failedRules++;
-  }
-
-  if (settings.maxHigh !== undefined && scanResult.summary.high > settings.maxHigh) {
-    const violation: PolicyViolation = {
-      ruleId: 'settings-max-high',
-      ruleName: 'Maximum High Findings',
-      action: 'block',
-      message: `Found ${scanResult.summary.high} high severity findings (max: ${settings.maxHigh})`,
-      findings: scanResult.findings.filter(f => f.severity === 'HIGH').slice(0, 10),
-      severity: 'HIGH',
-    };
-    violations.push(violation);
-    blockers.push(violation);
-    failedRules++;
-  }
-
-  if (settings.maxTotal !== undefined && scanResult.summary.total > settings.maxTotal) {
-    const violation: PolicyViolation = {
-      ruleId: 'settings-max-total',
-      ruleName: 'Maximum Total Findings',
-      action: 'block',
-      message: `Found ${scanResult.summary.total} total findings (max: ${settings.maxTotal})`,
-      findings: scanResult.findings.slice(0, 10),
-      severity: 'HIGH',
-    };
-    violations.push(violation);
-    blockers.push(violation);
-    failedRules++;
-  }
-
-  if (settings.minOverallScore !== undefined) {
-    const invertedScore = 100 - scanResult.overallRiskScore;
-    if (invertedScore < settings.minOverallScore) {
-      const violation: PolicyViolation = {
-        ruleId: 'settings-min-score',
-        ruleName: 'Minimum Security Score',
-        action: 'block',
-        message: `Security score ${invertedScore} below minimum ${settings.minOverallScore}`,
-        findings: [],
-        severity: 'HIGH',
-      };
-      violations.push(violation);
-      blockers.push(violation);
-      failedRules++;
-    }
-  }
-
-  // Determine exit code
   let exitCode = 0;
-  if (blockers.length > 0 && settings.failOnBlock) {
-    exitCode = settings.exitCodeOnBlock;
-  } else if (warnings.length > 0 && settings.exitCodeOnWarn > 0) {
-    exitCode = settings.exitCodeOnWarn;
+  if (blockers.length > 0 && policy.settings.failOnBlock) {
+    exitCode = policy.settings.exitCodeOnBlock;
+  } else if (warnings.length > 0 && policy.settings.exitCodeOnWarn > 0) {
+    exitCode = policy.settings.exitCodeOnWarn;
   }
 
   return {
@@ -470,66 +515,7 @@ export function findPolicyFile(basePath: string): string | null {
  * Initialize a new policy file
  */
 export function initPolicy(basePath: string, template: 'default' | 'strict' | 'minimal' = 'default'): string {
-  let policy: PolicyConfig;
-
-  switch (template) {
-    case 'strict':
-      policy = {
-        ...DEFAULT_POLICY,
-        name: 'Strict Security Policy',
-        settings: {
-          ...DEFAULT_POLICY.settings,
-          maxCritical: 0,
-          maxHigh: 0,
-          maxMedium: 5,
-          maxTotal: 20,
-        },
-        rules: [
-          ...DEFAULT_POLICY.rules,
-          {
-            id: 'no-medium',
-            description: 'Warn on medium severity findings',
-            enabled: true,
-            action: 'warn',
-            conditions: {
-              severities: ['MEDIUM'],
-            },
-            message: 'Medium severity issues detected',
-          },
-        ],
-      };
-      break;
-
-    case 'minimal':
-      policy = {
-        name: 'Minimal Security Policy',
-        version: '1.0.0',
-        description: 'Minimal policy - only blocks critical issues',
-        rules: [
-          {
-            id: 'no-critical',
-            description: 'Block critical severity findings',
-            enabled: true,
-            action: 'block',
-            conditions: {
-              severities: ['CRITICAL'],
-            },
-            message: 'Critical security issues must be resolved',
-          },
-        ],
-        settings: {
-          failOnBlock: true,
-          exitCodeOnBlock: 1,
-          exitCodeOnWarn: 0,
-          reportViolations: true,
-        },
-      };
-      break;
-
-    default:
-      policy = DEFAULT_POLICY;
-  }
-
+  const policy = POLICY_TEMPLATES[template] ?? DEFAULT_POLICY;
   const filePath = resolve(basePath, '.ferret-policy.json');
   savePolicy(policy, filePath);
   return filePath;
