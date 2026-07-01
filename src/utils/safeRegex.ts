@@ -6,21 +6,27 @@
  * Prevents ReDoS attacks and runaway regex matching in user-controlled patterns.
  */
 
-import type { default as RE2Type } from 're2';
 import { nodeRequire } from './esmRequire.js';
 
+// Inline structural type for the RE2 constructor.
+// Avoids `import type from 're2'` which fails at compile time when the
+// optional native package isn't installed (e.g. on platforms without
+// matching prebuilds). RE2 instances extend RegExp, so this shape is
+// sufficient for all usage in this file.
+type RE2Constructor = new (pattern: string | RegExp, flags?: string) => RegExp;
+
 // Lazy-load RE2 so the module is still usable when re2 is not installed.
-let RE2: typeof RE2Type | null = null;
+let RE2: RE2Constructor | null = null;
 let re2Attempted = false;
 
-function getRE2(): typeof RE2Type | null {
+function getRE2(): RE2Constructor | null {
   if (re2Attempted) return RE2;
   re2Attempted = true;
   try {
     // Bare `require('re2')` would throw in native ESM (require is undefined),
     // silently disabling RE2 in every published build. `nodeRequire` bridges to
     // a working CommonJS require via createRequire(import.meta.url).
-    RE2 = nodeRequire('re2') as typeof RE2Type;
+    RE2 = nodeRequire('re2') as RE2Constructor;
   } catch {
     RE2 = null;
   }
