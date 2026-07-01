@@ -235,6 +235,13 @@ function shouldDampenMatch(rule: Rule, lineContent: string): boolean {
  * Check if a rule applies to a file
  */
 function ruleApplies(rule: Rule, file: DiscoveredFile): boolean {
+  // Jupyter notebooks contain extracted text from code, markdown, and output
+  // cells — they can trigger any rule that applies to those source types.
+  // Bypass both per-rule filters so all rules scan notebook content.
+  if (file.type === 'ipynb') {
+    return true;
+  }
+
   // Check file type
   if (!rule.fileTypes.includes(file.type)) {
     return false;

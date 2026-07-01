@@ -1,0 +1,40 @@
+- id: ferret-scan
+  name: Ferret Security Scan
+  description: >
+    Scans AI CLI and MCP configuration files for credential leaks, prompt
+    injection, jailbreaks, and supply-chain risks using ferret-scan.
+    Fails on HIGH or CRITICAL findings by default.
+  language: node
+  entry: ferret scan
+  args: ["--fail-on", "HIGH", "--ci"]
+  pass_filenames: false
+  always_run: true
+  types_or: []
+
+- id: ferret-check-file
+  name: Ferret File Check
+  description: >
+    Checks individual staged files for security issues.
+    Suitable for repos where you only want to scan modified AI config files
+    rather than the entire workspace.
+  language: node
+  entry: ferret check
+  args: []
+  pass_filenames: true
+  types_or: [markdown, json, yaml]
+  files: >-
+    (CLAUDE\.md|\.mcp\.json|mcp\.json|settings\.json|settings\.local\.json|
+    \.cursorrules|\.windsurfrules|\.clinerules|\.aider\.conf\.yml|
+    \.cursor/|\.windsurf/|\.claude/|\.github/copilot-instructions\.md|.*\.ipynb)
+
+- id: ferret-mcp-audit
+  name: Ferret MCP Audit
+  description: >
+    Audits .mcp.json files for trust-score issues, unverified packages,
+    suspicious arguments, and known-bad patterns before they are committed.
+  language: node
+  entry: ferret mcp audit
+  args: []
+  pass_filenames: false
+  always_run: false
+  files: (\.mcp\.json|mcp\.json)$
