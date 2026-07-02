@@ -210,6 +210,4 @@ ferret policy pull --verify-sig ed25519:PUBKEY https://...
 
 ## Appendix: Version Numbering Policy
 
-Ferret-scan and ferret-lsp versions are bumped **in lockstep** using `scripts/release-bump.mjs`. The LSP embeds the scanner; a version mismatch between them is never supported.
-
-The VS Code extension follows the same version independently (it may ship between scanner releases) but the release-bump script updates it atomically when present.
+Ferret-scan, ferret-lsp, and the VS Code extension keep **independent version lines** (e.g. scanner 2.9.0 shipped with lsp 0.5.0 and extension 1.2.1), but they are bumped **together** by `scripts/release-bump.mjs`, which applies the same semver increment type (patch/minor/major) to each package. The LSP bundles the scanner, so it always receives a bump alongside a scanner release.

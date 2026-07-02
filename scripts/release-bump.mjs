@@ -93,7 +93,23 @@ if (!/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(newVersion)) {
   process.exit(1);
 }
 
-console.log(`\n📦 Release bump: ${currentVersion} → ${newVersion}${dryRun ? ' [DRY RUN]' : ''}\n`);
+// ferret-lsp and the VS Code extension have independent version lines
+// (e.g. scanner 2.9.0 shipped with lsp 0.5.0 and extension 1.2.1), so they
+// receive the same INCREMENT TYPE, not the same version string. When an
+// exact version is given, derive the increment type from the root delta.
+function incrementTypeOf(from, to) {
+  const [fM, fm] = from.split('.').map(Number);
+  const [tM, tm] = to.split('.').map(Number);
+  if (tM !== fM) return 'major';
+  if (tm !== fm) return 'minor';
+  return 'patch';
+}
+
+const incrementType = SEMVER_BUMPS.has(versionArg)
+  ? versionArg
+  : incrementTypeOf(currentVersion, newVersion);
+
+console.log(`\n📦 Release bump: ${currentVersion} → ${newVersion} (${incrementType})${dryRun ? ' [DRY RUN]' : ''}\n`);
 
 // ---------------------------------------------------------------------------
 // 1. Update package.json
@@ -111,20 +127,25 @@ const lspPkgPath = resolve(ROOT, 'lsp', 'package.json');
 console.log('2/6  Updating lsp/package.json …');
 const lspPkg = readJson(lspPkgPath);
 const lspOldVersion = lspPkg.version;
-lspPkg.version = newVersion;
+const lspNewVersion = bumpSemver(lspOldVersion, incrementType);
+lspPkg.version = lspNewVersion;
 writeJson(lspPkgPath, lspPkg);
-console.log(`     ferret-lsp ${lspOldVersion} → ${newVersion}`);
+console.log(`     ferret-lsp ${lspOldVersion} → ${lspNewVersion}`);
 
 // ---------------------------------------------------------------------------
 // 3. Update extensions/vscode/package.json (optional)
 // ---------------------------------------------------------------------------
 
 const vscodePkgPath = resolve(ROOT, 'extensions', 'vscode', 'package.json');
+let vscodeNewVersion = null;
 if (existsSync(vscodePkgPath)) {
   console.log('3/6  Updating extensions/vscode/package.json …');
   const vscodePkg = readJson(vscodePkgPath);
-  vscodePkg.version = newVersion;
+  const vscodeOldVersion = vscodePkg.version;
+  vscodeNewVersion = bumpSemver(vscodeOldVersion, incrementType);
+  vscodePkg.version = vscodeNewVersion;
   writeJson(vscodePkgPath, vscodePkg);
+  console.log(`     vscode extension ${vscodeOldVersion} → ${vscodeNewVersion}`);
 } else {
   console.log('3/6  extensions/vscode/package.json not found — skipping.');
 }
@@ -155,7 +176,7 @@ run(['npm', 'install', '--package-lock-only', '--ignore-scripts'], resolve(ROOT,
 // ---------------------------------------------------------------------------
 
 console.log(`
-✅ Release bump complete: ${currentVersion} → ${newVersion}
+✅ Release bump complete: ${currentVersion} → ${newVersion} (ferret-lsp → ${lspNewVersion}${vscodeNewVersion ? `, vscode → ${vscodeNewVersion}` : ''})
 
 Files updated:
   package.json
@@ -167,7 +188,7 @@ Files updated:
 
 Next steps:
   git add -A
-  git commit -m "chore: bump versions to ferret-scan@${newVersion} and ferret-lsp@${newVersion}"
+  git commit -m "chore: bump versions to ferret-scan@${newVersion} and ferret-lsp@${lspNewVersion}"
   git tag v${newVersion}
   git push && git push --tags
 `);

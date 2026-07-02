@@ -5,6 +5,56 @@ All notable changes to ferret-scan will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-07-01
+
+### Added
+- **Jupyter notebook scanning (`.ipynb`).** Cell sources **and outputs** are
+  extracted and run through all existing rules — output cells are where
+  credentials most commonly leak (a debugging `print(api_key)` saved into the
+  notebook). Findings carry `notebookCell`, `notebookCellType`, and
+  `notebookCellLine` metadata identifying the originating cell.
+- **JSONL output format (`--format jsonl`).** One finding per line with a
+  deterministic 12-character SHA-256 ID (`ruleId + file + line + match`),
+  stable across re-runs and rule reordering — designed as a SIEM / data
+  warehouse dedup key. A header line carries scan metadata.
+- **GitHub Action (`action.yml`).** One-step CI integration: installs
+  ferret-scan, runs the scan, exposes finding counts / risk score as outputs,
+  and uploads SARIF to GitHub Code Scanning.
+- **pre-commit framework hooks (`.pre-commit-hooks.yaml`).** Three hooks for
+  [pre-commit](https://pre-commit.com) users: `ferret-scan` (full scan),
+  `ferret-check-file` (staged AI config files), `ferret-mcp-audit`
+  (`.mcp.json` changes).
+- **Atomic release-bump script (`scripts/release-bump.mjs`).** Updates all six
+  version-bearing files (both lockfiles included) in one step so the v2.9.0
+  lockfile-desync CI failure cannot recur.
+
+### Fixed
+- **Publishing now requires green tests.** Removed the `github.event_name ==
+  'push'` bypass from the publish workflow's job conditions; a tag push no
+  longer publishes to npm when the test job fails. Emergency escape remains
+  via manual dispatch with `skip_tests: true`.
+- **`npm ci` no longer fails when the optional `re2` package cannot build.**
+  `safeRegex.ts` imported the `re2` type at compile time, breaking the
+  `prepare`-hook build on runners without re2 prebuilds. Replaced with an
+  inline structural type; runtime behaviour is unchanged (RE2 is still used
+  when available).
+
+## [2.9.0] - 2026-06-26
+
+### Changed
+- **Config validation failures now log as errors** with the config path and
+  offending field details instead of a silent fallback.
+- **`--config-only` mode scans `.windsurf/` and
+  `.github/copilot-instructions.md`** as high-signal AI config locations.
+- **Honest audit gate.** `npm audit` in CI no longer masks failures with
+  `|| true`; `undici` and `tar` pinned via package overrides.
+
+### Maintenance
+- Decomposed `evaluatePolicy` and extracted policy templates into a dedicated
+  module; extracted ThreatFeed built-in indicators to a data module.
+- Split the monolithic `rules.test.ts` into per-category test files.
+- Removed the unimplemented `permission-change` fix type.
+
 ## [2.8.1] - 2026-06-26
 
 ### Changed
