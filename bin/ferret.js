@@ -16,6 +16,7 @@ import { formatHtmlReport } from '../dist/reporters/HtmlReporter.js';
 import { formatCsvReport } from '../dist/reporters/CsvReporter.js';
 import { formatAtlasNavigatorLayer } from '../dist/reporters/AtlasNavigatorReporter.js';
 import { formatCycloneDxBom, formatAiBom } from '../dist/reporters/SbomReporter.js';
+import { formatJsonlReport } from '../dist/reporters/JsonlReporter.js';
 import { startEnhancedWatchMode } from '../dist/scanner/WatchMode.js';
 import {
   loadBaseline,
@@ -80,7 +81,7 @@ program
   .command('scan')
   .description('Scan AI CLI configurations for security issues')
   .argument('[path]', 'Path to scan (defaults to AI CLI config directories)')
-  .option('-f, --format <format>', 'Output format: console, json, sarif, html, csv, atlas, sbom, aibom', 'console')
+  .option('-f, --format <format>', 'Output format: console, json, jsonl, sarif, html, csv, atlas, sbom, aibom', 'console')
   .option('-s, --severity <levels>', 'Severity levels to report (comma-separated)', 'critical,high,medium,low,info')
   .option('-c, --categories <cats>', 'Categories to scan (comma-separated)')
   .option('--fail-on <severity>', 'Minimum severity to fail on', 'high')
@@ -377,6 +378,15 @@ program
           console.log(`SBOM written to: ${outFile} (${sbomFormat})`);
         } else {
           console.log(sbomOutput);
+        }
+      } else if (config.format === 'jsonl') {
+        const output = formatJsonlReport(reportResult);
+        if (config.outputFile) {
+          const { writeFileSync } = await import('node:fs');
+          writeFileSync(config.outputFile, output);
+          console.log(`JSONL report written to: ${config.outputFile}`);
+        } else {
+          console.log(output);
         }
       } else if (config.format === 'html') {
         const output = formatHtmlReport(reportResult, {

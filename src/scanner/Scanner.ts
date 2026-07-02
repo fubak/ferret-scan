@@ -30,6 +30,7 @@ import { loadCustomRules, loadCustomRulesSource } from '../features/customRules.
 import { applyDocumentationDampening } from '../features/docDampening.js';
 import { analyzeCorrelations, shouldAnalyzeCorrelations } from '../analyzers/CorrelationAnalyzer.js';
 import { parseIgnoreComments, shouldIgnoreFinding, isUntrustedScannedPath, type FileIgnoreState } from '../features/ignoreComments.js';
+import { extractJupyterText, resolveCellReference } from '../features/jupyterExtractor.js';
 import { annotateFindingsWithMitreAtlas, setMitreAtlasTechniqueCatalog } from '../mitre/atlas.js';
 import { loadMitreAtlasTechniqueCatalog } from '../mitre/atlasCatalog.js';
 import { createLlmProvider, type LlmProvider } from '../features/llm/index.js';
@@ -146,9 +147,21 @@ async function scanFile(
   analyzers: IAnalyzer[]
 ): Promise<{ findings: Finding[]; errors?: string[]; ignoreState?: FileIgnoreState }> {
   try {
-    const content = await readFile(file.path, 'utf-8');
+    const rawContent = await readFile(file.path, 'utf-8');
     const allFindings: Finding[] = [];
     let ignoreState: FileIgnoreState | undefined;
+
+    // Jupyter notebooks: extract scannable text from the JSON structure before
+    // running pattern rules. The raw JSON is still valid but produces noisy
+    // line numbers; the extractor builds a flat representation with accurate
+    // virtual lines and annotates findings with the cell index.
+    let content = rawContent;
+    let jupyterLineMap: ReturnType<typeof extractJupyterText>['lineMap'] = [];
+    if (file.type === 'ipynb') {
+      const extracted = extractJupyterText(rawContent);
+      content = extracted.text;
+      jupyterLineMap = extracted.lineMap;
+    }
 
     if (config.ignoreComments && content.includes('ferret-')) {
       const parsed = parseIgnoreComments(content, file.type);
@@ -162,6 +175,22 @@ async function scanFile(
     const patternFindings = matchRules(rules, file, content, {
       contextLines: config.contextLines,
     });
+
+    // For notebook findings, annotate metadata with cell reference
+    if (file.type === 'ipynb' && jupyterLineMap.length > 0) {
+      for (const finding of patternFindings) {
+        const ref = resolveCellReference(finding.line, jupyterLineMap);
+        if (ref) {
+          finding.metadata = {
+            ...finding.metadata,
+            notebookCell: ref.cellIndex,
+            notebookCellType: ref.cellType,
+            notebookCellLine: ref.withinCellLine,
+          };
+        }
+      }
+    }
+
     allFindings.push(...patternFindings);
 
     // Zero-width / bidi / BOM evasion: an attacker can split a literal keyword

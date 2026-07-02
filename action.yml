@@ -1,0 +1,134 @@
+name: Ferret Security Scan
+description: >
+  Scan AI CLI and MCP configurations for credential leaks, prompt injection,
+  jailbreaks, and supply-chain risks. Uploads SARIF results to GitHub Code
+  Scanning when permissions allow.
+author: Ferret Security Team
+
+branding:
+  icon: shield
+  color: orange
+
+inputs:
+  path:
+    description: Path(s) to scan (space-separated). Defaults to current directory.
+    required: false
+    default: "."
+  fail-on:
+    description: Minimum severity that causes a non-zero exit. One of CRITICAL, HIGH, MEDIUM, LOW, INFO, or NONE.
+    required: false
+    default: HIGH
+  format:
+    description: Output format — console, json, jsonl, sarif, csv. Use sarif to enable Code Scanning upload.
+    required: false
+    default: sarif
+  output-file:
+    description: Write report to this file path (required when format is sarif for upload step).
+    required: false
+    default: ferret-results.sarif
+  version:
+    description: Version of ferret-scan to install (e.g. "2.9.0" or "latest").
+    required: false
+    default: latest
+  extra-args:
+    description: Additional CLI arguments passed verbatim to `ferret scan` (e.g. "--no-mcp --baseline .ferret-baseline.json").
+    required: false
+    default: ""
+  upload-sarif:
+    description: Upload SARIF results to GitHub Code Scanning. Requires `security-events: write` permission.
+    required: false
+    default: "true"
+
+outputs:
+  findings-count:
+    description: Total number of findings across all severities.
+    value: ${{ steps.scan.outputs.findings_count }}
+  critical-count:
+    description: Number of CRITICAL findings.
+    value: ${{ steps.scan.outputs.critical_count }}
+  high-count:
+    description: Number of HIGH findings.
+    value: ${{ steps.scan.outputs.high_count }}
+  risk-score:
+    description: Overall risk score (0-100).
+    value: ${{ steps.scan.outputs.risk_score }}
+  sarif-path:
+    description: Path to the SARIF file (empty if format is not sarif).
+    value: ${{ steps.scan.outputs.sarif_path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Install ferret-scan
+      shell: bash
+      env:
+        FERRET_VERSION: ${{ inputs.version }}
+      run: |
+        npm install -g "ferret-scan@${FERRET_VERSION}"
+
+    - name: Run Ferret scan
+      id: scan
+      shell: bash
+      env:
+        FERRET_PATH: ${{ inputs.path }}
+        FERRET_FAIL_ON: ${{ inputs.fail-on }}
+        FERRET_FORMAT: ${{ inputs.format }}
+        FERRET_OUTPUT: ${{ inputs.output-file }}
+        FERRET_EXTRA: ${{ inputs.extra-args }}
+      run: |
+        set +e
+
+        OUTPUT_ARGS=""
+        if [ -n "$FERRET_OUTPUT" ] && [ "$FERRET_FORMAT" != "console" ]; then
+          OUTPUT_ARGS="-o ${FERRET_OUTPUT}"
+        fi
+
+        ferret scan \
+          --fail-on "${FERRET_FAIL_ON}" \
+          --format "${FERRET_FORMAT}" \
+          --ci \
+          ${OUTPUT_ARGS} \
+          ${FERRET_EXTRA} \
+          ${FERRET_PATH} \
+          --format json -o /tmp/ferret-summary.json 2>/dev/null || true
+
+        # Re-run in the requested format (primary output)
+        ferret scan \
+          --fail-on "${FERRET_FAIL_ON}" \
+          --format "${FERRET_FORMAT}" \
+          --ci \
+          ${OUTPUT_ARGS} \
+          ${FERRET_EXTRA} \
+          ${FERRET_PATH}
+        EXIT_CODE=$?
+
+        # Extract counts from JSON summary if available
+        if [ -f /tmp/ferret-summary.json ]; then
+          TOTAL=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('/tmp/ferret-summary.json'));console.log(r.summary?.total??0)}catch{console.log(0)}" 2>/dev/null || echo 0)
+          CRITICAL=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('/tmp/ferret-summary.json'));console.log(r.summary?.critical??0)}catch{console.log(0)}" 2>/dev/null || echo 0)
+          HIGH=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('/tmp/ferret-summary.json'));console.log(r.summary?.high??0)}catch{console.log(0)}" 2>/dev/null || echo 0)
+          SCORE=$(node -e "try{const r=JSON.parse(require('fs').readFileSync('/tmp/ferret-summary.json'));console.log(r.overallRiskScore??0)}catch{console.log(0)}" 2>/dev/null || echo 0)
+        else
+          TOTAL=0; CRITICAL=0; HIGH=0; SCORE=0
+        fi
+
+        echo "findings_count=${TOTAL}" >> "$GITHUB_OUTPUT"
+        echo "critical_count=${CRITICAL}" >> "$GITHUB_OUTPUT"
+        echo "high_count=${HIGH}" >> "$GITHUB_OUTPUT"
+        echo "risk_score=${SCORE}" >> "$GITHUB_OUTPUT"
+
+        if [ "$FERRET_FORMAT" = "sarif" ] && [ -n "$FERRET_OUTPUT" ]; then
+          echo "sarif_path=${FERRET_OUTPUT}" >> "$GITHUB_OUTPUT"
+        else
+          echo "sarif_path=" >> "$GITHUB_OUTPUT"
+        fi
+
+        exit $EXIT_CODE
+
+    - name: Upload SARIF to Code Scanning
+      if: ${{ inputs.upload-sarif == 'true' && inputs.format == 'sarif' && always() }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ${{ inputs.output-file }}
+        category: ferret-security
+      continue-on-error: true

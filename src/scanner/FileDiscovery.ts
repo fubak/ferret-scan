@@ -60,6 +60,9 @@ function getFileType(filePath: string): FileType | null {
     'js': 'js',
     'tsx': 'tsx',
     'jsx': 'jsx',
+    // Jupyter notebooks (.ipynb) contain JSON with cell sources and outputs.
+    // We extract the text content and run all existing rules against it.
+    'ipynb': 'ipynb',
   };
   return fileTypeMap[ext] ?? null;
 }
@@ -365,6 +368,11 @@ function isAnalyzableFile(filePath: string, options: DiscoveryOptions): boolean 
 
   // TypeScript / JavaScript files
   if (type === 'ts' || type === 'js' || type === 'tsx' || type === 'jsx') {
+    return true;
+  }
+
+  // Jupyter notebooks
+  if (type === 'ipynb') {
     return true;
   }
 

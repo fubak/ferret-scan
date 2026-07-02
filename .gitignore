@@ -122,3 +122,10 @@ pnpm-lock.yaml
 vitly/
 .ferret-policy.json
 undefined/
+
+# Local AI-assistant tooling artifacts (session-scoped, not project content)
+tasks/
+knowledge-base/
+docs/superpowers/
+.superpowers/
+.playwright-mcp/

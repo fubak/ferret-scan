@@ -34,7 +34,7 @@ export type ComponentType =
   | 'rules-file';
 
 /** File types supported for analysis */
-export type FileType = 'md' | 'sh' | 'bash' | 'zsh' | 'json' | 'yaml' | 'yml' | 'ts' | 'js' | 'tsx' | 'jsx';
+export type FileType = 'md' | 'sh' | 'bash' | 'zsh' | 'json' | 'yaml' | 'yml' | 'ts' | 'js' | 'tsx' | 'jsx' | 'ipynb';
 
 /** Semantic pattern for AST-based analysis */
 export interface SemanticPattern {
@@ -389,7 +389,7 @@ export interface ScannerConfig {
 }
 
 /** Supported output formats */
-export type OutputFormat = 'console' | 'json' | 'sarif' | 'html' | 'csv' | 'atlas' | 'sbom' | 'aibom';
+export type OutputFormat = 'console' | 'json' | 'jsonl' | 'sarif' | 'html' | 'csv' | 'atlas' | 'sbom' | 'aibom';
 
 /** CLI options passed from command line */
 export interface CliOptions {

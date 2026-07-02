@@ -104,7 +104,7 @@ jobs:
   publish:
     name: Publish ferret-scan
     needs: [test-unit]
-    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_main != 'false') }}
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_main != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -180,7 +180,7 @@ jobs:
   publish-lsp:
     name: Publish ferret-lsp
     needs: [test-unit]
-    if: ${{ always() && (needs.test-unit.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_lsp != 'false') }}
+    if: ${{ always() && (needs.test-unit.result == 'success' || github.event.inputs.skip_tests == 'true') && (github.event_name == 'push' || github.event.inputs.publish_lsp != 'false') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -263,8 +263,8 @@ jobs:
   build-vscode-extension:
     name: Build VS Code Extension
     needs: [publish, publish-lsp]
-    if: ${{ always() && 
-           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+    if: ${{ always() &&
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success') &&
            (github.event_name == 'push' || github.event.inputs.attach_vscode_extension != 'false') &&
            (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
     runs-on: ubuntu-latest
@@ -294,8 +294,8 @@ jobs:
   create-release:
     name: Create GitHub Release
     needs: [publish, publish-lsp, build-vscode-extension]
-    if: ${{ always() && 
-           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success' || github.event_name == 'push' || github.event.inputs.skip_tests == 'true') &&
+    if: ${{ always() &&
+           (needs.publish.result == 'success' || needs.publish-lsp.result == 'success') &&
            (github.event_name == 'push' || github.event.inputs.create_release != 'false') &&
            (github.event_name == 'push' || github.event.inputs.dry_run != 'true') }}
     runs-on: ubuntu-latest
